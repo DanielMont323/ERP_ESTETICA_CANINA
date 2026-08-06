@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { reportsAPI, productsAPI, remindersAPI } from '../services/api';
+import { reportsAPI, productsAPI, remindersAPI, accountsPayableAPI } from '../services/api';
 import toast from 'react-hot-toast';
+import { SkeletonStats } from '../components/Skeleton';
 import {
   DollarSign,
   Package,
@@ -10,7 +11,9 @@ import {
   ShoppingCart,
   FileText,
   ArrowUp,
-  ArrowDown
+  ArrowDown,
+  AlertTriangle,
+  X
 } from 'lucide-react';
 
 const Dashboard = () => {
@@ -19,6 +22,8 @@ const Dashboard = () => {
   const [dashboardData, setDashboardData] = useState(null);
   const [lowStockProducts, setLowStockProducts] = useState([]);
   const [upcomingReminders, setUpcomingReminders] = useState([]);
+  const [dueTomorrowAccounts, setDueTomorrowAccounts] = useState([]);
+  const [showAlert, setShowAlert] = useState(false);
 
   useEffect(() => {
     const fetchDashboardData = async () => {
@@ -39,6 +44,8 @@ const Dashboard = () => {
     };
 
     fetchDashboardData();
+    fetchAlerts();
+    fetchDueTomorrowAccounts();
   }, []);
 
   const fetchAlerts = async () => {
@@ -52,6 +59,19 @@ const Dashboard = () => {
       setUpcomingReminders(remindersRes.data.data.slice(0, 5));
     } catch (error) {
       console.error('Error fetching alerts:', error);
+    }
+  };
+
+  const fetchDueTomorrowAccounts = async () => {
+    try {
+      const response = await accountsPayableAPI.getDueTomorrow();
+      const accounts = response.data.data;
+      setDueTomorrowAccounts(accounts);
+      if (accounts.length > 0) {
+        setShowAlert(true);
+      }
+    } catch (error) {
+      console.error('Error fetching due tomorrow accounts:', error);
     }
   };
 
@@ -93,15 +113,44 @@ const Dashboard = () => {
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
-      </div>
-    );
+    return <SkeletonStats />;
   }
 
   return (
     <div className="space-y-6">
+      {/* Alert for accounts due tomorrow */}
+      {showAlert && dueTomorrowAccounts.length > 0 && (
+        <div className="bg-warning-50 border border-warning-200 rounded-xl p-4 animate-slide-up">
+          <div className="flex items-start justify-between">
+            <div className="flex items-start">
+              <AlertTriangle className="h-5 w-5 text-warning-600 mt-0.5 mr-3" />
+              <div>
+                <h3 className="font-semibold text-warning-900">
+                  {dueTomorrowAccounts.length} cuenta{dueTomorrowAccounts.length > 1 ? 's' : ''} por pagar vence{dueTomorrowAccounts.length > 1 ? 'n' : ''} mañana
+                </h3>
+                <div className="mt-2 space-y-1">
+                  {dueTomorrowAccounts.map((account) => (
+                    <div key={account._id} className="text-sm text-warning-800">
+                      <span className="font-medium">{account.proveedor?.name}</span>
+                      {' - '}
+                      {formatCurrency(account.saldo)}
+                      {' - '}
+                      {new Date(account.dueDate).toLocaleDateString('es-MX')}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+            <button
+              onClick={() => setShowAlert(false)}
+              className="text-warning-400 hover:text-warning-600 transition-colors"
+            >
+              <X className="h-5 w-5" />
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div>
         <h1 className="text-2xl font-semibold text-gray-900">Dashboard</h1>
@@ -219,36 +268,36 @@ const Dashboard = () => {
       {/* Quick Actions */}
       <div className="card">
         <div className="card-header">
-          <h3 className="text-lg font-medium text-gray-900">Acciones rápidas</h3>
+          <h3 className="text-lg font-semibold text-gray-900">Acciones rápidas</h3>
         </div>
         <div className="card-body">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <button 
               onClick={() => navigate('/sales')}
-              className="p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-primary-500 hover:bg-primary-50 transition-colors cursor-pointer"
+              className="p-4 border-2 border-dashed border-gray-300 rounded-xl hover:border-primary-500 hover:bg-primary-50 hover:shadow-sm transition-all duration-200 cursor-pointer group"
             >
-              <ShoppingCart className="h-8 w-8 text-primary-600 mx-auto mb-2" />
+              <ShoppingCart className="h-8 w-8 text-primary-600 mx-auto mb-2 group-hover:scale-110 transition-transform" />
               <p className="text-sm font-medium text-gray-900">Nueva venta</p>
             </button>
             <button 
               onClick={() => navigate('/products')}
-              className="p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-primary-500 hover:bg-primary-50 transition-colors cursor-pointer"
+              className="p-4 border-2 border-dashed border-gray-300 rounded-xl hover:border-primary-500 hover:bg-primary-50 hover:shadow-sm transition-all duration-200 cursor-pointer group"
             >
-              <Package className="h-8 w-8 text-primary-600 mx-auto mb-2" />
+              <Package className="h-8 w-8 text-primary-600 mx-auto mb-2 group-hover:scale-110 transition-transform" />
               <p className="text-sm font-medium text-gray-900">Agregar producto</p>
             </button>
             <button 
               onClick={() => navigate('/customers')}
-              className="p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-primary-500 hover:bg-primary-50 transition-colors cursor-pointer"
+              className="p-4 border-2 border-dashed border-gray-300 rounded-xl hover:border-primary-500 hover:bg-primary-50 hover:shadow-sm transition-all duration-200 cursor-pointer group"
             >
-              <Users className="h-8 w-8 text-primary-600 mx-auto mb-2" />
+              <Users className="h-8 w-8 text-primary-600 mx-auto mb-2 group-hover:scale-110 transition-transform" />
               <p className="text-sm font-medium text-gray-900">Nuevo cliente</p>
             </button>
             <button 
               onClick={() => navigate('/reports')}
-              className="p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-primary-500 hover:bg-primary-50 transition-colors cursor-pointer"
+              className="p-4 border-2 border-dashed border-gray-300 rounded-xl hover:border-primary-500 hover:bg-primary-50 hover:shadow-sm transition-all duration-200 cursor-pointer group"
             >
-              <FileText className="h-8 w-8 text-primary-600 mx-auto mb-2" />
+              <FileText className="h-8 w-8 text-primary-600 mx-auto mb-2 group-hover:scale-110 transition-transform" />
               <p className="text-sm font-medium text-gray-900">Generar reporte</p>
             </button>
           </div>

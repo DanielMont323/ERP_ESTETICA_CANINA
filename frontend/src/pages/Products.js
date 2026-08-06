@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { productsAPI } from '../services/api';
+import { productsAPI, productCategoriesAPI } from '../services/api';
 import toast from 'react-hot-toast';
+import { SkeletonTable } from '../components/Skeleton';
+import ConfirmModal from '../components/ConfirmModal';
 import {
   Plus,
   Search,
@@ -12,22 +14,28 @@ import {
 
 const Products = () => {
   const [products, setProducts] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [showModal, setShowModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteProductId, setDeleteProductId] = useState(null);
   const [editingProduct, setEditingProduct] = useState(null);
   const [formData, setFormData] = useState({
     name: '',
-    category: 'alimentos',
+    category: '',
     cost: '',
     price: '',
     stock: '',
-    minStock: '5'
+    minStock: '5',
+    sku: '',
+    discountPercentage: '0'
   });
   const [filter, setFilter] = useState('all');
 
   useEffect(() => {
     fetchProducts();
+    fetchCategories();
   }, []);
 
   const fetchProducts = async () => {
@@ -41,6 +49,15 @@ const Products = () => {
     }
   };
 
+  const fetchCategories = async () => {
+    try {
+      const response = await productCategoriesAPI.getAll({ active: true });
+      setCategories(response.data.data);
+    } catch (error) {
+      console.error('Error al cargar categorías:', error);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
@@ -49,7 +66,8 @@ const Products = () => {
         cost: parseFloat(formData.cost),
         price: parseFloat(formData.price),
         stock: parseInt(formData.stock),
-        minStock: parseInt(formData.minStock)
+        minStock: parseInt(formData.minStock),
+        discountPercentage: parseFloat(formData.discountPercentage) || 0
       };
 
       if (editingProduct) {
@@ -73,35 +91,42 @@ const Products = () => {
     setEditingProduct(product);
     setFormData({
       name: product.name,
-      category: product.category,
+      category: product.category?._id || product.category,
       cost: product.cost.toString(),
       price: product.price.toString(),
       stock: product.stock.toString(),
-      minStock: product.minStock.toString()
+      minStock: product.minStock.toString(),
+      sku: product.sku || '',
+      discountPercentage: (product.discountPercentage || 0).toString()
     });
     setShowModal(true);
   };
 
   const handleDelete = async (id) => {
-    if (window.confirm('¿Estás seguro de que deseas desactivar este producto?')) {
-      try {
-        await productsAPI.delete(id);
-        toast.success('Producto desactivado correctamente');
-        fetchProducts();
-      } catch (error) {
-        toast.error('Error al desactivar producto');
-      }
+    setDeleteProductId(id);
+    setShowDeleteModal(true);
+  };
+
+  const confirmDelete = async () => {
+    try {
+      await productsAPI.delete(deleteProductId);
+      toast.success('Producto desactivado correctamente');
+      fetchProducts();
+    } catch (error) {
+      toast.error('Error al desactivar producto');
     }
   };
 
   const resetForm = () => {
     setFormData({
       name: '',
-      category: 'alimentos',
+      category: '',
       cost: '',
       price: '',
       stock: '',
-      minStock: '5'
+      minStock: '5',
+      sku: '',
+      discountPercentage: '0'
     });
   };
 
@@ -127,11 +152,7 @@ const Products = () => {
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
-      </div>
-    );
+    return <SkeletonTable rows={5} columns={8} />;
   }
 
   return (
@@ -205,6 +226,8 @@ const Products = () => {
                 <th>Stock</th>
                 <th>Costo</th>
                 <th>Precio</th>
+                <th>Descuento</th>
+                <th>Precio Final</th>
                 <th>Margen</th>
                 <th>Estado</th>
                 <th>Acciones</th>
@@ -222,7 +245,7 @@ const Products = () => {
                       </div>
                     </td>
                     <td>
-                      <span className="capitalize">{product.category}</span>
+                      <span>{product.category?.name || 'Sin categoría'}</span>
                     </td>
                     <td>
                       <div className="text-right">
@@ -232,6 +255,23 @@ const Products = () => {
                     </td>
                     <td className="text-right">{formatCurrency(product.cost)}</td>
                     <td className="text-right">{formatCurrency(product.price)}</td>
+                    <td className="text-right">
+                      {product.discountPercentage > 0 ? (
+                        <span className="text-success-600 font-medium">{product.discountPercentage}%</span>
+                      ) : (
+                        <span className="text-gray-400">-</span>
+                      )}
+                    </td>
+                    <td className="text-right font-semibold">
+                      {product.discountPercentage > 0 ? (
+                        <div>
+                          <span className="text-gray-400 line-through text-sm">{formatCurrency(product.price)}</span>
+                          <div className="text-success-600">{formatCurrency(product.price * (1 - product.discountPercentage / 100))}</div>
+                        </div>
+                      ) : (
+                        formatCurrency(product.price)
+                      )}
+                    </td>
                     <td className="text-right">
                       <span className={`font-medium ${
                         product.margin > 30 ? 'text-success-600' : 
@@ -280,10 +320,10 @@ const Products = () => {
       {showModal && (
         <div className="fixed inset-0 z-50 overflow-y-auto">
           <div className="flex items-center justify-center min-h-screen px-4">
-            <div className="fixed inset-0 bg-gray-500 bg-opacity-75" onClick={() => setShowModal(false)} />
+            <div className="modal-overlay" onClick={() => setShowModal(false)} />
             
-            <div className="relative bg-white rounded-lg max-w-md w-full p-6">
-              <h3 className="text-lg font-medium text-gray-900 mb-4">
+            <div className="relative modal-content max-w-md w-full p-6 animate-slide-up">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">
                 {editingProduct ? 'Editar Producto' : 'Nuevo Producto'}
               </h3>
               
@@ -303,17 +343,43 @@ const Products = () => {
                   <div>
                     <label className="form-label">Categoría</label>
                     <select
+                      required
                       value={formData.category}
                       onChange={(e) => setFormData({...formData, category: e.target.value})}
                       className="form-input"
                     >
-                      <option value="alimentos">Alimentos</option>
-                      <option value="accesorios">Accesorios</option>
-                      <option value="medicamentos">Medicamentos</option>
-                      <option value="juguetes">Juguetes</option>
-                      <option value="higiene">Higiene</option>
-                      <option value="otros">Otros</option>
+                      <option value="">Seleccionar categoría</option>
+                      {categories.map(cat => (
+                        <option key={cat._id} value={cat._id}>
+                          {cat.name}
+                        </option>
+                      ))}
                     </select>
+                  </div>
+                  
+                  <div>
+                    <label className="form-label">SKU</label>
+                    <input
+                      type="text"
+                      value={formData.sku}
+                      onChange={(e) => setFormData({...formData, sku: e.target.value})}
+                      className="form-input"
+                      placeholder="Se generará automáticamente si se deja vacío"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="form-label">Descuento (%)</label>
+                    <input
+                      type="number"
+                      min="0"
+                      max="100"
+                      step="0.1"
+                      value={formData.discountPercentage}
+                      onChange={(e) => setFormData({...formData, discountPercentage: e.target.value})}
+                      className="form-input"
+                      placeholder="0 para sin descuento"
+                    />
                   </div>
                   
                   <div className="grid grid-cols-2 gap-4">
@@ -387,6 +453,19 @@ const Products = () => {
           </div>
         </div>
       )}
+      {/* Delete Confirmation Modal */}
+      <ConfirmModal
+        isOpen={showDeleteModal}
+        onClose={() => {
+          setShowDeleteModal(false);
+          setDeleteProductId(null);
+        }}
+        onConfirm={confirmDelete}
+        title="Desactivar producto"
+        message="¿Estás seguro de que deseas desactivar este producto? Esta acción se puede deshacer más tarde."
+        confirmText="Desactivar"
+        type="danger"
+      />
     </div>
   );
 };

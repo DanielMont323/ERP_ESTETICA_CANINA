@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { reportsAPI } from '../services/api';
 import toast from 'react-hot-toast';
+import { Skeleton, SkeletonCard } from '../components/Skeleton';
 import {
   BarChart3,
   Download
@@ -41,8 +42,20 @@ const Reports = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <Skeleton variant="title" className="w-48" />
+            <Skeleton variant="text" className="w-64 mt-2" />
+          </div>
+          <div className="flex items-center space-x-3">
+            <Skeleton variant="input" className="w-32" />
+            <Skeleton variant="button" />
+          </div>
+        </div>
+        <SkeletonCard />
+        <SkeletonCard />
+        <SkeletonCard />
       </div>
     );
   }

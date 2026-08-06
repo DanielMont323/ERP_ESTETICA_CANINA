@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { salesAPI, productsAPI, servicesAPI, customersAPI } from '../services/api';
 import toast from 'react-hot-toast';
+import { SkeletonTable } from '../components/Skeleton';
 import {
   Plus,
   Search,
@@ -24,7 +25,11 @@ const Sales = () => {
   const [cart, setCart] = useState([]);
   const [selectedCustomer, setSelectedCustomer] = useState('');
   const [paymentMethod, setPaymentMethod] = useState('efectivo');
+  const [saleChannel, setSaleChannel] = useState('local');
+  const [customCommission, setCustomCommission] = useState('');
+  const [useCustomCommission, setUseCustomCommission] = useState(false);
   const [notes, setNotes] = useState('');
+  const [userRole, setUserRole] = useState('user'); // Esto debería venir del contexto de autenticación
 
   const fetchSales = useCallback(async () => {
     try {
@@ -112,6 +117,9 @@ const Sales = () => {
   };
 
   const calculateCommission = () => {
+    if (useCustomCommission && customCommission) {
+      return parseFloat(customCommission);
+    }
     return calculateTotal() * 0.1;
   };
 
@@ -134,10 +142,16 @@ const Sales = () => {
           unitPrice: item.unitPrice
         })),
         paymentMethod,
+        saleChannel,
         customer: selectedCustomer || null,
         notes,
         user: 'current-user' // This should come from auth context
       };
+
+      // Solo administradores pueden modificar la comisión
+      if (userRole === 'admin' && useCustomCommission && customCommission) {
+        saleData.commission = parseFloat(customCommission);
+      }
 
       await salesAPI.create(saleData);
       toast.success('Venta registrada correctamente');
@@ -146,6 +160,9 @@ const Sales = () => {
       setCart([]);
       setSelectedCustomer('');
       setPaymentMethod('efectivo');
+      setSaleChannel('local');
+      setCustomCommission('');
+      setUseCustomCommission(false);
       setNotes('');
       setShowModal(false);
       fetchSales();
@@ -167,11 +184,7 @@ const Sales = () => {
   );
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
-      </div>
-    );
+    return <SkeletonTable rows={5} columns={8} />;
   }
 
   return (
@@ -295,11 +308,11 @@ const Sales = () => {
       {showModal && (
         <div className="fixed inset-0 z-50 overflow-y-auto">
           <div className="flex items-center justify-center min-h-screen px-4">
-            <div className="fixed inset-0 bg-gray-500 bg-opacity-75" onClick={() => setShowModal(false)} />
+            <div className="modal-overlay" onClick={() => setShowModal(false)} />
             
-            <div className="relative bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="relative modal-content max-w-4xl w-full max-h-[90vh] overflow-y-auto animate-slide-up">
               <div className="p-6">
-                <h3 className="text-lg font-medium text-gray-900 mb-6">Nueva Venta</h3>
+                <h3 className="text-lg font-semibold text-gray-900 mb-6">Nueva Venta</h3>
                 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                   {/* Products and Services */}
@@ -326,7 +339,7 @@ const Sales = () => {
                       <h4 className="font-medium text-gray-900 mb-3">Productos</h4>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         {products.filter(p => p.stock > 0).map(product => (
-                          <div key={product._id} className="border border-gray-200 rounded-lg p-3">
+                          <div key={product._id} className="border border-gray-200 rounded-xl p-3 hover:border-primary-300 hover:shadow-sm transition-all duration-200">
                             <div className="flex justify-between items-start">
                               <div className="flex-1">
                                 <p className="font-medium text-gray-900">{product.name}</p>
@@ -352,7 +365,7 @@ const Sales = () => {
                       <h4 className="font-medium text-gray-900 mb-3">Servicios</h4>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         {services.map(service => (
-                          <div key={service._id} className="border border-gray-200 rounded-lg p-3">
+                          <div key={service._id} className="border border-gray-200 rounded-xl p-3 hover:border-primary-300 hover:shadow-sm transition-all duration-200">
                             <div className="flex justify-between items-start">
                               <div className="flex-1">
                                 <p className="font-medium text-gray-900">{service.name}</p>
@@ -377,8 +390,8 @@ const Sales = () => {
                   {/* Cart */}
                   <div className="space-y-4">
                     <div>
-                      <h4 className="font-medium text-gray-900 mb-3">Carrito</h4>
-                      <div className="border border-gray-200 rounded-lg p-4 space-y-3">
+                      <h4 className="font-semibold text-gray-900 mb-3">Carrito</h4>
+                      <div className="border border-gray-200 rounded-xl p-4 space-y-3 bg-gray-50">
                         {cart.length === 0 ? (
                           <p className="text-gray-500 text-center py-4">Carrito vacío</p>
                         ) : (
@@ -418,15 +431,41 @@ const Sales = () => {
                     </div>
 
                     {/* Totals */}
-                    <div className="border border-gray-200 rounded-lg p-4 space-y-2">
+                    <div className="border border-gray-200 rounded-xl p-4 space-y-2 bg-white shadow-sm">
                       <div className="flex justify-between">
                         <span>Subtotal:</span>
                         <span className="font-medium">{formatCurrency(calculateTotal())}</span>
                       </div>
                       <div className="flex justify-between">
-                        <span>Comisión (10%):</span>
+                        <span>Comisión:</span>
                         <span className="font-medium">{formatCurrency(calculateCommission())}</span>
                       </div>
+                      {userRole === 'admin' && (
+                        <div className="pt-2 border-t border-gray-200">
+                          <label className="flex items-center text-sm">
+                            <input
+                              type="checkbox"
+                              checked={useCustomCommission}
+                              onChange={(e) => setUseCustomCommission(e.target.checked)}
+                              className="mr-2"
+                            />
+                            Modificar comisión
+                          </label>
+                          {useCustomCommission && (
+                            <div className="mt-2">
+                              <input
+                                type="number"
+                                min="0"
+                                step="0.01"
+                                value={customCommission}
+                                onChange={(e) => setCustomCommission(e.target.value)}
+                                className="form-input"
+                                placeholder="Monto de comisión"
+                              />
+                            </div>
+                          )}
+                        </div>
+                      )}
                       <div className="flex justify-between text-lg font-bold">
                         <span>Ingreso Neto:</span>
                         <span className="text-success-600">{formatCurrency(calculateNetIncome())}</span>
@@ -444,6 +483,20 @@ const Sales = () => {
                         <option value="efectivo">Efectivo</option>
                         <option value="tarjeta">Tarjeta</option>
                         <option value="transferencia">Transferencia</option>
+                      </select>
+                    </div>
+
+                    {/* Sale Channel */}
+                    <div>
+                      <label className="form-label">Canal de venta</label>
+                      <select
+                        value={saleChannel}
+                        onChange={(e) => setSaleChannel(e.target.value)}
+                        className="form-input"
+                      >
+                        <option value="local">Local comercial</option>
+                        <option value="mercado_libre">Mercado Libre</option>
+                        <option value="redes_sociales">Redes Sociales</option>
                       </select>
                     </div>
 

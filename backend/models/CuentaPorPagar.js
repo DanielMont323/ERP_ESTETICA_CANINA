@@ -11,6 +11,10 @@ const cuentaPorPagarSchema = new mongoose.Schema({
     ref: 'Compra',
     required: true
   },
+  receiptNumber: {
+    type: String,
+    trim: true
+  },
   monto: {
     type: Number,
     required: true,

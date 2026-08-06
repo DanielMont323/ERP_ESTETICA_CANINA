@@ -15,7 +15,9 @@ router.get('/', async (req, res) => {
       query.name = { $regex: search, $options: 'i' };
     }
 
-    const productos = await Producto.find(query).sort({ name: 1 });
+    const productos = await Producto.find(query)
+      .populate('category', 'name')
+      .sort({ name: 1 });
     
     res.json({
       success: true,
@@ -37,7 +39,9 @@ router.get('/low-stock', async (req, res) => {
   try {
     const productos = await Producto.find({
       $expr: { $lte: ['$stock', '$minStock'] }
-    }).sort({ stock: 1 });
+    })
+      .populate('category', 'name')
+      .sort({ stock: 1 });
     
     res.json({
       success: true,
@@ -57,7 +61,8 @@ router.get('/low-stock', async (req, res) => {
 // @desc    Obtener producto por ID
 router.get('/:id', async (req, res) => {
   try {
-    const producto = await Producto.findById(req.params.id);
+    const producto = await Producto.findById(req.params.id)
+      .populate('category', 'name');
     
     if (!producto) {
       return res.status(404).json({

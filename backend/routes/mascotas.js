@@ -1,6 +1,7 @@
 const express = require('express');
 const Mascota = require('../models/Mascota');
 const Cliente = require('../models/Cliente');
+const CarnetVacunacion = require('../models/CarnetVacunacion');
 const router = express.Router();
 
 // @route   GET /api/mascotas
@@ -92,6 +93,25 @@ router.post('/', async (req, res) => {
     const mascota = await Mascota.create(req.body);
     if (req.body.owner) {
       await mascota.populate('owner', 'name phone email');
+    }
+
+    // Crear carnet de vacunación automáticamente
+    if (req.body.owner) {
+      try {
+        const cliente = await Cliente.findById(req.body.owner);
+        await CarnetVacunacion.create({
+          mascota: mascota._id,
+          nombreMascota: mascota.name,
+          especie: mascota.type,
+          raza: mascota.breed,
+          propietario: req.body.owner,
+          nombrePropietario: cliente.name,
+          vacunas: []
+        });
+      } catch (carnetError) {
+        console.error('Error al crear carnet de vacunación:', carnetError);
+        // No fallar la creación de la mascota si falla el carnet
+      }
     }
     
     res.status(201).json({

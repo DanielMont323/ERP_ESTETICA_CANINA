@@ -78,7 +78,7 @@ router.get('/:id', async (req, res) => {
 // @desc    Crear nueva compra
 router.post('/', async (req, res) => {
   try {
-    const { proveedor, items, type, paymentMethod, user, notes, invoice } = req.body;
+    const { proveedor, items, type, paymentMethod, user, notes, invoice, receiptNumber } = req.body;
 
     // Validar que haya items
     if (!items || items.length === 0) {
@@ -163,6 +163,7 @@ router.post('/', async (req, res) => {
       await CuentaPorPagar.create({
         proveedor,
         compra: compra._id,
+        receiptNumber,
         monto: compra.total,
         montoBase: compra.baseTotal,
         descuentoDisponible: compra.totalDiscount,

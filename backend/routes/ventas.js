@@ -1,6 +1,7 @@
 const express = require('express');
 const Venta = require('../models/Venta');
 const Producto = require('../models/Producto');
+const Servicio = require('../models/Servicio');
 const Cliente = require('../models/Cliente');
 const router = express.Router();
 
@@ -23,10 +24,22 @@ router.get('/', async (req, res) => {
     const ventas = await Venta.find(query)
       .populate('customer', 'name phone')
       .populate('user', 'name')
-      .populate('items.item', 'name')
       .sort({ date: -1 })
       .limit(limit * 1)
       .skip((page - 1) * limit);
+
+    // Populate items manualmente según el tipo
+    for (const venta of ventas) {
+      for (const item of venta.items) {
+        if (item.type === 'producto') {
+          const producto = await Producto.findById(item.item).select('name price');
+          item.item = producto;
+        } else if (item.type === 'servicio') {
+          const servicio = await Servicio.findById(item.item).select('name price');
+          item.item = servicio;
+        }
+      }
+    }
 
     const total = await Venta.countDocuments(query);
 

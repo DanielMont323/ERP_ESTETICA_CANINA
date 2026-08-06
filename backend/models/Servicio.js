@@ -21,9 +21,15 @@ const servicioSchema = new mongoose.Schema({
     min: 1
   },
   category: {
-    type: String,
-    enum: ['baño', 'corte', 'consulta', 'vacunación', 'desparasitación', 'estética', 'otros'],
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'CategoriaServicio',
     required: [true, 'La categoría es obligatoria']
+  },
+  discountPercentage: {
+    type: Number,
+    default: 0,
+    min: 0,
+    max: 100
   },
   isActive: {
     type: Boolean,

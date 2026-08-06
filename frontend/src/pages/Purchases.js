@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { purchasesAPI, suppliersAPI, productsAPI, supplierProductsAPI } from '../services/api';
 import toast from 'react-hot-toast';
+import { SkeletonTable } from '../components/Skeleton';
 import {
   Plus,
   FileText,
@@ -15,6 +16,7 @@ const Purchases = () => {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
+  const [selectedSupplier, setSelectedSupplier] = useState('');
   const [formData, setFormData] = useState({
     proveedor: '',
     type: 'contado',
@@ -22,7 +24,8 @@ const Purchases = () => {
     user: 'default_user',
     items: [],
     notes: '',
-    invoice: ''
+    invoice: '',
+    receiptNumber: ''
   });
   const [currentItem, setCurrentItem] = useState({
     product: '',
@@ -172,12 +175,12 @@ const Purchases = () => {
     return baseTotal * (discountInfo.discountPercentage / 100);
   };
 
+  const filteredPurchases = selectedSupplier 
+    ? purchases.filter(p => p.proveedor?._id === selectedSupplier)
+    : purchases;
+
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
-      </div>
-    );
+    return <SkeletonTable rows={5} columns={8} />;
   }
 
   return (
@@ -194,6 +197,29 @@ const Purchases = () => {
           <Plus className="h-4 w-4 mr-2" />
           Nueva Compra
         </button>
+      </div>
+
+      {/* Filters */}
+      <div className="card">
+        <div className="card-body">
+          <div className="flex items-center gap-4">
+            <div className="flex-1">
+              <label className="form-label">Filtrar por proveedor</label>
+              <select
+                value={selectedSupplier}
+                onChange={(e) => setSelectedSupplier(e.target.value)}
+                className="form-input"
+              >
+                <option value="">Todos los proveedores</option>
+                {suppliers.map(supplier => (
+                  <option key={supplier._id} value={supplier._id}>
+                    {supplier.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Purchases Table */}
@@ -213,7 +239,7 @@ const Purchases = () => {
               </tr>
             </thead>
             <tbody>
-              {purchases.map((purchase) => (
+              {filteredPurchases.map((purchase) => (
                 <tr key={purchase._id}>
                   <td>{new Date(purchase.date).toLocaleDateString()}</td>
                   <td>{purchase.proveedor?.name}</td>
@@ -255,15 +281,18 @@ const Purchases = () => {
 
       {/* Modal for New Purchase */}
       {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6">
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-semibold">Nueva Compra</h2>
-                <button onClick={() => setShowModal(false)} className="text-gray-500 hover:text-gray-700">
-                  <X className="h-6 w-6" />
-                </button>
-              </div>
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          <div className="flex items-center justify-center min-h-screen px-4">
+            <div className="modal-overlay" onClick={() => setShowModal(false)} />
+            
+            <div className="relative modal-content max-w-4xl w-full max-h-[90vh] overflow-y-auto animate-slide-up">
+              <div className="p-6">
+                <div className="flex justify-between items-center mb-4">
+                  <h2 className="text-xl font-semibold text-gray-900">Nueva Compra</h2>
+                  <button onClick={() => setShowModal(false)} className="text-gray-400 hover:text-gray-600 transition-colors">
+                    <X className="h-6 w-6" />
+                  </button>
+                </div>
 
               <form onSubmit={handleSubmit}>
                 <div className="grid grid-cols-2 gap-4 mb-4">
@@ -297,9 +326,32 @@ const Purchases = () => {
                   </div>
                 </div>
 
+                <div className="grid grid-cols-2 gap-4 mb-4">
+                  <div>
+                    <label className="form-label">Número de Factura</label>
+                    <input
+                      type="text"
+                      value={formData.invoice}
+                      onChange={(e) => setFormData({...formData, invoice: e.target.value})}
+                      className="form-input"
+                      placeholder="Opcional"
+                    />
+                  </div>
+                  <div>
+                    <label className="form-label">Número de Recibo</label>
+                    <input
+                      type="text"
+                      value={formData.receiptNumber}
+                      onChange={(e) => setFormData({...formData, receiptNumber: e.target.value})}
+                      className="form-input"
+                      placeholder="Opcional"
+                    />
+                  </div>
+                </div>
+
                 {/* Items Section */}
-                <div className="border rounded-lg p-4 mb-4">
-                  <h3 className="font-semibold mb-3">Agregar Productos</h3>
+                <div className="border border-gray-200 rounded-xl p-4 mb-4 bg-gray-50">
+                  <h3 className="font-semibold text-gray-900 mb-3">Agregar Productos</h3>
                   
                   <div className="grid grid-cols-4 gap-4 mb-4">
                     <div>
@@ -351,8 +403,8 @@ const Purchases = () => {
 
                   {/* Discount Info */}
                   {discountInfo && (
-                    <div className="bg-green-50 border border-green-200 rounded-lg p-3 mb-4">
-                      <div className="flex items-center text-green-700">
+                    <div className="bg-success-50 border border-success-200 rounded-xl p-3 mb-4">
+                      <div className="flex items-center text-success-700">
                         <TrendingDown className="h-5 w-5 mr-2" />
                         <div>
                           <p className="font-semibold">
@@ -368,15 +420,15 @@ const Purchases = () => {
 
                   {/* Items List */}
                   {formData.items.length > 0 && (
-                    <div className="border rounded-lg p-3">
+                    <div className="border border-gray-200 rounded-xl p-3 bg-white">
                       <table className="w-full text-sm">
                         <thead>
                           <tr>
-                            <th className="text-left">Producto</th>
-                            <th className="text-left">Cantidad</th>
-                            <th className="text-left">Costo Unitario</th>
-                            <th className="text-left">Subtotal</th>
-                            <th></th>
+                            <th className="text-left py-2">Producto</th>
+                            <th className="text-left py-2">Cantidad</th>
+                            <th className="text-left py-2">Costo Unitario</th>
+                            <th className="text-left py-2">Subtotal</th>
+                            <th className="py-2"></th>
                           </tr>
                         </thead>
                         <tbody>
@@ -390,7 +442,7 @@ const Purchases = () => {
                                 <button
                                   type="button"
                                   onClick={() => handleRemoveItem(index)}
-                                  className="text-red-600 hover:text-red-800"
+                                  className="text-danger-600 hover:text-danger-900 transition-colors"
                                 >
                                   <X className="h-4 w-4" />
                                 </button>
@@ -457,6 +509,7 @@ const Purchases = () => {
             </div>
           </div>
         </div>
+      </div>
       )}
     </div>
   );

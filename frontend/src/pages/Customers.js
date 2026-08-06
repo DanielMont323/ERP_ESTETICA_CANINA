@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { customersAPI } from '../services/api';
 import toast from 'react-hot-toast';
+import { Skeleton, SkeletonCard } from '../components/Skeleton';
+import ConfirmModal from '../components/ConfirmModal';
 import {
   Plus,
   Search,
@@ -17,6 +19,8 @@ const Customers = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [showModal, setShowModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteCustomerId, setDeleteCustomerId] = useState(null);
   const [editingCustomer, setEditingCustomer] = useState(null);
   const [formData, setFormData] = useState({
     name: '',
@@ -76,14 +80,17 @@ const Customers = () => {
   };
 
   const handleDelete = async (id) => {
-    if (window.confirm('¿Estás seguro de que deseas desactivar este cliente?')) {
-      try {
-        await customersAPI.delete(id);
-        toast.success('Cliente desactivado correctamente');
-        fetchCustomers();
-      } catch (error) {
-        toast.error('Error al desactivar cliente');
-      }
+    setDeleteCustomerId(id);
+    setShowDeleteModal(true);
+  };
+
+  const confirmDelete = async () => {
+    try {
+      await customersAPI.delete(deleteCustomerId);
+      toast.success('Cliente desactivado correctamente');
+      fetchCustomers();
+    } catch (error) {
+      toast.error('Error al desactivar cliente');
     }
   };
 
@@ -107,8 +114,19 @@ const Customers = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <Skeleton variant="title" className="w-48" />
+            <Skeleton variant="text" className="w-64 mt-2" />
+          </div>
+          <Skeleton variant="button" />
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <SkeletonCard />
+          <SkeletonCard />
+          <SkeletonCard />
+        </div>
       </div>
     );
   }
@@ -209,10 +227,10 @@ const Customers = () => {
       {showModal && (
         <div className="fixed inset-0 z-50 overflow-y-auto">
           <div className="flex items-center justify-center min-h-screen px-4">
-            <div className="fixed inset-0 bg-gray-500 bg-opacity-75" onClick={() => setShowModal(false)} />
+            <div className="modal-overlay" onClick={() => setShowModal(false)} />
             
-            <div className="relative bg-white rounded-lg max-w-md w-full p-6">
-              <h3 className="text-lg font-medium text-gray-900 mb-4">
+            <div className="relative modal-content max-w-md w-full p-6 animate-slide-up">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">
                 {editingCustomer ? 'Editar Cliente' : 'Nuevo Cliente'}
               </h3>
               
@@ -295,6 +313,19 @@ const Customers = () => {
           </div>
         </div>
       )}
+      {/* Delete Confirmation Modal */}
+      <ConfirmModal
+        isOpen={showDeleteModal}
+        onClose={() => {
+          setShowDeleteModal(false);
+          setDeleteCustomerId(null);
+        }}
+        onConfirm={confirmDelete}
+        title="Desactivar cliente"
+        message="¿Estás seguro de que deseas desactivar este cliente? Esta acción se puede deshacer más tarde."
+        confirmText="Desactivar"
+        type="danger"
+      />
     </div>
   );
 };

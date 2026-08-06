@@ -19,7 +19,9 @@ import {
   Menu,
   X,
   Bell,
-  Search
+  Search,
+  Syringe,
+  Tag
 } from 'lucide-react';
 
 const Layout = () => {
@@ -30,11 +32,14 @@ const Layout = () => {
   const navigation = [
     { name: 'Dashboard', href: '/dashboard', icon: Home },
     { name: 'Productos', href: '/products', icon: Package },
+    { name: 'Categorías Productos', href: '/product-categories', icon: Tag },
     { name: 'Ventas', href: '/sales', icon: ShoppingCart },
     { name: 'Compras', href: '/purchases', icon: PurchasesIcon },
     { name: 'Clientes', href: '/customers', icon: Users },
     { name: 'Mascotas', href: '/pets', icon: Heart },
+    { name: 'Carnet Vacunación', href: '/vaccination-cards', icon: Syringe },
     { name: 'Servicios', href: '/services', icon: Scissors },
+    { name: 'Categorías Servicios', href: '/service-categories', icon: Tag },
     { name: 'Proveedores', href: '/suppliers', icon: Truck },
     { name: 'Cuentas por Pagar', href: '/accounts-payable', icon: FileText },
     { name: 'Costos', href: '/costs', icon: DollarSign },
@@ -76,10 +81,10 @@ const Layout = () => {
       {/* Main content */}
       <div className="flex flex-col w-0 flex-1 overflow-hidden">
         {/* Top header */}
-        <header className="relative z-10 flex-shrink-0 flex h-16 bg-white border-b border-gray-200">
+        <header className="relative z-10 flex-shrink-0 flex h-16 bg-white border-b border-gray-200 shadow-sm">
           <button
             type="button"
-            className="px-4 border-r border-gray-200 text-gray-500 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-primary-500 md:hidden"
+            className="px-4 border-r border-gray-200 text-gray-500 hover:bg-gray-50 hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-primary-500 md:hidden transition-colors"
             onClick={() => setSidebarOpen(true)}
           >
             <Menu className="h-6 w-6" />
@@ -89,11 +94,11 @@ const Layout = () => {
             <div className="flex-1 flex">
               <div className="w-full flex md:ml-0">
                 <div className="relative w-full text-gray-400 focus-within:text-gray-600">
-                  <div className="absolute inset-y-0 left-0 flex items-center pointer-events-none">
+                  <div className="absolute inset-y-0 left-0 flex items-center pointer-events-none pl-3">
                     <Search className="h-5 w-5" />
                   </div>
                   <input
-                    className="block w-full h-full pl-8 pr-3 py-2 border-transparent text-gray-900 placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-0 focus:border-transparent sm:text-sm"
+                    className="block w-full h-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 sm:text-sm transition-all duration-200"
                     placeholder="Buscar..."
                     type="search"
                   />
@@ -101,34 +106,32 @@ const Layout = () => {
               </div>
             </div>
             
-            <div className="ml-4 flex items-center md:ml-6 space-x-4">
+            <div className="ml-4 flex items-center md:ml-6 space-x-3">
               {/* Notifications */}
-              <button className="p-1 rounded-full text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
-                <Bell className="h-6 w-6" />
+              <button className="btn-ghost p-2 rounded-lg">
+                <Bell className="h-5 w-5" />
               </button>
 
               {/* User dropdown */}
-              <div className="relative">
-                <div className="flex items-center space-x-3">
-                  <div className="text-right">
-                    <p className="text-sm font-medium text-gray-900">{user?.name}</p>
-                    <p className="text-xs text-gray-500">{user?.email}</p>
-                  </div>
-                  <div className="h-8 w-8 rounded-full bg-primary-600 flex items-center justify-center">
-                    <span className="text-white text-sm font-medium">
-                      {user?.name?.charAt(0).toUpperCase()}
-                    </span>
-                  </div>
+              <div className="relative flex items-center space-x-3 pl-3 border-l border-gray-200">
+                <div className="text-right hidden sm:block">
+                  <p className="text-sm font-medium text-gray-900">{user?.name}</p>
+                  <p className="text-xs text-gray-500">{user?.email}</p>
+                </div>
+                <div className="h-9 w-9 rounded-full bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center shadow-sm">
+                  <span className="text-white text-sm font-semibold">
+                    {user?.name?.charAt(0).toUpperCase()}
+                  </span>
                 </div>
               </div>
 
               {/* Logout */}
               <button
                 onClick={logout}
-                className="p-1 rounded-full text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
+                className="btn-ghost p-2 rounded-lg"
                 title="Cerrar sesión"
               >
-                <LogOut className="h-6 w-6" />
+                <LogOut className="h-5 w-5" />
               </button>
             </div>
           </div>
@@ -150,24 +153,22 @@ const Layout = () => {
 const Sidebar = ({ navigation, isActive }) => {
   return (
     <div className="flex flex-col h-full bg-white border-r border-gray-200">
-      <div className="flex items-center h-16 flex-shrink-0 px-4 bg-primary-600">
-        <h1 className="text-xl font-semibold text-white">ERP System</h1>
+      <div className="flex items-center h-16 flex-shrink-0 px-6 bg-gradient-to-r from-primary-600 to-primary-700 shadow-sm">
+        <h1 className="text-xl font-bold text-white tracking-tight">ERP System</h1>
       </div>
       
-      <nav className="flex-1 px-2 py-4 space-y-1">
+      <nav className="flex-1 px-3 py-6 space-y-1">
         {navigation.map((item) => {
           const Icon = item.icon;
           return (
             <Link
               key={item.name}
               to={item.href}
-              className={`group flex items-center px-2 py-2 text-sm font-medium rounded-md transition-colors ${
-                isActive(item.href)
-                  ? 'bg-primary-100 text-primary-700 border-r-2 border-primary-700'
-                  : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+              className={`sidebar-item ${
+                isActive(item.href) ? 'active' : ''
               }`}
             >
-              <Icon className="mr-3 h-5 w-5" />
+              <Icon className="mr-3 h-5 w-5 flex-shrink-0" />
               {item.name}
             </Link>
           );

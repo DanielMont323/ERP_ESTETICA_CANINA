@@ -16,6 +16,7 @@ router.get('/', async (req, res) => {
     }
 
     const servicios = await Servicio.find(query)
+      .populate('category', 'name')
       .sort({ name: 1 })
       .limit(limit * 1)
       .skip((page - 1) * limit);
@@ -45,7 +46,8 @@ router.get('/', async (req, res) => {
 // @desc    Obtener servicio por ID
 router.get('/:id', async (req, res) => {
   try {
-    const servicio = await Servicio.findById(req.params.id);
+    const servicio = await Servicio.findById(req.params.id)
+      .populate('category', 'name');
     
     if (!servicio) {
       return res.status(404).json({

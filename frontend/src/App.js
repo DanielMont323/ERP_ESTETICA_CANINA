@@ -17,6 +17,9 @@ import Costs from './pages/Costs';
 import Reminders from './pages/Reminders';
 import Reports from './pages/Reports';
 import Settings from './pages/Settings';
+import ProductCategories from './pages/ProductCategories';
+import ServiceCategories from './pages/ServiceCategories';
+import VaccinationCards from './pages/VaccinationCards';
 
 // Protected Route component
 const ProtectedRoute = ({ children }) => {
@@ -78,11 +81,14 @@ function App() {
               <Route index element={<Navigate to="/dashboard" />} />
               <Route path="dashboard" element={<Dashboard />} />
               <Route path="products" element={<Products />} />
+              <Route path="product-categories" element={<ProductCategories />} />
               <Route path="sales" element={<Sales />} />
               <Route path="purchases" element={<Purchases />} />
               <Route path="customers" element={<Customers />} />
               <Route path="pets" element={<Pets />} />
+              <Route path="vaccination-cards" element={<VaccinationCards />} />
               <Route path="services" element={<Services />} />
+              <Route path="service-categories" element={<ServiceCategories />} />
               <Route path="suppliers" element={<Suppliers />} />
               <Route path="accounts-payable" element={<AccountsPayable />} />
               <Route path="costs" element={<Costs />} />
@@ -101,21 +107,36 @@ function App() {
             toastOptions={{
               duration: 4000,
               style: {
-                background: '#363636',
-                color: '#fff',
+                background: 'white',
+                color: '#1f2937',
+                borderRadius: '0.75rem',
+                padding: '1rem',
+                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+                border: '1px solid #e5e7eb',
               },
               success: {
                 duration: 3000,
                 iconTheme: {
-                  primary: '#22c55e',
+                  primary: '#16a34a',
                   secondary: '#fff',
+                },
+                style: {
+                  borderLeft: '4px solid #16a34a',
                 },
               },
               error: {
                 duration: 5000,
                 iconTheme: {
-                  primary: '#ef4444',
+                  primary: '#dc2626',
                   secondary: '#fff',
+                },
+                style: {
+                  borderLeft: '4px solid #dc2626',
+                },
+              },
+              loading: {
+                style: {
+                  borderLeft: '4px solid #2563eb',
                 },
               },
             }}

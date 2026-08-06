@@ -8,8 +8,7 @@ const productoSchema = new mongoose.Schema({
   },
   category: {
     type: String,
-    required: [true, 'La categoría es obligatoria'],
-    enum: ['alimentos', 'accesorios', 'medicamentos', 'juguetes', 'higiene', 'otros']
+    trim: true
   },
   cost: {
     type: Number,
@@ -39,6 +38,12 @@ const productoSchema = new mongoose.Schema({
     default: function() {
       return 'PRD-' + Date.now() + '-' + Math.random().toString(36).substr(2, 5).toUpperCase();
     }
+  },
+  discountPercentage: {
+    type: Number,
+    default: 0,
+    min: 0,
+    max: 100
   },
   isActive: {
     type: Boolean,

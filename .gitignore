@@ -2,6 +2,9 @@
 node_modules/
 package-lock.json
 
+# Cache
+frontend/node_modules/.cache/
+
 # Environment variables
 .env
 .env.local

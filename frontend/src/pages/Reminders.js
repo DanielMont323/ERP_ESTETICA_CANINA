@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { remindersAPI } from '../services/api';
 import toast from 'react-hot-toast';
+import { Skeleton, SkeletonCard } from '../components/Skeleton';
+import ConfirmModal from '../components/ConfirmModal';
 import {
   Plus,
   Calendar,
@@ -14,6 +16,8 @@ const Reminders = () => {
   const [reminders, setReminders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteReminderId, setDeleteReminderId] = useState(null);
   const [editingReminder, setEditingReminder] = useState(null);
   const [formData, setFormData] = useState({
     title: '',
@@ -79,14 +83,17 @@ const Reminders = () => {
   };
 
   const handleDeleteReminder = async (reminderId) => {
-    if (window.confirm('¿Estás seguro de que quieres eliminar este recordatorio?')) {
-      try {
-        await remindersAPI.delete(reminderId);
-        toast.success('Recordatorio eliminado correctamente');
-        fetchReminders();
-      } catch (error) {
-        toast.error('Error al eliminar recordatorio');
-      }
+    setDeleteReminderId(reminderId);
+    setShowDeleteModal(true);
+  };
+
+  const confirmDelete = async () => {
+    try {
+      await remindersAPI.delete(deleteReminderId);
+      toast.success('Recordatorio eliminado correctamente');
+      fetchReminders();
+    } catch (error) {
+      toast.error('Error al eliminar recordatorio');
     }
   };
 
@@ -119,8 +126,19 @@ const Reminders = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <Skeleton variant="title" className="w-48" />
+            <Skeleton variant="text" className="w-64 mt-2" />
+          </div>
+          <Skeleton variant="button" />
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <SkeletonCard />
+          <SkeletonCard />
+          <SkeletonCard />
+        </div>
       </div>
     );
   }
@@ -201,10 +219,12 @@ const Reminders = () => {
 
       {/* Modal */}
       {showModal && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-          <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
-            <div className="mt-3">
-              <h3 className="text-lg font-medium text-gray-900">
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          <div className="flex items-center justify-center min-h-screen px-4">
+            <div className="modal-overlay" onClick={() => setShowModal(false)} />
+            
+            <div className="relative modal-content max-w-md w-full p-6 animate-slide-up">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">
                 {editingReminder ? 'Editar Recordatorio' : 'Nuevo Recordatorio'}
               </h3>
               <form onSubmit={handleSubmit} className="mt-4 space-y-4">
@@ -285,6 +305,19 @@ const Reminders = () => {
           </div>
         </div>
       )}
+      {/* Delete Confirmation Modal */}
+      <ConfirmModal
+        isOpen={showDeleteModal}
+        onClose={() => {
+          setShowDeleteModal(false);
+          setDeleteReminderId(null);
+        }}
+        onConfirm={confirmDelete}
+        title="Eliminar recordatorio"
+        message="¿Estás seguro de que deseas eliminar este recordatorio? Esta acción no se puede deshacer."
+        confirmText="Eliminar"
+        type="danger"
+      />
     </div>
   );
 };

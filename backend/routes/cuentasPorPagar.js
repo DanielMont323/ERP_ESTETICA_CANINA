@@ -112,6 +112,41 @@ router.get('/upcoming', async (req, res) => {
   }
 });
 
+// @route   GET /api/cuentas-por-pagar/due-tomorrow
+// @desc    Obtener cuentas que vencen mañana (para alertas)
+router.get('/due-tomorrow', async (req, res) => {
+  try {
+    const today = new Date();
+    const tomorrow = new Date();
+    tomorrow.setDate(today.getDate() + 1);
+    
+    // Inicio y fin del día de mañana
+    const startOfTomorrow = new Date(tomorrow);
+    startOfTomorrow.setHours(0, 0, 0, 0);
+    const endOfTomorrow = new Date(tomorrow);
+    endOfTomorrow.setHours(23, 59, 59, 999);
+    
+    const cuentas = await CuentaPorPagar.find({
+      status: 'pendiente',
+      dueDate: { $gte: startOfTomorrow, $lte: endOfTomorrow }
+    })
+      .populate('proveedor', 'name contact phone')
+      .populate('compra', 'invoice date total')
+      .sort({ dueDate: 1 });
+
+    res.json({
+      success: true,
+      data: cuentas
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      success: false,
+      message: 'Error al obtener cuentas que vencen mañana'
+    });
+  }
+});
+
 // @route   GET /api/cuentas-por-pagar/:id
 // @desc    Obtener cuenta por pagar por ID
 router.get('/:id', async (req, res) => {

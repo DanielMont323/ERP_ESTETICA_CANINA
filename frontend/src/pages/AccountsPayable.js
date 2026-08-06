@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { accountsPayableAPI } from '../services/api';
 import toast from 'react-hot-toast';
+import { SkeletonTable } from '../components/Skeleton';
 import { AlertTriangle, X } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -92,11 +93,7 @@ const AccountsPayable = () => {
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
-      </div>
-    );
+    return <SkeletonTable rows={5} columns={10} />;
   }
 
   return (
@@ -119,6 +116,7 @@ const AccountsPayable = () => {
             <thead>
               <tr>
                 <th>Proveedor</th>
+                <th>Número de Recibo</th>
                 <th>Factura</th>
                 <th>Monto Base</th>
                 <th>Descuento</th>
@@ -136,6 +134,7 @@ const AccountsPayable = () => {
                 return (
                   <tr key={account._id}>
                     <td>{account.proveedor?.name}</td>
+                    <td>{account.receiptNumber || '-'}</td>
                     <td>{account.compra?.invoice || 'N/A'}</td>
                     <td>{formatCurrency(account.montoBase || account.monto)}</td>
                     <td className="text-green-600">
@@ -207,6 +206,9 @@ const AccountsPayable = () => {
                   <div>
                     <h3 className="font-semibold text-gray-900">{account.proveedor?.name}</h3>
                     <p className="text-sm text-gray-600">Factura: {account.compra?.invoice || 'N/A'}</p>
+                    {account.receiptNumber && (
+                      <p className="text-sm text-gray-600">Recibo: {account.receiptNumber}</p>
+                    )}
                   </div>
                   <span className={`px-2 py-1 rounded text-xs ${
                     account.status === 'pagado' ? 'bg-green-100 text-green-800' :
@@ -290,37 +292,34 @@ const AccountsPayable = () => {
 
       {/* Payment Modal */}
       {showPaymentModal && selectedAccount && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between p-4 md:p-6 border-b sticky top-0 bg-white">
-              <h3 className="text-lg font-semibold text-gray-900">Registrar Pago</h3>
-              <button
-                onClick={() => setShowPaymentModal(false)}
-                className="text-gray-400 hover:text-gray-600 p-1"
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          <div className="flex items-center justify-center min-h-screen px-4">
+            <div className="modal-overlay" onClick={() => setShowPaymentModal(false)} />
+            
+            <div className="relative modal-content max-w-md w-full max-h-[90vh] overflow-y-auto animate-slide-up">
+              <div className="flex items-center justify-between p-4 md:p-6 border-b border-gray-200 sticky top-0 bg-white rounded-t-xl">
+                <h3 className="text-lg font-semibold text-gray-900">Registrar Pago</h3>
+                <button
+                  onClick={() => setShowPaymentModal(false)}
+                  className="text-gray-400 hover:text-gray-600 transition-colors p-1"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
             
             <form onSubmit={handlePaymentSubmit} className="p-4 md:p-6 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Proveedor
-                </label>
+                <label className="form-label">Proveedor</label>
                 <p className="text-gray-900 font-medium">{selectedAccount.proveedor?.name}</p>
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Saldo Pendiente
-                </label>
+                <label className="form-label">Saldo Pendiente</label>
                 <p className="text-gray-900 font-medium text-lg">{formatCurrency(selectedAccount.saldo)}</p>
               </div>
               
               <div>
-                <label htmlFor="amount" className="block text-sm font-medium text-gray-700 mb-1">
-                  Monto a Pagar
-                </label>
+                <label htmlFor="amount" className="form-label">Monto a Pagar</label>
                 <input
                   id="amount"
                   type="number"
@@ -330,19 +329,17 @@ const AccountsPayable = () => {
                   required
                   value={paymentData.amount}
                   onChange={(e) => setPaymentData({ ...paymentData, amount: e.target.value })}
-                  className="w-full px-3 py-3 text-lg border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  className="form-input text-lg"
                 />
               </div>
               
               <div>
-                <label htmlFor="paymentMethod" className="block text-sm font-medium text-gray-700 mb-1">
-                  Método de Pago
-                </label>
+                <label htmlFor="paymentMethod" className="form-label">Método de Pago</label>
                 <select
                   id="paymentMethod"
                   value={paymentData.paymentMethod}
                   onChange={(e) => setPaymentData({ ...paymentData, paymentMethod: e.target.value })}
-                  className="w-full px-3 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 text-base"
+                  className="form-input"
                 >
                   <option value="efectivo">Efectivo</option>
                   <option value="transferencia">Transferencia</option>
@@ -352,15 +349,13 @@ const AccountsPayable = () => {
               </div>
               
               <div>
-                <label htmlFor="notes" className="block text-sm font-medium text-gray-700 mb-1">
-                  Notas (opcional)
-                </label>
+                <label htmlFor="notes" className="form-label">Notas (opcional)</label>
                 <textarea
                   id="notes"
                   rows="3"
                   value={paymentData.notes}
                   onChange={(e) => setPaymentData({ ...paymentData, notes: e.target.value })}
-                  className="w-full px-3 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 text-base"
+                  className="form-input"
                   placeholder="Referencia, número de confirmación, etc."
                 />
               </div>
@@ -369,14 +364,14 @@ const AccountsPayable = () => {
                 <button
                   type="button"
                   onClick={() => setShowPaymentModal(false)}
-                  className="w-full sm:w-auto px-4 py-3 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 font-medium"
+                  className="btn btn-secondary btn-md"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
                   disabled={processingPayment}
-                  className="w-full sm:w-auto px-4 py-3 bg-primary-600 text-white rounded-md hover:bg-primary-700 disabled:opacity-50 font-medium"
+                  className="btn btn-primary btn-md"
                 >
                   {processingPayment ? 'Procesando...' : 'Confirmar Pago'}
                 </button>
@@ -384,6 +379,7 @@ const AccountsPayable = () => {
             </form>
           </div>
         </div>
+      </div>
       )}
     </div>
   );

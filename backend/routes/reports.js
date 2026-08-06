@@ -13,10 +13,44 @@ const router = express.Router();
 // @desc    Estado de resultados
 router.get('/income-statement', async (req, res) => {
   try {
-    const { startDate, endDate } = req.query;
+    const { period, startDate, endDate } = req.query;
     
     let dateFilter = {};
-    if (startDate && endDate) {
+    
+    // Filtros de periodo predefinidos
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    if (period === 'today') {
+      const tomorrow = new Date(today);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      dateFilter = {
+        date: { $gte: today, $lt: tomorrow }
+      };
+    } else if (period === 'week') {
+      const startOfWeek = new Date(today);
+      startOfWeek.setDate(today.getDate() - today.getDay());
+      startOfWeek.setHours(0, 0, 0, 0);
+      const endOfWeek = new Date(startOfWeek);
+      endOfWeek.setDate(startOfWeek.getDate() + 7);
+      dateFilter = {
+        date: { $gte: startOfWeek, $lt: endOfWeek }
+      };
+    } else if (period === 'month') {
+      const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+      const endOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+      endOfMonth.setHours(23, 59, 59, 999);
+      dateFilter = {
+        date: { $gte: startOfMonth, $lte: endOfMonth }
+      };
+    } else if (period === 'year') {
+      const startOfYear = new Date(today.getFullYear(), 0, 1);
+      const endOfYear = new Date(today.getFullYear(), 11, 31);
+      endOfYear.setHours(23, 59, 59, 999);
+      dateFilter = {
+        date: { $gte: startOfYear, $lte: endOfYear }
+      };
+    } else if (startDate && endDate) {
       dateFilter = {
         date: {
           $gte: new Date(startDate),
@@ -103,10 +137,44 @@ router.get('/income-statement', async (req, res) => {
 // @desc    Resumen de ventas
 router.get('/sales-summary', async (req, res) => {
   try {
-    const { period, startDate, endDate } = req.query;
+    const { period, startDate, endDate, category } = req.query;
     
     let dateFilter = {};
-    if (startDate && endDate) {
+    
+    // Filtros de periodo predefinidos
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    if (period === 'today') {
+      const tomorrow = new Date(today);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      dateFilter = {
+        date: { $gte: today, $lt: tomorrow }
+      };
+    } else if (period === 'week') {
+      const startOfWeek = new Date(today);
+      startOfWeek.setDate(today.getDate() - today.getDay());
+      startOfWeek.setHours(0, 0, 0, 0);
+      const endOfWeek = new Date(startOfWeek);
+      endOfWeek.setDate(startOfWeek.getDate() + 7);
+      dateFilter = {
+        date: { $gte: startOfWeek, $lt: endOfWeek }
+      };
+    } else if (period === 'month') {
+      const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+      const endOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+      endOfMonth.setHours(23, 59, 59, 999);
+      dateFilter = {
+        date: { $gte: startOfMonth, $lte: endOfMonth }
+      };
+    } else if (period === 'year') {
+      const startOfYear = new Date(today.getFullYear(), 0, 1);
+      const endOfYear = new Date(today.getFullYear(), 11, 31);
+      endOfYear.setHours(23, 59, 59, 999);
+      dateFilter = {
+        date: { $gte: startOfYear, $lte: endOfYear }
+      };
+    } else if (startDate && endDate) {
       dateFilter = {
         date: {
           $gte: new Date(startDate),
@@ -116,7 +184,7 @@ router.get('/sales-summary', async (req, res) => {
     }
 
     let groupFormat;
-    if (period === 'day') {
+    if (period === 'day' || period === 'today') {
       groupFormat = {
         year: { $year: '$date' },
         month: { $month: '$date' },
@@ -133,11 +201,23 @@ router.get('/sales-summary', async (req, res) => {
       };
     }
 
+    // Filtro por categoría de producto
+    let categoryFilter = {};
+    if (category) {
+      const productos = await Producto.find({ category }).select('_id');
+      const productIds = productos.map(p => p._id);
+      categoryFilter = {
+        'items.item': { $in: productIds },
+        'items.type': 'producto'
+      };
+    }
+
     const salesByPeriod = await Venta.aggregate([
       {
         $match: {
           ...dateFilter,
-          status: 'completada'
+          status: 'completada',
+          ...categoryFilter
         }
       },
       {
@@ -157,7 +237,8 @@ router.get('/sales-summary', async (req, res) => {
         $match: {
           ...dateFilter,
           status: 'completada',
-          'items.type': 'producto'
+          'items.type': 'producto',
+          ...categoryFilter
         }
       },
       { $unwind: '$items' },
@@ -193,7 +274,8 @@ router.get('/sales-summary', async (req, res) => {
       {
         $match: {
           ...dateFilter,
-          status: 'completada'
+          status: 'completada',
+          ...categoryFilter
         }
       },
       {
@@ -226,7 +308,18 @@ router.get('/sales-summary', async (req, res) => {
 // @desc    Reporte de inventario
 router.get('/inventory', async (req, res) => {
   try {
-    const productos = await Producto.find({ isActive: true })
+    const { category } = req.query;
+    
+    let categoryFilter = {};
+    if (category) {
+      categoryFilter = { category };
+    }
+
+    const productos = await Producto.find({ 
+      isActive: true,
+      ...categoryFilter
+    })
+      .populate('category', 'name')
       .select('name category cost price stock minStock sku');
 
     const totalProducts = productos.length;
@@ -236,7 +329,7 @@ router.get('/inventory', async (req, res) => {
     const outOfStockProducts = productos.filter(p => p.stock === 0);
 
     const inventoryByCategory = await Producto.aggregate([
-      { $match: { isActive: true } },
+      { $match: { isActive: true, ...categoryFilter } },
       {
         $group: {
           _id: '$category',
@@ -287,10 +380,44 @@ router.get('/inventory', async (req, res) => {
 // @desc    Reporte de clientes
 router.get('/customers', async (req, res) => {
   try {
-    const { startDate, endDate } = req.query;
+    const { period, startDate, endDate } = req.query;
     
     let dateFilter = {};
-    if (startDate && endDate) {
+    
+    // Filtros de periodo predefinidos
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    if (period === 'today') {
+      const tomorrow = new Date(today);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      dateFilter = {
+        date: { $gte: today, $lt: tomorrow }
+      };
+    } else if (period === 'week') {
+      const startOfWeek = new Date(today);
+      startOfWeek.setDate(today.getDate() - today.getDay());
+      startOfWeek.setHours(0, 0, 0, 0);
+      const endOfWeek = new Date(startOfWeek);
+      endOfWeek.setDate(startOfWeek.getDate() + 7);
+      dateFilter = {
+        date: { $gte: startOfWeek, $lt: endOfWeek }
+      };
+    } else if (period === 'month') {
+      const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+      const endOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+      endOfMonth.setHours(23, 59, 59, 999);
+      dateFilter = {
+        date: { $gte: startOfMonth, $lte: endOfMonth }
+      };
+    } else if (period === 'year') {
+      const startOfYear = new Date(today.getFullYear(), 0, 1);
+      const endOfYear = new Date(today.getFullYear(), 11, 31);
+      endOfYear.setHours(23, 59, 59, 999);
+      dateFilter = {
+        date: { $gte: startOfYear, $lte: endOfYear }
+      };
+    } else if (startDate && endDate) {
       dateFilter = {
         date: {
           $gte: new Date(startDate),

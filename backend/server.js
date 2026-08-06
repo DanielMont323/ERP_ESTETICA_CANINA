@@ -18,6 +18,9 @@ const costoRoutes = require('./routes/costos');
 const recordatorioRoutes = require('./routes/recordatorios');
 const reportRoutes = require('./routes/reports');
 const supplierProductRoutes = require('./routes/supplierProducts');
+const categoriaProductoRoutes = require('./routes/categoriasProducto');
+const carnetVacunacionRoutes = require('./routes/carnetVacunacion');
+const categoriaServicioRoutes = require('./routes/categoriasServicio');
 
 // Conectar a la base de datos
 connectDB();
@@ -66,6 +69,9 @@ app.use('/api/costos', costoRoutes);
 app.use('/api/recordatorios', recordatorioRoutes);
 app.use('/api/reports', reportRoutes);
 app.use('/api/supplier-products', supplierProductRoutes);
+app.use('/api/categorias-producto', categoriaProductoRoutes);
+app.use('/api/carnet-vacunacion', carnetVacunacionRoutes);
+app.use('/api/categorias-servicio', categoriaServicioRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

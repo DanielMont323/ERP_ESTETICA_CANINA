@@ -50,12 +50,14 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
         <div>
           <div className="flex justify-center">
             <div className="flex items-center space-x-2">
-              <Building2 className="h-8 w-8 text-primary-600" />
+              <div className="p-3 bg-gradient-to-br from-primary-500 to-primary-600 rounded-xl shadow-lg">
+                <Building2 className="h-8 w-8 text-white" />
+              </div>
               <h1 className="text-2xl font-bold text-gray-900">ERP System</h1>
             </div>
           </div>
@@ -122,13 +124,13 @@ const Login = () => {
                 />
                 <button
                   type="button"
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 transition-colors"
                   onClick={() => setShowPassword(!showPassword)}
                 >
                   {showPassword ? (
-                    <EyeOff className="h-5 w-5 text-gray-400" />
+                    <EyeOff className="h-5 w-5" />
                   ) : (
-                    <Eye className="h-5 w-5 text-gray-400" />
+                    <Eye className="h-5 w-5" />
                   )}
                 </button>
               </div>
@@ -139,7 +141,7 @@ const Login = () => {
             <button
               type="submit"
               disabled={loading}
-              className="group relative w-full btn btn-primary btn-md"
+              className="group relative w-full btn btn-primary btn-md shadow-lg hover:shadow-xl"
             >
               {loading ? (
                 <div className="flex items-center justify-center">
@@ -156,7 +158,7 @@ const Login = () => {
             <button
               type="button"
               onClick={() => setIsRegister(!isRegister)}
-              className="text-primary-600 hover:text-primary-500 text-sm font-medium"
+              className="text-primary-600 hover:text-primary-700 text-sm font-medium transition-colors"
             >
               {isRegister 
                 ? '¿Ya tienes cuenta? Inicia sesión' 

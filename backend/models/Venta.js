@@ -40,6 +40,12 @@ const ventaSchema = new mongoose.Schema({
     enum: ['efectivo', 'tarjeta', 'transferencia'],
     required: true
   },
+  saleChannel: {
+    type: String,
+    enum: ['local', 'mercado_libre', 'redes_sociales'],
+    required: true,
+    default: 'local'
+  },
   commission: {
     type: Number,
     required: true,
@@ -79,17 +85,17 @@ const ventaSchema = new mongoose.Schema({
 ventaSchema.pre('save', function(next) {
   // Calcular subtotal de cada item
   this.items.forEach(item => {
-    item.subtotal = item.quantity * item.unitPrice;
+    item.subtotal = Math.round((item.quantity * item.unitPrice) * 100) / 100;
   });
   
   // Calcular total
-  this.total = this.items.reduce((sum, item) => sum + item.subtotal, 0);
+  this.total = Math.round(this.items.reduce((sum, item) => sum + item.subtotal, 0) * 100) / 100;
   
-  // Calcular comisión (10% del total)
-  this.commission = this.total * 0.1;
+  // Calcular comisión (10% del total) - redondeado a 2 decimales
+  this.commission = Math.round((this.total * 0.1) * 100) / 100;
   
   // Calcular ingreso neto
-  this.netIncome = this.total - this.commission;
+  this.netIncome = Math.round((this.total - this.commission) * 100) / 100;
   
   next();
 });

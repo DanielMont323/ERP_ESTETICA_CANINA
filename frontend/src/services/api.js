@@ -56,6 +56,35 @@ export const productsAPI = {
   getLowStock: () => api.get('/productos/low-stock'),
 };
 
+// Product Categories services
+export const productCategoriesAPI = {
+  getAll: (params) => api.get('/categorias-producto', { params }),
+  getById: (id) => api.get(`/categorias-producto/${id}`),
+  create: (data) => api.post('/categorias-producto', data),
+  update: (id, data) => api.put(`/categorias-producto/${id}`, data),
+  delete: (id) => api.delete(`/categorias-producto/${id}`),
+};
+
+// Service Categories services
+export const serviceCategoriesAPI = {
+  getAll: (params) => api.get('/categorias-servicio', { params }),
+  getById: (id) => api.get(`/categorias-servicio/${id}`),
+  create: (data) => api.post('/categorias-servicio', data),
+  update: (id, data) => api.put(`/categorias-servicio/${id}`, data),
+  delete: (id) => api.delete(`/categorias-servicio/${id}`),
+};
+
+// Vaccination Card services
+export const vaccinationCardAPI = {
+  getAll: (params) => api.get('/carnet-vacunacion', { params }),
+  getById: (id) => api.get(`/carnet-vacunacion/${id}`),
+  getByPet: (petId) => api.get(`/carnet-vacunacion/mascota/${petId}`),
+  create: (data) => api.post('/carnet-vacunacion', data),
+  update: (id, data) => api.put(`/carnet-vacunacion/${id}`, data),
+  addVaccine: (id, data) => api.post(`/carnet-vacunacion/${id}/vacunas`, data),
+  removeVaccine: (id, vaccineId) => api.delete(`/carnet-vacunacion/${id}/vacunas/${vaccineId}`),
+};
+
 // Sales services
 export const salesAPI = {
   getAll: (params) => api.get('/ventas', { params }),
@@ -134,6 +163,7 @@ export const accountsPayableAPI = {
   updateStatus: (id, data) => api.patch(`/cuentas-por-pagar/${id}/status`, data),
   getOverdue: () => api.get('/cuentas-por-pagar/overdue'),
   getUpcoming: () => api.get('/cuentas-por-pagar/upcoming'),
+  getDueTomorrow: () => api.get('/cuentas-por-pagar/due-tomorrow'),
   getSummary: () => api.get('/cuentas-por-pagar/summary'),
 };
 

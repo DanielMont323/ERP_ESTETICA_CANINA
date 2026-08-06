@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { servicesAPI } from '../services/api';
+import { servicesAPI, serviceCategoriesAPI } from '../services/api';
 import toast from 'react-hot-toast';
+import { Skeleton, SkeletonCard } from '../components/Skeleton';
+import ConfirmModal from '../components/ConfirmModal';
 import {
   Plus,
   Clock,
@@ -11,19 +13,24 @@ import {
 
 const Services = () => {
   const [services, setServices] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteServiceId, setDeleteServiceId] = useState(null);
   const [editingService, setEditingService] = useState(null);
   const [formData, setFormData] = useState({
     name: '',
     description: '',
     price: '',
     duration: '',
-    category: 'baño'
+    category: '',
+    discountPercentage: '0'
   });
 
   useEffect(() => {
     fetchServices();
+    fetchCategories();
   }, []);
 
   const fetchServices = async () => {
@@ -34,6 +41,15 @@ const Services = () => {
       toast.error('Error al cargar servicios');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchCategories = async () => {
+    try {
+      const response = await serviceCategoriesAPI.getAll({ active: true });
+      setCategories(response.data.data);
+    } catch (error) {
+      console.error('Error al cargar categorías:', error);
     }
   };
 
@@ -51,7 +67,8 @@ const Services = () => {
       description: '',
       price: '',
       duration: '',
-      category: 'baño'
+      category: '',
+      discountPercentage: '0'
     });
     setShowModal(true);
   };
@@ -63,20 +80,24 @@ const Services = () => {
       description: service.description || '',
       price: service.price,
       duration: service.duration,
-      category: service.category
+      category: service.category?._id || service.category,
+      discountPercentage: (service.discountPercentage || 0).toString()
     });
     setShowModal(true);
   };
 
   const handleDeleteService = async (serviceId) => {
-    if (window.confirm('¿Estás seguro de que quieres eliminar este servicio?')) {
-      try {
-        await servicesAPI.delete(serviceId);
-        toast.success('Servicio eliminado correctamente');
-        fetchServices();
-      } catch (error) {
-        toast.error('Error al eliminar servicio');
-      }
+    setDeleteServiceId(serviceId);
+    setShowDeleteModal(true);
+  };
+
+  const confirmDelete = async () => {
+    try {
+      await servicesAPI.delete(deleteServiceId);
+      toast.success('Servicio eliminado correctamente');
+      fetchServices();
+    } catch (error) {
+      toast.error('Error al eliminar servicio');
     }
   };
 
@@ -99,8 +120,19 @@ const Services = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <Skeleton variant="title" className="w-48" />
+            <Skeleton variant="text" className="w-64 mt-2" />
+          </div>
+          <Skeleton variant="button" />
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <SkeletonCard />
+          <SkeletonCard />
+          <SkeletonCard />
+        </div>
       </div>
     );
   }
@@ -139,11 +171,25 @@ const Services = () => {
                     </div>
                     <div className="flex items-center text-sm text-gray-600">
                       <DollarSign className="h-4 w-4 mr-2" />
-                      {formatCurrency(service.price)}
+                      {service.discountPercentage > 0 ? (
+                        <div>
+                          <span className="text-gray-400 line-through text-sm">{formatCurrency(service.price)}</span>
+                          <span className="text-success-600 font-semibold ml-2">
+                            {formatCurrency(service.price * (1 - service.discountPercentage / 100))}
+                          </span>
+                        </div>
+                      ) : (
+                        formatCurrency(service.price)
+                      )}
                     </div>
+                    {service.discountPercentage > 0 && (
+                      <div className="text-sm text-success-600 font-medium">
+                        {service.discountPercentage}% de descuento
+                      </div>
+                    )}
                     <div className="text-sm">
-                      <span className="capitalize badge badge-info">
-                        {service.category}
+                      <span className="badge badge-info">
+                        {service.category?.name || 'Sin categoría'}
                       </span>
                     </div>
                   </div>
@@ -170,10 +216,12 @@ const Services = () => {
 
       {/* Modal */}
       {showModal && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-          <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
-            <div className="mt-3">
-              <h3 className="text-lg font-medium text-gray-900">
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          <div className="flex items-center justify-center min-h-screen px-4">
+            <div className="modal-overlay" onClick={() => setShowModal(false)} />
+            
+            <div className="relative modal-content max-w-md w-full p-6 animate-slide-up">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">
                 {editingService ? 'Editar Servicio' : 'Nuevo Servicio'}
               </h3>
               <form onSubmit={handleSubmit} className="mt-4 space-y-4">
@@ -220,18 +268,29 @@ const Services = () => {
                 <div>
                   <label className="form-label">Categoría</label>
                   <select
+                    required
                     value={formData.category}
                     onChange={(e) => setFormData({...formData, category: e.target.value})}
                     className="form-input"
                   >
-                    <option value="baño">Baño</option>
-                    <option value="corte">Corte</option>
-                    <option value="consulta">Consulta</option>
-                    <option value="vacunación">Vacunación</option>
-                    <option value="desparasitación">Desparasitación</option>
-                    <option value="estética">Estética</option>
-                    <option value="otros">Otros</option>
+                    <option value="">Seleccionar categoría</option>
+                    {categories.map(cat => (
+                      <option key={cat._id} value={cat._id}>{cat.name}</option>
+                    ))}
                   </select>
+                </div>
+                <div>
+                  <label className="form-label">Descuento (%)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    max="100"
+                    step="0.1"
+                    value={formData.discountPercentage}
+                    onChange={(e) => setFormData({...formData, discountPercentage: e.target.value})}
+                    className="form-input"
+                    placeholder="0 para sin descuento"
+                  />
                 </div>
                 <div className="flex justify-end space-x-2">
                   <button
@@ -253,6 +312,19 @@ const Services = () => {
           </div>
         </div>
       )}
+      {/* Delete Confirmation Modal */}
+      <ConfirmModal
+        isOpen={showDeleteModal}
+        onClose={() => {
+          setShowDeleteModal(false);
+          setDeleteServiceId(null);
+        }}
+        onConfirm={confirmDelete}
+        title="Eliminar servicio"
+        message="¿Estás seguro de que deseas eliminar este servicio? Esta acción no se puede deshacer."
+        confirmText="Eliminar"
+        type="danger"
+      />
     </div>
   );
 };

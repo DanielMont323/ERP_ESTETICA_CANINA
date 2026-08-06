@@ -93,7 +93,7 @@ const Settings = () => {
                   <h3 className="text-lg font-medium text-gray-900">Información del Perfil</h3>
                   
                   <div className="flex items-center space-x-4">
-                    <div className="h-16 w-16 rounded-full bg-primary-600 flex items-center justify-center">
+                    <div className="h-16 w-16 rounded-full bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center shadow-lg">
                       <span className="text-white text-xl font-medium">
                         {user?.name?.charAt(0).toUpperCase()}
                       </span>
@@ -124,7 +124,7 @@ const Settings = () => {
                     </div>
                   </div>
 
-                  <button className="btn btn-primary btn-md">
+                  <button className="btn btn-primary btn-md hover:scale-105 transition-transform">
                     <Save className="h-4 w-4 mr-2" />
                     Guardar Cambios
                   </button>
@@ -224,7 +224,7 @@ const Settings = () => {
                       />
                     </div>
 
-                    <button type="submit" className="btn btn-primary btn-md">
+                    <button type="submit" className="btn btn-primary btn-md hover:scale-105 transition-transform">
                       Actualizar Contraseña
                     </button>
                   </form>
@@ -237,28 +237,28 @@ const Settings = () => {
                   <h3 className="text-lg font-medium text-gray-900">Gestión de Datos</h3>
                   
                   <div className="space-y-4">
-                    <div className="border border-gray-200 rounded-lg p-4">
+                    <div className="border border-gray-200 rounded-xl p-4 hover:shadow-md transition-shadow">
                       <h4 className="font-medium text-gray-900 mb-2">Exportar Datos</h4>
                       <p className="text-sm text-gray-500 mb-4">Descarga todos tus datos en formato CSV</p>
-                      <button className="btn btn-secondary btn-md">
+                      <button className="btn btn-secondary btn-md hover:scale-105 transition-transform">
                         <Database className="h-4 w-4 mr-2" />
                         Exportar Datos
                       </button>
                     </div>
 
-                    <div className="border border-gray-200 rounded-lg p-4">
+                    <div className="border border-gray-200 rounded-xl p-4 hover:shadow-md transition-shadow">
                       <h4 className="font-medium text-gray-900 mb-2">Respaldo de Base de Datos</h4>
                       <p className="text-sm text-gray-500 mb-4">Crea un respaldo completo de la base de datos</p>
-                      <button className="btn btn-secondary btn-md">
+                      <button className="btn btn-secondary btn-md hover:scale-105 transition-transform">
                         <Database className="h-4 w-4 mr-2" />
                         Crear Respaldo
                       </button>
                     </div>
 
-                    <div className="border border-danger-200 rounded-lg p-4">
+                    <div className="border border-danger-200 rounded-xl p-4 hover:shadow-md transition-shadow">
                       <h4 className="font-medium text-danger-900 mb-2">Zona de Peligro</h4>
                       <p className="text-sm text-danger-500 mb-4">Estas acciones son irreversibles</p>
-                      <button className="btn btn-danger btn-md">
+                      <button className="btn btn-danger btn-md hover:scale-105 transition-transform">
                         Eliminar Todos los Datos
                       </button>
                     </div>
