@@ -15,6 +15,26 @@ const cuentaPorPagarSchema = new mongoose.Schema({
     type: String,
     trim: true
   },
+  hasIVA: {
+    type: Boolean,
+    default: false
+  },
+  ivaRate: {
+    type: Number,
+    default: 0.16,
+    min: 0,
+    max: 1
+  },
+  subtotal: {
+    type: Number,
+    required: false,
+    min: 0
+  },
+  ivaAmount: {
+    type: Number,
+    default: 0,
+    min: 0
+  },
   monto: {
     type: Number,
     required: true,
@@ -89,6 +109,33 @@ const cuentaPorPagarSchema = new mongoose.Schema({
     type: Date,
     default: Date.now
   }
+});
+
+// Pre-save hook para calcular IVA automáticamente
+cuentaPorPagarSchema.pre('save', function(next) {
+  // Calcular IVA si aplica
+  if (this.hasIVA) {
+    // Usar subtotal o montoBase como fallback para cuentas antiguas
+    const baseAmount = this.subtotal || this.montoBase || this.monto;
+    if (baseAmount) {
+      this.ivaAmount = Math.round((baseAmount * this.ivaRate) * 100) / 100;
+      this.monto = Math.round((baseAmount + this.ivaAmount) * 100) / 100;
+    }
+  } else {
+    this.ivaAmount = 0;
+    // Usar subtotal o montoBase como fallback
+    const baseAmount = this.subtotal || this.montoBase;
+    if (baseAmount) {
+      this.monto = baseAmount;
+    }
+  }
+  
+  // Si montoBase no está establecido, usar el subtotal o monto
+  if (!this.montoBase || this.montoBase === 0) {
+    this.montoBase = this.subtotal || this.monto;
+  }
+  
+  next();
 });
 
 // Actualizar estado a vencido si pasa la fecha

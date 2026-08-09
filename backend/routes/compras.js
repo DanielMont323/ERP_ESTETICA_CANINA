@@ -3,18 +3,45 @@ const Compra = require('../models/Compra');
 const Proveedor = require('../models/Proveedor');
 const Producto = require('../models/Producto');
 const CuentaPorPagar = require('../models/CuentaPorPagar');
+const { authenticateToken } = require('../middleware/auth');
 const router = express.Router();
 
 // @route   GET /api/compras
 // @desc    Obtener todas las compras
-router.get('/', async (req, res) => {
+router.get('/', authenticateToken, async (req, res) => {
   try {
-    const { proveedor, status, type, page = 1, limit = 10 } = req.query;
+    const { proveedor, status, sku, type, page = 1, limit = 10 } = req.query;
     let query = {};
 
     if (proveedor) query.proveedor = proveedor;
     if (status) query.status = status;
     if (type) query.type = type;
+
+    // Filtro por SKU (busca en items de la compra)
+    if (sku) {
+      // Buscar productos que coincidan con el SKU
+      const productos = await Producto.find({ 
+        sku: { $regex: sku, $options: 'i' } 
+      }).select('_id');
+      
+      const productoIds = productos.map(p => p._id);
+      
+      if (productoIds.length > 0) {
+        query['items.product'] = { $in: productoIds };
+      } else {
+        // Si no hay productos con ese SKU, retornar vacío
+        return res.json({
+          success: true,
+          data: [],
+          pagination: {
+            page: parseInt(page),
+            limit: parseInt(limit),
+            total: 0,
+            pages: 0
+          }
+        });
+      }
+    }
 
     const compras = await Compra.find(query)
       .populate('proveedor', 'name contact phone')
@@ -47,7 +74,7 @@ router.get('/', async (req, res) => {
 
 // @route   GET /api/compras/:id
 // @desc    Obtener compra por ID
-router.get('/:id', async (req, res) => {
+router.get('/:id', authenticateToken, async (req, res) => {
   try {
     const compra = await Compra.findById(req.params.id)
       .populate('proveedor', 'name contact phone email creditDays')
@@ -76,9 +103,9 @@ router.get('/:id', async (req, res) => {
 
 // @route   POST /api/compras
 // @desc    Crear nueva compra
-router.post('/', async (req, res) => {
+router.post('/', authenticateToken, async (req, res) => {
   try {
-    const { proveedor, items, type, paymentMethod, user, notes, invoice, receiptNumber } = req.body;
+    const { proveedor, items, type, paymentMethod, user, notes, invoice, receiptNumber, hasIVA, ivaRate } = req.body;
 
     // Validar que haya items
     if (!items || items.length === 0) {
@@ -160,21 +187,30 @@ router.post('/', async (req, res) => {
 
     // Si es a crédito, crear cuenta por pagar
     if (type === 'credito') {
+      // Calcular IVA si aplica
+      const finalIvaRate = hasIVA ? (ivaRate || 0.16) : 0;
+      const ivaAmount = hasIVA ? Math.round((compra.baseTotal * finalIvaRate) * 100) / 100 : 0;
+      const totalConIVA = Math.round((compra.baseTotal + ivaAmount) * 100) / 100;
+
       await CuentaPorPagar.create({
         proveedor,
         compra: compra._id,
         receiptNumber,
-        monto: compra.total,
+        hasIVA: hasIVA || false,
+        ivaRate: finalIvaRate,
+        subtotal: compra.baseTotal,
+        ivaAmount,
+        monto: totalConIVA,
         montoBase: compra.baseTotal,
         descuentoDisponible: compra.totalDiscount,
         discountDeadline: compra.discountDeadline,
-        saldo: compra.total,
+        saldo: totalConIVA,
         dueDate,
         notes: `Cuenta generada por compra ${compra._id}`
       });
 
-      // Actualizar deuda del proveedor
-      proveedorDoc.currentDebt += compra.total;
+      // Actualizar deuda del proveedor con el total con IVA
+      proveedorDoc.currentDebt += totalConIVA;
       await proveedorDoc.save();
     }
 

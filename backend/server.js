@@ -21,6 +21,10 @@ const supplierProductRoutes = require('./routes/supplierProducts');
 const categoriaProductoRoutes = require('./routes/categoriasProducto');
 const carnetVacunacionRoutes = require('./routes/carnetVacunacion');
 const categoriaServicioRoutes = require('./routes/categoriasServicio');
+const vacunaRoutes = require('./routes/vacunas');
+
+// Import middleware
+const { authenticateToken, requireAdmin } = require('./middleware/auth');
 
 // Conectar a la base de datos
 connectDB();
@@ -72,6 +76,7 @@ app.use('/api/supplier-products', supplierProductRoutes);
 app.use('/api/categorias-producto', categoriaProductoRoutes);
 app.use('/api/carnet-vacunacion', carnetVacunacionRoutes);
 app.use('/api/categorias-servicio', categoriaServicioRoutes);
+app.use('/api/vacunas', vacunaRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

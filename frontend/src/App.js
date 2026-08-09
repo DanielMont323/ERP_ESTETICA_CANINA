@@ -20,6 +20,7 @@ import Settings from './pages/Settings';
 import ProductCategories from './pages/ProductCategories';
 import ServiceCategories from './pages/ServiceCategories';
 import VaccinationCards from './pages/VaccinationCards';
+import VaccinesCatalog from './pages/VaccinesCatalog';
 
 // Protected Route component
 const ProtectedRoute = ({ children }) => {
@@ -87,6 +88,7 @@ function App() {
               <Route path="customers" element={<Customers />} />
               <Route path="pets" element={<Pets />} />
               <Route path="vaccination-cards" element={<VaccinationCards />} />
+              <Route path="vaccines-catalog" element={<VaccinesCatalog />} />
               <Route path="services" element={<Services />} />
               <Route path="service-categories" element={<ServiceCategories />} />
               <Route path="suppliers" element={<Suppliers />} />

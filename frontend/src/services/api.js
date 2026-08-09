@@ -54,6 +54,7 @@ export const productsAPI = {
   delete: (id) => api.delete(`/productos/${id}`),
   updateStock: (id, data) => api.patch(`/productos/${id}/stock`, data),
   getLowStock: () => api.get('/productos/low-stock'),
+  search: (query) => api.get('/productos/search', { params: { q: query } }),
 };
 
 // Product Categories services
@@ -93,6 +94,7 @@ export const salesAPI = {
   update: (id, data) => api.put(`/ventas/${id}`, data),
   delete: (id) => api.delete(`/ventas/${id}`),
   getDaily: (date) => api.get(`/ventas/daily/${date}`),
+  getByPet: (petId) => api.get(`/ventas/by-mascota/${petId}`),
 };
 
 // Customers services
@@ -114,6 +116,7 @@ export const petsAPI = {
   addMedicalHistory: (id, data) => api.post(`/mascotas/${id}/medical-history`, data),
   addVaccination: (id, data) => api.post(`/mascotas/${id}/vaccinations`, data),
   getVaccinationsDue: () => api.get('/mascotas/vaccinations/due'),
+  getByOwner: (ownerId) => api.get('/mascotas', { params: { owner: ownerId, active: true } }),
 };
 
 // Services services
@@ -160,11 +163,22 @@ export const accountsPayableAPI = {
   getAll: (params) => api.get('/cuentas-por-pagar', { params }),
   getById: (id) => api.get(`/cuentas-por-pagar/${id}`),
   pay: (id, data) => api.patch(`/cuentas-por-pagar/${id}/pagar`, data),
+  payMassive: (data) => api.post('/cuentas-por-pagar/pagar-masivo', data),
   updateStatus: (id, data) => api.patch(`/cuentas-por-pagar/${id}/status`, data),
   getOverdue: () => api.get('/cuentas-por-pagar/overdue'),
   getUpcoming: () => api.get('/cuentas-por-pagar/upcoming'),
   getDueTomorrow: () => api.get('/cuentas-por-pagar/due-tomorrow'),
   getSummary: () => api.get('/cuentas-por-pagar/summary'),
+};
+
+// Vaccines services
+export const vaccinesAPI = {
+  getAll: (params) => api.get('/vacunas', { params }),
+  getActive: () => api.get('/vacunas/active'),
+  getById: (id) => api.get(`/vacunas/${id}`),
+  create: (data) => api.post('/vacunas', data),
+  update: (id, data) => api.put(`/vacunas/${id}`, data),
+  updateStatus: (id, data) => api.patch(`/vacunas/${id}/status`, data),
 };
 
 // Costs services

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { petsAPI, customersAPI } from '../services/api';
+import { petsAPI, customersAPI, salesAPI } from '../services/api';
 import toast from 'react-hot-toast';
 import { Skeleton, SkeletonCard } from '../components/Skeleton';
 import ConfirmModal from '../components/ConfirmModal';
@@ -8,7 +8,10 @@ import {
   Calendar,
   Scale,
   Edit,
-  Trash2
+  Trash2,
+  ChevronDown,
+  ChevronUp,
+  ShoppingCart
 } from 'lucide-react';
 
 const Pets = () => {
@@ -19,6 +22,9 @@ const Pets = () => {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deletePetId, setDeletePetId] = useState(null);
   const [editingPet, setEditingPet] = useState(null);
+  const [expandedPetId, setExpandedPetId] = useState(null);
+  const [petSales, setPetSales] = useState({});
+  const [loadingSales, setLoadingSales] = useState({});
   const [formData, setFormData] = useState({
     name: '',
     type: '',
@@ -67,6 +73,37 @@ const Pets = () => {
     }
     
     return age;
+  };
+
+  const formatCurrency = (amount) => {
+    return new Intl.NumberFormat('es-MX', {
+      style: 'currency',
+      currency: 'MXN'
+    }).format(amount);
+  };
+
+  const fetchPetSales = async (petId) => {
+    if (petSales[petId] || loadingSales[petId]) return;
+    
+    setLoadingSales(prev => ({ ...prev, [petId]: true }));
+    try {
+      const response = await salesAPI.getByPet(petId);
+      setPetSales(prev => ({ ...prev, [petId]: response.data.data }));
+    } catch (error) {
+      console.error('Error al cargar ventas de mascota:', error);
+      setPetSales(prev => ({ ...prev, [petId]: [] }));
+    } finally {
+      setLoadingSales(prev => ({ ...prev, [petId]: false }));
+    }
+  };
+
+  const toggleExpand = (petId) => {
+    if (expandedPetId === petId) {
+      setExpandedPetId(null);
+    } else {
+      setExpandedPetId(petId);
+      fetchPetSales(petId);
+    }
   };
 
   const handleCreatePet = () => {
@@ -204,6 +241,17 @@ const Pets = () => {
                 </div>
                 <div className="flex items-center space-x-2">
                   <button 
+                    onClick={() => toggleExpand(pet._id)}
+                    className="text-primary-600 hover:text-primary-900"
+                    title="Ver historial"
+                  >
+                    {expandedPetId === pet._id ? (
+                      <ChevronUp className="h-4 w-4" />
+                    ) : (
+                      <ChevronDown className="h-4 w-4" />
+                    )}
+                  </button>
+                  <button 
                     onClick={() => handleEditPet(pet)}
                     className="text-primary-600 hover:text-primary-900"
                   >
@@ -217,6 +265,78 @@ const Pets = () => {
                   </button>
                 </div>
               </div>
+
+              {/* Sales History */}
+              {expandedPetId === pet._id && (
+                <div className="mt-4 pt-4 border-t border-gray-200">
+                  <h4 className="font-medium text-gray-900 mb-3 flex items-center">
+                    <ShoppingCart className="h-4 w-4 mr-2" />
+                    Historial de compras y servicios
+                  </h4>
+                  {loadingSales[pet._id] ? (
+                    <div className="text-center py-4 text-gray-500">
+                      Cargando historial...
+                    </div>
+                  ) : petSales[pet._id] && petSales[pet._id].length > 0 ? (
+                    <div className="space-y-3 max-h-64 overflow-y-auto">
+                      {petSales[pet._id].map((sale) => (
+                        <div key={sale._id} className="bg-gray-50 rounded-lg p-3">
+                          <div className="flex justify-between items-start mb-2">
+                            <div>
+                              <p className="text-sm font-medium text-gray-900">
+                                {new Date(sale.date).toLocaleDateString('es-MX')}
+                              </p>
+                              <p className="text-xs text-gray-500">
+                                Venta #{sale._id.slice(-6)}
+                              </p>
+                            </div>
+                            <p className="font-medium text-primary-600">
+                              {formatCurrency(sale.total)}
+                            </p>
+                          </div>
+                          <div className="space-y-1">
+                            {sale.items.filter(item => item.type === 'producto').length > 0 && (
+                              <div>
+                                <p className="text-xs font-medium text-gray-700">Productos:</p>
+                                {sale.items.filter(item => item.type === 'producto').map((item, idx) => (
+                                  <p key={idx} className="text-xs text-gray-600">
+                                    • {item.quantity}x {item.item?.name || 'Producto'}
+                                  </p>
+                                ))}
+                              </div>
+                            )}
+                            {sale.items.filter(item => item.type === 'servicio').length > 0 && (
+                              <div>
+                                <p className="text-xs font-medium text-gray-700">Servicios:</p>
+                                {sale.items.filter(item => item.type === 'servicio').map((item, idx) => (
+                                  <p key={idx} className="text-xs text-gray-600">
+                                    • {item.quantity}x {item.item?.name || 'Servicio'}
+                                  </p>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                          <div className="mt-2 pt-2 border-t border-gray-200">
+                            <p className="text-xs text-gray-500">
+                              Método: <span className="capitalize">{sale.paymentMethod}</span>
+                            </p>
+                            {sale.customer && (
+                              <p className="text-xs text-gray-500">
+                                Cliente: {sale.customer.name}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-4 text-gray-500">
+                      <ShoppingCart className="h-8 w-8 text-gray-300 mx-auto mb-2" />
+                      <p className="text-sm">No hay historial de compras</p>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         ))}

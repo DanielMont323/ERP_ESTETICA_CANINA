@@ -18,7 +18,14 @@ const mascotaSchema = new mongoose.Schema({
   },
   birthDate: {
     type: Date,
-    required: [true, 'La fecha de nacimiento es obligatoria']
+    required: false,
+    validate: {
+      validator: function(value) {
+        if (!value) return true; // Permitir null
+        return value <= new Date(); // No permitir fechas futuras
+      },
+      message: 'La fecha de nacimiento no puede ser futura'
+    }
   },
   weight: {
     type: Number,

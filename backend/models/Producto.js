@@ -7,7 +7,7 @@ const productoSchema = new mongoose.Schema({
     trim: true
   },
   category: {
-    type: String,
+    type: mongoose.Schema.Types.Mixed, // Acepta String o ObjectId para compatibilidad
     trim: true
   },
   cost: {

@@ -38,6 +38,7 @@ const Layout = () => {
     { name: 'Clientes', href: '/customers', icon: Users },
     { name: 'Mascotas', href: '/pets', icon: Heart },
     { name: 'Carnet Vacunación', href: '/vaccination-cards', icon: Syringe },
+    ...(user?.role === 'admin' ? [{ name: 'Catálogo Vacunas', href: '/vaccines-catalog', icon: Syringe }] : []),
     { name: 'Servicios', href: '/services', icon: Scissors },
     { name: 'Categorías Servicios', href: '/service-categories', icon: Tag },
     { name: 'Proveedores', href: '/suppliers', icon: Truck },

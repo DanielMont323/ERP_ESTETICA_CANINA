@@ -1,16 +1,31 @@
 const express = require('express');
 const CarnetVacunacion = require('../models/CarnetVacunacion');
 const Mascota = require('../models/Mascota');
+const Vacuna = require('../models/Vacuna');
+const mongoose = require('mongoose');
+const { authenticateToken } = require('../middleware/auth');
 const router = express.Router();
 
 // @route   GET /api/carnet-vacunacion
 // @desc    Obtener todos los carnets de vacunación
-router.get('/', async (req, res) => {
+router.get('/', authenticateToken, async (req, res) => {
   try {
     const carnets = await CarnetVacunacion.find()
       .populate('mascota', 'name type breed birthDate')
       .populate('propietario', 'name phone email')
       .sort({ nombreMascota: 1 });
+
+    // Populate manual de vacunas para manejar ObjectId y String
+    for (const carnet of carnets) {
+      for (const vacuna of carnet.vacunas) {
+        if (vacuna.vacuna && mongoose.Types.ObjectId.isValid(vacuna.vacuna)) {
+          // Si es ObjectId, populate
+          const vacunaDoc = await Vacuna.findById(vacuna.vacuna).select('name description');
+          vacuna.vacuna = vacunaDoc;
+        }
+        // Si es String, mantener como está (histórico)
+      }
+    }
 
     res.json({
       success: true,
@@ -54,8 +69,8 @@ router.get('/mascota/:mascotaId', async (req, res) => {
 });
 
 // @route   GET /api/carnet-vacunacion/:id
-// @desc    Obtener carnet por ID
-router.get('/:id', async (req, res) => {
+// @desc    Obtener carnet de vacunación por ID
+router.get('/:id', authenticateToken, async (req, res) => {
   try {
     const carnet = await CarnetVacunacion.findById(req.params.id)
       .populate('mascota', 'name type breed birthDate')
@@ -83,7 +98,7 @@ router.get('/:id', async (req, res) => {
 
 // @route   POST /api/carnet-vacunacion
 // @desc    Crear nuevo carnet de vacunación
-router.post('/', async (req, res) => {
+router.post('/', authenticateToken, async (req, res) => {
   try {
     const carnet = await CarnetVacunacion.create(req.body);
     
@@ -110,7 +125,7 @@ router.post('/', async (req, res) => {
 
 // @route   PUT /api/carnet-vacunacion/:id
 // @desc    Actualizar carnet de vacunación
-router.put('/:id', async (req, res) => {
+router.put('/:id', authenticateToken, async (req, res) => {
   try {
     const carnet = await CarnetVacunacion.findByIdAndUpdate(
       req.params.id,
@@ -148,9 +163,13 @@ router.put('/:id', async (req, res) => {
 
 // @route   POST /api/carnet-vacunacion/:id/vacunas
 // @desc    Agregar vacuna al carnet
-router.post('/:id/vacunas', async (req, res) => {
+router.post('/:id/vacunas', authenticateToken, async (req, res) => {
   try {
-    const { nombre, fecha, proximaDosis, observaciones } = req.body;
+    console.log('req.body completo:', req.body);
+    
+    const { vacuna, fecha, proximaDosis, observaciones } = req.body;
+    
+    console.log('Datos recibidos:', { vacuna, fecha, proximaDosis, observaciones });
     
     const carnet = await CarnetVacunacion.findById(req.params.id);
     if (!carnet) {
@@ -160,18 +179,52 @@ router.post('/:id/vacunas', async (req, res) => {
       });
     }
 
-    carnet.vacunas.push({
-      nombre,
+    // Validar que se proporcione vacuna
+    if (!vacuna) {
+      return res.status(400).json({
+        success: false,
+        message: 'Debe seleccionar una vacuna del catálogo'
+      });
+    }
+
+    // Si se proporciona vacuna (del catálogo), obtener nombre
+    let nombreFinal = '';
+
+    if (mongoose.Types.ObjectId.isValid(vacuna)) {
+      // Obtener nombre del catálogo
+      const vacunaDoc = await Vacuna.findById(vacuna);
+      if (vacunaDoc) {
+        nombreFinal = vacunaDoc.name;
+      } else {
+        return res.status(404).json({
+          success: false,
+          message: 'Vacuna no encontrada en el catálogo'
+        });
+      }
+    }
+
+    const nuevaVacuna = {
+      vacuna,
+      nombre: nombreFinal,
       fecha,
       proximaDosis,
       observaciones
-    });
+    };
 
+    console.log('Nueva vacuna a guardar:', nuevaVacuna);
+
+    carnet.vacunas.push(nuevaVacuna);
     await carnet.save();
+
+    // Populate para respuesta
+    if (mongoose.Types.ObjectId.isValid(vacuna)) {
+      const vacunaDoc = await Vacuna.findById(vacuna).select('name description');
+      nuevaVacuna.vacuna = vacunaDoc;
+    }
 
     res.json({
       success: true,
-      data: carnet,
+      data: nuevaVacuna,
       message: 'Vacuna agregada correctamente'
     });
   } catch (error) {
@@ -185,7 +238,7 @@ router.post('/:id/vacunas', async (req, res) => {
 
 // @route   DELETE /api/carnet-vacunacion/:id/vacunas/:vacunaId
 // @desc    Eliminar vacuna del carnet
-router.delete('/:id/vacunas/:vacunaId', async (req, res) => {
+router.delete('/:id/vacunas/:vacunaId', authenticateToken, async (req, res) => {
   try {
     const carnet = await CarnetVacunacion.findById(req.params.id);
     if (!carnet) {
@@ -195,15 +248,11 @@ router.delete('/:id/vacunas/:vacunaId', async (req, res) => {
       });
     }
 
-    carnet.vacunas = carnet.vacunas.filter(
-      vacuna => vacuna._id.toString() !== req.params.vacunaId
-    );
-
+    carnet.vacunas = carnet.vacunas.filter(v => v._id.toString() !== req.params.vacunaId);
     await carnet.save();
 
     res.json({
       success: true,
-      data: carnet,
       message: 'Vacuna eliminada correctamente'
     });
   } catch (error) {

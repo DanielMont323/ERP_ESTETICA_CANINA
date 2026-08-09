@@ -1,9 +1,13 @@
 const mongoose = require('mongoose');
 
 const vacunaSchema = new mongoose.Schema({
+  // Compatibilidad: acepta ObjectId (nuevo) o String (histórico)
+  vacuna: {
+    type: mongoose.Schema.Types.Mixed, // ObjectId o String
+    required: true
+  },
   nombre: {
     type: String,
-    required: true,
     trim: true
   },
   fecha: {

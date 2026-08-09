@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { vaccinationCardAPI, petsAPI } from '../services/api';
+import { vaccinationCardAPI, vaccinesAPI } from '../services/api';
 import toast from 'react-hot-toast';
 import { Skeleton, SkeletonCard } from '../components/Skeleton';
 import ConfirmModal from '../components/ConfirmModal';
@@ -15,15 +15,16 @@ import {
 
 const VaccinationCards = () => {
   const [cards, setCards] = useState([]);
-  const [pets, setPets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCard, setSelectedCard] = useState(null);
   const [showVaccineModal, setShowVaccineModal] = useState(false);
   const [showDeleteVaccineModal, setShowDeleteVaccineModal] = useState(false);
   const [deleteVaccineId, setDeleteVaccineId] = useState(null);
+  const [vaccines, setVaccines] = useState([]);
+  const [loadingVaccines, setLoadingVaccines] = useState(false);
   const [vaccineForm, setVaccineForm] = useState({
-    nombre: '',
+    vacunaId: '',
     fecha: '',
     proximaDosis: '',
     observaciones: ''
@@ -31,8 +32,27 @@ const VaccinationCards = () => {
 
   useEffect(() => {
     fetchCards();
-    fetchPets();
   }, []);
+
+  // Cargar vacunas cuando se abre el modal
+  useEffect(() => {
+    if (showVaccineModal) {
+      fetchVaccines();
+    }
+  }, [showVaccineModal]);
+
+  const fetchVaccines = async () => {
+    setLoadingVaccines(true);
+    try {
+      const response = await vaccinesAPI.getActive();
+      setVaccines(response.data.data);
+    } catch (error) {
+      console.error('Error al cargar vacunas:', error);
+      toast.error('Error al cargar catálogo de vacunas');
+    } finally {
+      setLoadingVaccines(false);
+    }
+  };
 
   const fetchCards = async () => {
     try {
@@ -45,25 +65,27 @@ const VaccinationCards = () => {
     }
   };
 
-  const fetchPets = async () => {
-    try {
-      const response = await petsAPI.getAll({ active: true });
-      setPets(response.data.data);
-    } catch (error) {
-      console.error('Error al cargar mascotas:', error);
-    }
-  };
-
   const handleAddVaccine = async (e) => {
     e.preventDefault();
     try {
-      await vaccinationCardAPI.addVaccine(selectedCard._id, vaccineForm);
+      // Enviar vacunaId como vacuna para el backend
+      const dataToSend = {
+        vacuna: vaccineForm.vacunaId,
+        fecha: vaccineForm.fecha,
+        proximaDosis: vaccineForm.proximaDosis,
+        observaciones: vaccineForm.observaciones
+      };
+      
+      console.log('Enviando datos:', dataToSend);
+      
+      await vaccinationCardAPI.addVaccine(selectedCard._id, dataToSend);
       toast.success('Vacuna agregada correctamente');
       setShowVaccineModal(false);
-      setVaccineForm({ nombre: '', fecha: '', proximaDosis: '', observaciones: '' });
+      setVaccineForm({ vacunaId: '', fecha: '', proximaDosis: '', observaciones: '' });
       fetchCards();
     } catch (error) {
-      toast.error('Error al agregar vacuna');
+      console.error('Error al agregar vacuna:', error);
+      toast.error(error.response?.data?.message || 'Error al agregar vacuna');
     }
   };
 
@@ -239,15 +261,24 @@ const VaccinationCards = () => {
               
               <form onSubmit={handleAddVaccine} className="space-y-4">
                 <div>
-                  <label className="form-label">Nombre de la vacuna</label>
-                  <input
-                    type="text"
+                  <label className="form-label">Seleccionar vacuna</label>
+                  <select
                     required
-                    value={vaccineForm.nombre}
-                    onChange={(e) => setVaccineForm({...vaccineForm, nombre: e.target.value})}
+                    value={vaccineForm.vacunaId}
+                    onChange={(e) => setVaccineForm({...vaccineForm, vacunaId: e.target.value})}
                     className="form-input"
-                    placeholder="Ej: Rabia, Parvovirus"
-                  />
+                    disabled={loadingVaccines}
+                  >
+                    <option value="">Seleccione una vacuna...</option>
+                    {vaccines.map(vaccine => (
+                      <option key={vaccine._id} value={vaccine._id}>
+                        {vaccine.name}
+                      </option>
+                    ))}
+                  </select>
+                  {loadingVaccines && (
+                    <p className="text-sm text-gray-500 mt-1">Cargando catálogo de vacunas...</p>
+                  )}
                 </div>
                 
                 <div>
@@ -287,7 +318,7 @@ const VaccinationCards = () => {
                     type="button"
                     onClick={() => {
                       setShowVaccineModal(false);
-                      setVaccineForm({ nombre: '', fecha: '', proximaDosis: '', observaciones: '' });
+                      setVaccineForm({ vacunaId: '', fecha: '', proximaDosis: '', observaciones: '' });
                     }}
                     className="btn btn-secondary btn-md"
                   >
@@ -295,6 +326,7 @@ const VaccinationCards = () => {
                   </button>
                   <button
                     type="submit"
+                    disabled={loadingVaccines || !vaccineForm.vacunaId}
                     className="btn btn-primary btn-md"
                   >
                     Agregar Vacuna

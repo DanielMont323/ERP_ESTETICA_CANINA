@@ -61,6 +61,18 @@ const ventaSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Cliente'
   },
+  mascota: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Mascota'
+  },
+  amountReceived: {
+    type: Number,
+    min: 0
+  },
+  change: {
+    type: Number,
+    min: 0
+  },
   user: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Usuario',
@@ -99,5 +111,10 @@ ventaSchema.pre('save', function(next) {
   
   next();
 });
+
+// Índices para mejorar rendimiento
+ventaSchema.index({ mascota: 1 });
+ventaSchema.index({ customer: 1 });
+ventaSchema.index({ date: -1 });
 
 module.exports = mongoose.model('Venta', ventaSchema);

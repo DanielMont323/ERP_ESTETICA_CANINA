@@ -1,11 +1,12 @@
 const express = require('express');
 const CuentaPorPagar = require('../models/CuentaPorPagar');
 const Proveedor = require('../models/Proveedor');
+const { authenticateToken } = require('../middleware/auth');
 const router = express.Router();
 
 // @route   GET /api/cuentas-por-pagar
 // @desc    Obtener todas las cuentas por pagar
-router.get('/', async (req, res) => {
+router.get('/', authenticateToken, async (req, res) => {
   try {
     const { proveedor, status, dueDate, page = 1, limit = 10 } = req.query;
     let query = {};
@@ -56,9 +57,186 @@ router.get('/', async (req, res) => {
   }
 });
 
+// @route   POST /api/cuentas-por-pagar
+// @desc    Crear nueva cuenta por pagar
+router.post('/', authenticateToken, async (req, res) => {
+  try {
+    const { proveedor, compra, receiptNumber, subtotal, hasIVA, ivaRate, dueDate, notes } = req.body;
+    
+    // Validar campos requeridos
+    if (!proveedor || !compra || !subtotal) {
+      return res.status(400).json({
+        success: false,
+        message: 'Faltan campos requeridos'
+      });
+    }
+
+    // Verificar que el proveedor exista
+    const proveedorDoc = await Proveedor.findById(proveedor);
+    if (!proveedorDoc) {
+      return res.status(404).json({
+        success: false,
+        message: 'Proveedor no encontrado'
+      });
+    }
+
+    // Calcular IVA en backend (no confiar en frontend)
+    const finalIvaRate = hasIVA ? (ivaRate || 0.16) : 0;
+    const ivaAmount = hasIVA ? Math.round((subtotal * finalIvaRate) * 100) / 100 : 0;
+    const total = Math.round((subtotal + ivaAmount) * 100) / 100;
+
+    // Crear cuenta por pagar
+    const cuenta = await CuentaPorPagar.create({
+      proveedor,
+      compra,
+      receiptNumber,
+      hasIVA: hasIVA || false,
+      ivaRate: finalIvaRate,
+      subtotal,
+      ivaAmount,
+      monto: total,
+      montoBase: subtotal,
+      saldo: total,
+      dueDate,
+      notes
+    });
+
+    // Populate para respuesta
+    await cuenta.populate('proveedor', 'name contact phone');
+    await cuenta.populate('compra', 'invoice date total');
+
+    res.status(201).json({
+      success: true,
+      data: cuenta,
+      message: 'Cuenta por pagar creada correctamente'
+    });
+  } catch (error) {
+    console.error(error);
+    if (error.name === 'ValidationError') {
+      const messages = Object.values(error.errors).map(val => val.message);
+      return res.status(400).json({
+        success: false,
+        message: messages.join(', ')
+      });
+    }
+    res.status(500).json({
+      success: false,
+      message: 'Error al crear cuenta por pagar'
+    });
+  }
+});
+
+// @route   POST /api/cuentas-por-pagar/pagar-masivo
+// @desc    Pagar múltiples cuentas por pagar
+router.post('/pagar-masivo', authenticateToken, async (req, res) => {
+  const session = await CuentaPorPagar.startSession();
+  session.startTransaction();
+  
+  try {
+    const { cuentaIds, paymentMethod, user, notes } = req.body;
+    
+    // Validaciones
+    if (!cuentaIds || !Array.isArray(cuentaIds) || cuentaIds.length === 0) {
+      await session.abortTransaction();
+      return res.status(400).json({
+        success: false,
+        message: 'Debe seleccionar al menos una cuenta'
+      });
+    }
+    
+    if (!paymentMethod || !user) {
+      await session.abortTransaction();
+      return res.status(400).json({
+        success: false,
+        message: 'Faltan campos requeridos'
+      });
+    }
+    
+    // Obtener todas las cuentas
+    const cuentas = await CuentaPorPagar.find({ _id: { $in: cuentaIds } }).session(session);
+    
+    if (cuentas.length !== cuentaIds.length) {
+      await session.abortTransaction();
+      return res.status(404).json({
+        success: false,
+        message: 'Algunas cuentas no fueron encontradas'
+      });
+    }
+    
+    // Validar que todas estén pendientes
+    const cuentasNoPendientes = cuentas.filter(c => c.status !== 'pendiente');
+    if (cuentasNoPendientes.length > 0) {
+      await session.abortTransaction();
+      return res.status(400).json({
+        success: false,
+        message: 'Algunas cuentas ya están pagadas o canceladas'
+      });
+    }
+    
+    // Calcular totales desde backend (no confiar en frontend)
+    let subtotalTotal = 0;
+    let ivaTotal = 0;
+    let totalAPagar = 0;
+    
+    for (const cuenta of cuentas) {
+      subtotalTotal += cuenta.subtotal || cuenta.montoBase || cuenta.monto;
+      ivaTotal += cuenta.ivaAmount || 0;
+      totalAPagar += cuenta.saldo;
+    }
+    
+    // Procesar pagos
+    const resultados = [];
+    for (const cuenta of cuentas) {
+      // Registrar pago
+      await cuenta.addPayment(cuenta.saldo, paymentMethod, user, notes);
+      
+      // Actualizar deuda del proveedor
+      if (cuenta.proveedor) {
+        const proveedor = await Proveedor.findById(cuenta.proveedor).session(session);
+        if (proveedor) {
+          proveedor.currentDebt -= cuenta.saldo;
+          if (proveedor.currentDebt < 0) {
+            proveedor.currentDebt = 0;
+          }
+          await proveedor.save({ session });
+        }
+      }
+      
+      resultados.push({
+        cuentaId: cuenta._id,
+        montoPagado: cuenta.saldo,
+        estado: 'pagado'
+      });
+    }
+    
+    await session.commitTransaction();
+    
+    res.json({
+      success: true,
+      data: {
+        cuentasPagadas: resultados.length,
+        subtotal: subtotalTotal,
+        iva: ivaTotal,
+        total: totalAPagar,
+        resultados
+      },
+      message: `${resultados.length} cuentas pagadas correctamente`
+    });
+  } catch (error) {
+    await session.abortTransaction();
+    console.error('Error en pago masivo:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error al procesar pago masivo'
+    });
+  } finally {
+    session.endSession();
+  }
+});
+
 // @route   GET /api/cuentas-por-pagar/overdue
 // @desc    Obtener cuentas vencidas
-router.get('/overdue', async (req, res) => {
+router.get('/overdue', authenticateToken, async (req, res) => {
   try {
     const today = new Date();
     
@@ -85,7 +263,7 @@ router.get('/overdue', async (req, res) => {
 
 // @route   GET /api/cuentas-por-pagar/upcoming
 // @desc    Obtener cuentas próximas a vencer (próximos 7 días)
-router.get('/upcoming', async (req, res) => {
+router.get('/upcoming', authenticateToken, async (req, res) => {
   try {
     const today = new Date();
     const next7Days = new Date();
@@ -114,7 +292,7 @@ router.get('/upcoming', async (req, res) => {
 
 // @route   GET /api/cuentas-por-pagar/due-tomorrow
 // @desc    Obtener cuentas que vencen mañana (para alertas)
-router.get('/due-tomorrow', async (req, res) => {
+router.get('/due-tomorrow', authenticateToken, async (req, res) => {
   try {
     const today = new Date();
     const tomorrow = new Date();
@@ -149,7 +327,7 @@ router.get('/due-tomorrow', async (req, res) => {
 
 // @route   GET /api/cuentas-por-pagar/:id
 // @desc    Obtener cuenta por pagar por ID
-router.get('/:id', async (req, res) => {
+router.get('/:id', authenticateToken, async (req, res) => {
   try {
     const cuenta = await CuentaPorPagar.findById(req.params.id)
       .populate('proveedor', 'name contact phone email creditDays')
@@ -184,7 +362,7 @@ router.get('/:id', async (req, res) => {
 
 // @route   PATCH /api/cuentas-por-pagar/:id/pagar
 // @desc    Realizar pago parcial o total de cuenta
-router.patch('/:id/pagar', async (req, res) => {
+router.patch('/:id/pagar', authenticateToken, async (req, res) => {
   try {
     const { amount, paymentMethod, user, notes } = req.body;
     

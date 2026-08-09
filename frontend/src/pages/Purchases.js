@@ -1,12 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { purchasesAPI, suppliersAPI, productsAPI, supplierProductsAPI } from '../services/api';
 import toast from 'react-hot-toast';
 import { SkeletonTable } from '../components/Skeleton';
 import {
+  Search,
   Plus,
-  FileText,
   X,
-  DollarSign,
   TrendingDown
 } from 'lucide-react';
 
@@ -17,6 +16,7 @@ const Purchases = () => {
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [selectedSupplier, setSelectedSupplier] = useState('');
+  const [skuSearch, setSkuSearch] = useState('');
   const [formData, setFormData] = useState({
     proveedor: '',
     type: 'contado',
@@ -25,7 +25,9 @@ const Purchases = () => {
     items: [],
     notes: '',
     invoice: '',
-    receiptNumber: ''
+    receiptNumber: '',
+    hasIVA: false,
+    ivaRate: 0.16
   });
   const [currentItem, setCurrentItem] = useState({
     product: '',
@@ -34,22 +36,25 @@ const Purchases = () => {
   });
   const [discountInfo, setDiscountInfo] = useState(null);
 
-  useEffect(() => {
-    fetchData();
-    fetchSuppliers();
-    fetchProducts();
-  }, []);
-
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     try {
-      const purchasesRes = await purchasesAPI.getAll();
+      const params = {};
+      if (selectedSupplier) params.proveedor = selectedSupplier;
+      if (skuSearch) params.sku = skuSearch;
+      const purchasesRes = await purchasesAPI.getAll(params);
       setPurchases(purchasesRes.data.data);
     } catch (error) {
       toast.error('Error al cargar datos');
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedSupplier, skuSearch]);
+
+  useEffect(() => {
+    fetchData();
+    fetchSuppliers();
+    fetchProducts();
+  }, [fetchData]);
 
   const fetchSuppliers = async () => {
     try {
@@ -175,6 +180,10 @@ const Purchases = () => {
     return baseTotal * (discountInfo.discountPercentage / 100);
   };
 
+  const calculateBaseTotal = () => {
+    return formData.items.reduce((sum, item) => sum + (item.quantity * item.unitCost), 0);
+  };
+
   const filteredPurchases = selectedSupplier 
     ? purchases.filter(p => p.proveedor?._id === selectedSupplier)
     : purchases;
@@ -202,7 +211,7 @@ const Purchases = () => {
       {/* Filters */}
       <div className="card">
         <div className="card-body">
-          <div className="flex items-center gap-4">
+          <div className="flex flex-col sm:flex-row items-center gap-4">
             <div className="flex-1">
               <label className="form-label">Filtrar por proveedor</label>
               <select
@@ -217,6 +226,19 @@ const Purchases = () => {
                   </option>
                 ))}
               </select>
+            </div>
+            <div className="flex-1">
+              <label className="form-label">Buscar por SKU</label>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="SKU del producto..."
+                  value={skuSearch}
+                  onChange={(e) => setSkuSearch(e.target.value)}
+                  className="form-input pl-10"
+                />
+              </div>
             </div>
           </div>
         </div>
@@ -454,6 +476,63 @@ const Purchases = () => {
                     </div>
                   )}
                 </div>
+
+                {/* IVA Section - Solo para compras a crédito */}
+                {formData.type === 'credito' && (
+                  <div className="border border-gray-200 rounded-xl p-4 mb-4 bg-gray-50">
+                    <div className="flex items-center mb-3">
+                      <input
+                        type="checkbox"
+                        id="hasIVA"
+                        checked={formData.hasIVA}
+                        onChange={(e) => setFormData({...formData, hasIVA: e.target.checked})}
+                        className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
+                      />
+                      <label htmlFor="hasIVA" className="ml-2 block text-sm font-medium text-gray-900">
+                        Aplicar IVA
+                      </label>
+                    </div>
+                    
+                    {formData.hasIVA && (
+                      <div className="space-y-2 ml-6">
+                        <div className="flex items-center gap-2">
+                          <label className="text-sm text-gray-600">Tasa de IVA:</label>
+                          <input
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            max="1"
+                            value={formData.ivaRate}
+                            onChange={(e) => setFormData({...formData, ivaRate: parseFloat(e.target.value)})}
+                            className="form-input w-24"
+                          />
+                          <span className="text-sm text-gray-600">{(formData.ivaRate * 100).toFixed(0)}%</span>
+                        </div>
+                        
+                        {formData.items.length > 0 && (
+                          <div className="bg-white border border-gray-200 rounded-lg p-3 mt-2">
+                            <div className="text-sm space-y-1">
+                              <div className="flex justify-between">
+                                <span className="text-gray-600">Subtotal:</span>
+                                <span className="font-medium">{formatCurrency(calculateBaseTotal())}</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-gray-600">IVA ({(formData.ivaRate * 100).toFixed(0)}%):</span>
+                                <span className="font-medium">{formatCurrency(calculateBaseTotal() * formData.ivaRate)}</span>
+                              </div>
+                              <div className="flex justify-between border-t border-gray-200 pt-1">
+                                <span className="font-semibold">Total con IVA:</span>
+                                <span className="font-semibold text-primary-600">
+                                  {formatCurrency(calculateBaseTotal() * (1 + formData.ivaRate))}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 <div className="grid grid-cols-2 gap-4 mb-4">
                   <div>

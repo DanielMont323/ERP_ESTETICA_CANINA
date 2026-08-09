@@ -10,9 +10,15 @@ const AccountsPayable = () => {
   const [accounts, setAccounts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [showMassivePaymentModal, setShowMassivePaymentModal] = useState(false);
   const [selectedAccount, setSelectedAccount] = useState(null);
+  const [selectedAccounts, setSelectedAccounts] = useState([]);
   const [paymentData, setPaymentData] = useState({
     amount: '',
+    paymentMethod: 'efectivo',
+    notes: ''
+  });
+  const [massivePaymentData, setMassivePaymentData] = useState({
     paymentMethod: 'efectivo',
     notes: ''
   });
@@ -92,6 +98,58 @@ const AccountsPayable = () => {
     }
   };
 
+  const handleSelectAccount = (accountId) => {
+    setSelectedAccounts(prev => {
+      if (prev.includes(accountId)) {
+        return prev.filter(id => id !== accountId);
+      } else {
+        return [...prev, accountId];
+      }
+    });
+  };
+
+  const handleSelectAll = () => {
+    const pendingAccounts = accounts.filter(a => a.status === 'pendiente');
+    if (selectedAccounts.length === pendingAccounts.length) {
+      setSelectedAccounts([]);
+    } else {
+      setSelectedAccounts(pendingAccounts.map(a => a._id));
+    }
+  };
+
+  const getSelectedAccountsSummary = () => {
+    const selected = accounts.filter(a => selectedAccounts.includes(a._id));
+    const subtotal = selected.reduce((sum, a) => sum + (a.subtotal || a.montoBase || a.monto), 0);
+    const iva = selected.reduce((sum, a) => sum + (a.ivaAmount || 0), 0);
+    const total = selected.reduce((sum, a) => sum + a.saldo, 0);
+    return { count: selected.length, subtotal, iva, total };
+  };
+
+  const handleMassivePaymentSubmit = async (e) => {
+    e.preventDefault();
+    setProcessingPayment(true);
+
+    try {
+      const response = await accountsPayableAPI.payMassive({
+        cuentaIds: selectedAccounts,
+        paymentMethod: massivePaymentData.paymentMethod,
+        user: user.id,
+        notes: massivePaymentData.notes
+      });
+
+      if (response.data.success) {
+        toast.success(response.data.message);
+        setShowMassivePaymentModal(false);
+        setSelectedAccounts([]);
+        fetchAccounts();
+      }
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Error al procesar el pago masivo');
+    } finally {
+      setProcessingPayment(false);
+    }
+  };
+
   if (loading) {
     return <SkeletonTable rows={5} columns={10} />;
   }
@@ -108,6 +166,34 @@ const AccountsPayable = () => {
         </div>
       </div>
 
+      {/* Selected Accounts Summary */}
+      {selectedAccounts.length > 0 && (
+        <div className="card bg-primary-50 border-primary-200">
+          <div className="card-body">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div>
+                <h3 className="font-semibold text-gray-900">
+                  {selectedAccounts.length} cuenta{selectedAccounts.length !== 1 ? 's' : ''} seleccionada{selectedAccounts.length !== 1 ? 's' : ''}
+                </h3>
+                <div className="text-sm text-gray-600 mt-1">
+                  <span>Subtotal: {formatCurrency(getSelectedAccountsSummary().subtotal)}</span>
+                  <span className="mx-2">|</span>
+                  <span>IVA: {formatCurrency(getSelectedAccountsSummary().iva)}</span>
+                  <span className="mx-2">|</span>
+                  <span className="font-semibold">Total: {formatCurrency(getSelectedAccountsSummary().total)}</span>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowMassivePaymentModal(true)}
+                className="btn btn-primary btn-md"
+              >
+                Pagar cuentas seleccionadas
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Accounts Table */}
       <div className="card">
         {/* Desktop Table View */}
@@ -115,12 +201,20 @@ const AccountsPayable = () => {
           <table className="table">
             <thead>
               <tr>
+                <th>
+                  <input
+                    type="checkbox"
+                    checked={selectedAccounts.length > 0}
+                    onChange={handleSelectAll}
+                    className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
+                  />
+                </th>
                 <th>Proveedor</th>
                 <th>Número de Recibo</th>
                 <th>Factura</th>
-                <th>Monto Base</th>
-                <th>Descuento</th>
-                <th>Monto Final</th>
+                <th>Subtotal</th>
+                <th>IVA</th>
+                <th>Total</th>
                 <th>Saldo Pendiente</th>
                 <th>Fecha Límite Descuento</th>
                 <th>Fecha Vencimiento</th>
@@ -133,12 +227,21 @@ const AccountsPayable = () => {
                 const discountStatus = getDiscountStatus(account.discountInfo);
                 return (
                   <tr key={account._id}>
+                    <td>
+                      <input
+                        type="checkbox"
+                        checked={selectedAccounts.includes(account._id)}
+                        onChange={() => handleSelectAccount(account._id)}
+                        disabled={account.status !== 'pendiente'}
+                        className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
+                      />
+                    </td>
                     <td>{account.proveedor?.name}</td>
                     <td>{account.receiptNumber || '-'}</td>
                     <td>{account.compra?.invoice || 'N/A'}</td>
-                    <td>{formatCurrency(account.montoBase || account.monto)}</td>
-                    <td className="text-green-600">
-                      {account.descuentoDisponible > 0 ? formatCurrency(account.descuentoDisponible) : '-'}
+                    <td>{formatCurrency(account.subtotal || account.montoBase || account.monto)}</td>
+                    <td className={account.hasIVA ? 'text-blue-600' : 'text-gray-400'}>
+                      {account.hasIVA ? formatCurrency(account.ivaAmount) : '$0.00'}
                     </td>
                     <td className="font-semibold">
                       {formatCurrency(account.monto)}
@@ -221,17 +324,17 @@ const AccountsPayable = () => {
 
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Monto Base:</span>
-                    <span className="font-medium">{formatCurrency(account.montoBase || account.monto)}</span>
+                    <span className="text-gray-600">Subtotal:</span>
+                    <span className="font-medium">{formatCurrency(account.subtotal || account.montoBase || account.monto)}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Descuento:</span>
-                    <span className="text-green-600 font-medium">
-                      {account.descuentoDisponible > 0 ? formatCurrency(account.descuentoDisponible) : '-'}
+                    <span className="text-gray-600">IVA:</span>
+                    <span className={account.hasIVA ? 'text-blue-600 font-medium' : 'text-gray-400'}>
+                      {account.hasIVA ? formatCurrency(account.ivaAmount) : '$0.00'}
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Monto Final:</span>
+                    <span className="text-gray-600">Total:</span>
                     <span className="font-semibold">{formatCurrency(account.monto)}</span>
                   </div>
                   <div className="flex justify-between">
@@ -313,9 +416,27 @@ const AccountsPayable = () => {
                 <p className="text-gray-900 font-medium">{selectedAccount.proveedor?.name}</p>
               </div>
               
-              <div>
-                <label className="form-label">Saldo Pendiente</label>
-                <p className="text-gray-900 font-medium text-lg">{formatCurrency(selectedAccount.saldo)}</p>
+              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                <div className="text-sm space-y-2">
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Subtotal:</span>
+                    <span className="font-medium">{formatCurrency(selectedAccount.subtotal || selectedAccount.montoBase || selectedAccount.monto)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">IVA ({selectedAccount.hasIVA ? (selectedAccount.ivaRate * 100).toFixed(0) + '%' : '0%'}):</span>
+                    <span className={selectedAccount.hasIVA ? 'text-blue-600 font-medium' : 'text-gray-400'}>
+                      {formatCurrency(selectedAccount.ivaAmount || 0)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between border-t border-gray-300 pt-2">
+                    <span className="font-semibold">Total:</span>
+                    <span className="font-semibold text-lg">{formatCurrency(selectedAccount.monto)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Saldo Pendiente:</span>
+                    <span className="font-semibold text-primary-600">{formatCurrency(selectedAccount.saldo)}</span>
+                  </div>
+                </div>
               </div>
               
               <div>
@@ -374,6 +495,94 @@ const AccountsPayable = () => {
                   className="btn btn-primary btn-md"
                 >
                   {processingPayment ? 'Procesando...' : 'Confirmar Pago'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+      )}
+
+      {/* Massive Payment Modal */}
+      {showMassivePaymentModal && (
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          <div className="flex items-center justify-center min-h-screen px-4">
+            <div className="modal-overlay" onClick={() => setShowMassivePaymentModal(false)} />
+            
+            <div className="relative modal-content max-w-md w-full max-h-[90vh] overflow-y-auto animate-slide-up">
+              <div className="flex items-center justify-between p-4 md:p-6 border-b border-gray-200 sticky top-0 bg-white rounded-t-xl">
+                <h3 className="text-lg font-semibold text-gray-900">Pagar Cuentas Seleccionadas</h3>
+                <button
+                  onClick={() => setShowMassivePaymentModal(false)}
+                  className="text-gray-400 hover:text-gray-600 transition-colors p-1"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+            
+            <form onSubmit={handleMassivePaymentSubmit} className="p-4 md:p-6 space-y-4">
+              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                <div className="text-sm space-y-2">
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Cuentas a pagar:</span>
+                    <span className="font-medium">{selectedAccounts.length}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Subtotal:</span>
+                    <span className="font-medium">{formatCurrency(getSelectedAccountsSummary().subtotal)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">IVA:</span>
+                    <span className="font-medium">{formatCurrency(getSelectedAccountsSummary().iva)}</span>
+                  </div>
+                  <div className="flex justify-between border-t border-gray-300 pt-2">
+                    <span className="font-semibold">Total a pagar:</span>
+                    <span className="font-semibold text-lg text-primary-600">{formatCurrency(getSelectedAccountsSummary().total)}</span>
+                  </div>
+                </div>
+              </div>
+              
+              <div>
+                <label htmlFor="massivePaymentMethod" className="form-label">Método de Pago</label>
+                <select
+                  id="massivePaymentMethod"
+                  value={massivePaymentData.paymentMethod}
+                  onChange={(e) => setMassivePaymentData({ ...massivePaymentData, paymentMethod: e.target.value })}
+                  className="form-input"
+                >
+                  <option value="efectivo">Efectivo</option>
+                  <option value="transferencia">Transferencia</option>
+                  <option value="tarjeta">Tarjeta</option>
+                  <option value="cheque">Cheque</option>
+                </select>
+              </div>
+              
+              <div>
+                <label htmlFor="massiveNotes" className="form-label">Notas (opcional)</label>
+                <textarea
+                  id="massiveNotes"
+                  rows="3"
+                  value={massivePaymentData.notes}
+                  onChange={(e) => setMassivePaymentData({ ...massivePaymentData, notes: e.target.value })}
+                  className="form-input"
+                  placeholder="Referencia, número de confirmación, etc."
+                />
+              </div>
+              
+              <div className="flex flex-col-reverse sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-3 pt-4">
+                <button
+                  type="button"
+                  onClick={() => setShowMassivePaymentModal(false)}
+                  className="btn btn-secondary btn-md"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={processingPayment}
+                  className="btn btn-primary btn-md"
+                >
+                  {processingPayment ? 'Procesando...' : `Pagar ${selectedAccounts.length} cuenta${selectedAccounts.length !== 1 ? 's' : ''}`}
                 </button>
               </div>
             </form>

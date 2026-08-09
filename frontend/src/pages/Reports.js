@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { reportsAPI } from '../services/api';
 import toast from 'react-hot-toast';
-import { Skeleton, SkeletonCard } from '../components/Skeleton';
+import Skeleton, { SkeletonCard } from '../components/Skeleton';
 import {
   BarChart3,
   Download

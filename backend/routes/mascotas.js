@@ -96,22 +96,25 @@ router.post('/', async (req, res) => {
     }
 
     // Crear carnet de vacunación automáticamente
-    if (req.body.owner) {
-      try {
+    try {
+      let nombrePropietario = 'Sin propietario';
+      if (req.body.owner) {
         const cliente = await Cliente.findById(req.body.owner);
-        await CarnetVacunacion.create({
-          mascota: mascota._id,
-          nombreMascota: mascota.name,
-          especie: mascota.type,
-          raza: mascota.breed,
-          propietario: req.body.owner,
-          nombrePropietario: cliente.name,
-          vacunas: []
-        });
-      } catch (carnetError) {
-        console.error('Error al crear carnet de vacunación:', carnetError);
-        // No fallar la creación de la mascota si falla el carnet
+        nombrePropietario = cliente ? cliente.name : 'Sin propietario';
       }
+
+      await CarnetVacunacion.create({
+        mascota: mascota._id,
+        nombreMascota: mascota.name,
+        especie: mascota.type,
+        raza: mascota.breed,
+        propietario: req.body.owner || null,
+        nombrePropietario: nombrePropietario,
+        vacunas: []
+      });
+    } catch (carnetError) {
+      console.error('Error al crear carnet de vacunación:', carnetError);
+      // No fallar la creación de la mascota si falla el carnet
     }
     
     res.status(201).json({

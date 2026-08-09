@@ -3,21 +3,55 @@ const Venta = require('../models/Venta');
 const Producto = require('../models/Producto');
 const Servicio = require('../models/Servicio');
 const Cliente = require('../models/Cliente');
+const Mascota = require('../models/Mascota');
+const { authenticateToken, requireAdmin } = require('../middleware/auth');
 const router = express.Router();
 
 // @route   GET /api/ventas
 // @desc    Obtener todas las ventas
 router.get('/', async (req, res) => {
   try {
-    const { date, customer, status, page = 1, limit = 10 } = req.query;
+    const { date, startDate, endDate, customer, status, page = 1, limit = 50 } = req.query;
     let query = {};
 
-    if (date) {
-      const startDate = new Date(date);
-      const endDate = new Date(date);
-      endDate.setDate(endDate.getDate() + 1);
-      query.date = { $gte: startDate, $lt: endDate };
+    // Filtro por fecha única (compatibilidad con existente)
+    if (date && !startDate && !endDate) {
+      const filterDate = new Date(date);
+      const startOfDay = new Date(filterDate);
+      startOfDay.setHours(0, 0, 0, 0);
+      const endOfDay = new Date(filterDate);
+      endOfDay.setHours(23, 59, 59, 999);
+      query.date = { $gte: startOfDay, $lte: endOfDay };
     }
+    
+    // Filtro por rango de fechas
+    if (startDate && endDate) {
+      const start = new Date(startDate);
+      start.setHours(0, 0, 0, 0);
+      const end = new Date(endDate);
+      end.setHours(23, 59, 59, 999);
+      
+      // Validar que startDate <= endDate
+      if (start > end) {
+        return res.status(400).json({
+          success: false,
+          message: 'La fecha inicial debe ser menor o igual a la fecha final'
+        });
+      }
+      
+      query.date = { $gte: start, $lte: end };
+    } else if (startDate && !endDate) {
+      // Solo startDate
+      const start = new Date(startDate);
+      start.setHours(0, 0, 0, 0);
+      query.date = { $gte: start };
+    } else if (!startDate && endDate) {
+      // Solo endDate
+      const end = new Date(endDate);
+      end.setHours(23, 59, 59, 999);
+      query.date = { $lte: end };
+    }
+
     if (customer) query.customer = customer;
     if (status) query.status = status;
 
@@ -62,6 +96,44 @@ router.get('/', async (req, res) => {
   }
 });
 
+// @route   GET /api/ventas/by-mascota/:mascotaId
+// @desc    Obtener ventas por mascota
+router.get('/by-mascota/:mascotaId', authenticateToken, async (req, res) => {
+  try {
+    const { mascotaId } = req.params;
+
+    const ventas = await Venta.find({ mascota: mascotaId })
+      .populate('customer', 'name phone')
+      .populate('mascota', 'name type breed')
+      .populate('user', 'name')
+      .sort({ date: -1 });
+
+    // Populate items manualmente según el tipo
+    for (const venta of ventas) {
+      for (const item of venta.items) {
+        if (item.type === 'producto') {
+          const producto = await Producto.findById(item.item).select('name price');
+          item.item = producto;
+        } else if (item.type === 'servicio') {
+          const servicio = await Servicio.findById(item.item).select('name price');
+          item.item = servicio;
+        }
+      }
+    }
+
+    res.json({
+      success: true,
+      data: ventas
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      success: false,
+      message: 'Error al obtener ventas de la mascota'
+    });
+  }
+});
+
 // @route   GET /api/ventas/:id
 // @desc    Obtener venta por ID
 router.get('/:id', async (req, res) => {
@@ -95,9 +167,9 @@ router.get('/:id', async (req, res) => {
 // @desc    Crear nueva venta
 router.post('/', async (req, res) => {
   try {
-    const { items, paymentMethod, customer, user, notes } = req.body;
+    const { items, paymentMethod, customer, mascota, user, notes, amountReceived } = req.body;
 
-    // Validar que haya items
+    // 1. Validar que haya items
     if (!items || items.length === 0) {
       return res.status(400).json({
         success: false,
@@ -105,7 +177,42 @@ router.post('/', async (req, res) => {
       });
     }
 
-    // Verificar stock y actualizar inventario
+    // 2. Validar relación cliente-mascota
+    if (mascota) {
+      if (!customer) {
+        return res.status(400).json({
+          success: false,
+          message: 'Si se selecciona una mascota, debe seleccionar un cliente'
+        });
+      }
+
+      const mascotaDoc = await Mascota.findById(mascota);
+      if (!mascotaDoc) {
+        return res.status(404).json({
+          success: false,
+          message: 'Mascota no encontrada'
+        });
+      }
+
+      if (!mascotaDoc.owner || mascotaDoc.owner.toString() !== customer) {
+        return res.status(403).json({
+          success: false,
+          message: 'La mascota no pertenece al cliente seleccionado'
+        });
+      }
+    }
+
+    // 3. Validar monto recibido para efectivo
+    if (paymentMethod === 'efectivo') {
+      if (!amountReceived || amountReceived < 0) {
+        return res.status(400).json({
+          success: false,
+          message: 'El monto recibido es requerido para pagos en efectivo'
+        });
+      }
+    }
+
+    // 4. Verificar disponibilidad de stock (SIN actualizar aún)
     for (const item of items) {
       if (item.type === 'producto') {
         const producto = await Producto.findById(item.item);
@@ -122,24 +229,52 @@ router.post('/', async (req, res) => {
             message: `Stock insuficiente para ${producto.name}. Stock disponible: ${producto.stock}`
           });
         }
-
-        // Actualizar stock
-        producto.stock -= item.quantity;
-        await producto.save();
       }
     }
 
-    // Crear venta
+    // 5. Crear venta
     const venta = await Venta.create({
       items,
       paymentMethod,
       customer,
+      mascota,
       user,
       notes
     });
 
+    // 6. Calcular y validar cambio para efectivo
+    if (paymentMethod === 'efectivo' && amountReceived) {
+      const calculatedChange = Math.round((amountReceived - venta.total) * 100) / 100;
+      
+      if (calculatedChange < 0) {
+        // Eliminar venta si el pago es insuficiente (stock no fue descargado aún)
+        await Venta.findByIdAndDelete(venta._id);
+        
+        return res.status(400).json({
+          success: false,
+          message: `El monto recibido es insuficiente. Faltan $${Math.abs(calculatedChange).toFixed(2)}`
+        });
+      }
+      
+      venta.amountReceived = amountReceived;
+      venta.change = calculatedChange;
+      await venta.save();
+    }
+
+    // 7. Actualizar inventario (solo después de todas las validaciones)
+    for (const item of items) {
+      if (item.type === 'producto') {
+        const producto = await Producto.findById(item.item);
+        if (producto) {
+          producto.stock -= item.quantity;
+          await producto.save();
+        }
+      }
+    }
+
     // Populate para respuesta
     await venta.populate('customer', 'name phone');
+    await venta.populate('mascota', 'name type breed');
     await venta.populate('user', 'name');
     await venta.populate('items.item', 'name');
 
@@ -164,10 +299,10 @@ router.post('/', async (req, res) => {
 });
 
 // @route   PUT /api/ventas/:id
-// @desc    Actualizar venta (solo status o notas)
-router.put('/:id', async (req, res) => {
+// @desc    Actualizar venta (solo status o notas para usuarios normales, campos sensibles solo para admin)
+router.put('/:id', authenticateToken, async (req, res) => {
   try {
-    const { status, notes } = req.body;
+    const { status, notes, items, total, commission, discount, customer, mascota, amountReceived, change } = req.body;
     
     const venta = await Venta.findById(req.params.id);
     if (!venta) {
@@ -177,14 +312,75 @@ router.put('/:id', async (req, res) => {
       });
     }
 
-    // Solo permitir actualizar status y notas
+    // Campos sensibles que solo admin puede modificar
+    const sensitiveFields = ['items', 'total', 'commission', 'discount', 'customer', 'mascota', 'amountReceived', 'change'];
+    const hasSensitiveFields = sensitiveFields.some(field => req.body[field] !== undefined);
+
+    if (hasSensitiveFields) {
+      if (req.user.role !== 'admin') {
+        return res.status(403).json({
+          success: false,
+          message: 'No tienes permiso para modificar campos financieros de la venta'
+        });
+      }
+      
+      // Validar relación cliente-mascota si se modifica
+      if (mascota !== undefined && customer !== undefined) {
+        if (mascota && !customer) {
+          return res.status(400).json({
+            success: false,
+            message: 'Si se selecciona una mascota, debe seleccionar un cliente'
+          });
+        }
+
+        if (mascota) {
+          const mascotaDoc = await Mascota.findById(mascota);
+          if (!mascotaDoc) {
+            return res.status(404).json({
+              success: false,
+              message: 'Mascota no encontrada'
+            });
+          }
+
+          if (!mascotaDoc.owner || mascotaDoc.owner.toString() !== customer) {
+            return res.status(403).json({
+              success: false,
+              message: 'La mascota no pertenece al cliente seleccionado'
+            });
+          }
+        }
+      }
+      
+      // Admin puede modificar campos sensibles
+      if (items) venta.items = items;
+      if (total !== undefined) venta.total = total;
+      if (commission !== undefined) venta.commission = commission;
+      if (discount !== undefined) venta.discount = discount;
+      if (customer !== undefined) venta.customer = customer;
+      if (mascota !== undefined) venta.mascota = mascota;
+      if (amountReceived !== undefined) venta.amountReceived = amountReceived;
+      if (change !== undefined) venta.change = change;
+    }
+
+    // Cualquier usuario puede modificar status y notas
     if (status) venta.status = status;
     if (notes !== undefined) venta.notes = notes;
 
     await venta.save();
     await venta.populate('customer', 'name phone');
+    await venta.populate('mascota', 'name type breed');
     await venta.populate('user', 'name');
-    await venta.populate('items.item', 'name');
+    
+    // Populate items manualmente según el tipo
+    for (const item of venta.items) {
+      if (item.type === 'producto') {
+        const producto = await Producto.findById(item.item).select('name price');
+        item.item = producto;
+      } else if (item.type === 'servicio') {
+        const servicio = await Servicio.findById(item.item).select('name price');
+        item.item = servicio;
+      }
+    }
 
     res.json({
       success: true,

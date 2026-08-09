@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { salesAPI, productsAPI, servicesAPI, customersAPI } from '../services/api';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { salesAPI, productsAPI, servicesAPI, customersAPI, petsAPI } from '../services/api';
 import toast from 'react-hot-toast';
 import { SkeletonTable } from '../components/Skeleton';
 import {
@@ -11,43 +11,63 @@ import {
   PlusCircle,
   MinusCircle
 } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
 
 const Sales = () => {
+  const { user } = useAuth();
   const [sales, setSales] = useState([]);
   const [products, setProducts] = useState([]);
   const [services, setServices] = useState([]);
   const [customers, setCustomers] = useState([]);
+  const [pets, setPets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+  const [dateRange, setDateRange] = useState({
+    startDate: '',
+    endDate: '',
+    useRange: false
+  });
   
   const [cart, setCart] = useState([]);
   const [selectedCustomer, setSelectedCustomer] = useState('');
+  const [selectedPet, setSelectedPet] = useState('');
   const [paymentMethod, setPaymentMethod] = useState('efectivo');
   const [saleChannel, setSaleChannel] = useState('local');
   const [customCommission, setCustomCommission] = useState('');
   const [useCustomCommission, setUseCustomCommission] = useState(false);
   const [notes, setNotes] = useState('');
-  const [userRole, setUserRole] = useState('user'); // Esto debería venir del contexto de autenticación
+  const [amountReceived, setAmountReceived] = useState('');
+  const [productSearchQuery, setProductSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
+  const searchInputRef = useRef(null);
+  const userRole = user?.role || 'user';
 
   const fetchSales = useCallback(async () => {
     try {
-      const response = await salesAPI.getAll({ date: selectedDate });
+      let params = {};
+      if (dateRange.useRange) {
+        if (dateRange.startDate) params.startDate = dateRange.startDate;
+        if (dateRange.endDate) params.endDate = dateRange.endDate;
+      } else {
+        params.date = selectedDate;
+      }
+      const response = await salesAPI.getAll(params);
       setSales(response.data.data);
     } catch (error) {
       toast.error('Error al cargar ventas');
     } finally {
       setLoading(false);
     }
-  }, [selectedDate]);
+  }, [selectedDate, dateRange]);
 
   useEffect(() => {
     fetchSales();
     fetchProducts();
     fetchServices();
     fetchCustomers();
-  }, [selectedDate, fetchSales]);
+  }, [selectedDate, dateRange.useRange, dateRange.startDate, dateRange.endDate, fetchSales]);
 
   const fetchProducts = async () => {
     try {
@@ -73,6 +93,79 @@ const Sales = () => {
       setCustomers(response.data.data);
     } catch (error) {
       console.error('Error fetching customers:', error);
+    }
+  };
+
+  const fetchPetsByCustomer = useCallback(async (customerId) => {
+    if (!customerId) {
+      setPets([]);
+      setSelectedPet('');
+      return;
+    }
+    try {
+      const response = await petsAPI.getByOwner(customerId);
+      setPets(response.data.data);
+      setSelectedPet('');
+    } catch (error) {
+      console.error('Error fetching pets:', error);
+      setPets([]);
+    }
+  }, []);
+
+  // Cargar mascotas cuando cambia el cliente seleccionado
+  useEffect(() => {
+    fetchPetsByCustomer(selectedCustomer);
+  }, [selectedCustomer, fetchPetsByCustomer]);
+
+  // Búsqueda de productos con debounce
+  useEffect(() => {
+    const timer = setTimeout(async () => {
+      if (productSearchQuery.trim()) {
+        try {
+          const response = await productsAPI.search(productSearchQuery);
+          setSearchResults(response.data.data);
+        } catch (error) {
+          console.error('Error searching products:', error);
+          setSearchResults([]);
+        }
+      } else {
+        setSearchResults([]);
+      }
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [productSearchQuery]);
+
+  // Manejo de ENTER para escaneo de SKU
+  const handleSearchKeyDown = async (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      
+      if (!productSearchQuery.trim()) return;
+
+      try {
+        const response = await productsAPI.search(productSearchQuery);
+        const results = response.data.data;
+
+        if (results.length === 1) {
+          // Producto único encontrado - agregar automáticamente
+          const product = results[0];
+          addToCart(product, 'producto');
+          setProductSearchQuery('');
+          setSearchResults([]);
+          toast.success(`${product.name} agregado al carrito`);
+          
+          // Mantener foco en el campo para escaneo continuo
+          setTimeout(() => {
+            searchInputRef.current?.focus();
+          }, 100);
+        } else if (results.length === 0) {
+          toast.error('Producto no encontrado');
+        }
+        // Si hay múltiples resultados, mostrarlos en la lista
+      } catch (error) {
+        toast.error('Error al buscar producto');
+      }
     }
   };
 
@@ -133,6 +226,16 @@ const Sales = () => {
       return;
     }
 
+    // Validar monto recibido para efectivo
+    if (paymentMethod === 'efectivo') {
+      const total = calculateTotal();
+      const received = parseFloat(amountReceived) || 0;
+      if (received < total) {
+        toast.error(`El monto recibido es insuficiente. Faltan $${(total - received).toFixed(2)}`);
+        return;
+      }
+    }
+
     try {
       const saleData = {
         items: cart.map(item => ({
@@ -144,9 +247,15 @@ const Sales = () => {
         paymentMethod,
         saleChannel,
         customer: selectedCustomer || null,
+        mascota: selectedPet || null,
         notes,
-        user: 'current-user' // This should come from auth context
+        user: user?._id || null
       };
+
+      // Agregar amountReceived solo si es efectivo
+      if (paymentMethod === 'efectivo' && amountReceived) {
+        saleData.amountReceived = parseFloat(amountReceived);
+      }
 
       // Solo administradores pueden modificar la comisión
       if (userRole === 'admin' && useCustomCommission && customCommission) {
@@ -159,11 +268,16 @@ const Sales = () => {
       // Reset form
       setCart([]);
       setSelectedCustomer('');
+      setSelectedPet('');
+      setPets([]);
       setPaymentMethod('efectivo');
       setSaleChannel('local');
       setCustomCommission('');
       setUseCustomCommission(false);
       setNotes('');
+      setAmountReceived('');
+      setProductSearchQuery('');
+      setSearchResults([]);
       setShowModal(false);
       fetchSales();
     } catch (error) {
@@ -209,27 +323,66 @@ const Sales = () => {
       {/* Filters */}
       <div className="card">
         <div className="card-body">
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="flex-1">
-              <label className="form-label">Fecha</label>
+          <div className="flex flex-col gap-4">
+            <div className="flex items-center gap-2">
               <input
-                type="date"
-                value={selectedDate}
-                onChange={(e) => setSelectedDate(e.target.value)}
-                className="form-input"
+                type="checkbox"
+                id="useRange"
+                checked={dateRange.useRange}
+                onChange={(e) => setDateRange({ ...dateRange, useRange: e.target.checked })}
+                className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
               />
+              <label htmlFor="useRange" className="text-sm font-medium text-gray-900">
+                Usar rango de fechas
+              </label>
             </div>
-            <div className="flex-1">
-              <label className="form-label">Buscar</label>
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                <input
-                  type="text"
-                  placeholder="Buscar ventas..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="form-input pl-10"
-                />
+            
+            <div className="flex flex-col sm:flex-row gap-4">
+              {!dateRange.useRange ? (
+                <div className="flex-1">
+                  <label className="form-label">Fecha</label>
+                  <input
+                    type="date"
+                    value={selectedDate}
+                    onChange={(e) => setSelectedDate(e.target.value)}
+                    className="form-input"
+                  />
+                </div>
+              ) : (
+                <>
+                  <div className="flex-1">
+                    <label className="form-label">Fecha Inicial</label>
+                    <input
+                      type="date"
+                      value={dateRange.startDate}
+                      onChange={(e) => setDateRange({ ...dateRange, startDate: e.target.value })}
+                      className="form-input"
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <label className="form-label">Fecha Final</label>
+                    <input
+                      type="date"
+                      value={dateRange.endDate}
+                      onChange={(e) => setDateRange({ ...dateRange, endDate: e.target.value })}
+                      min={dateRange.startDate}
+                      className="form-input"
+                    />
+                  </div>
+                </>
+              )}
+              <div className="flex-1">
+                <label className="form-label">Buscar</label>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <input
+                    type="text"
+                    placeholder="Buscar ventas..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="form-input pl-10"
+                  />
+                </div>
               </div>
             </div>
           </div>
@@ -332,6 +485,61 @@ const Sales = () => {
                           </option>
                         ))}
                       </select>
+                    </div>
+
+                    {/* Pet Selection */}
+                    {selectedCustomer && (
+                      <div>
+                        <label className="form-label">Mascota (opcional)</label>
+                        <select
+                          value={selectedPet}
+                          onChange={(e) => setSelectedPet(e.target.value)}
+                          className="form-input"
+                        >
+                          <option value="">Seleccionar mascota...</option>
+                          {pets.map(pet => (
+                            <option key={pet._id} value={pet._id}>
+                              {pet.name} - {pet.breed}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
+
+                    {/* Product Search */}
+                    <div>
+                      <label className="form-label">Buscar producto por nombre o SKU...</label>
+                      <input
+                        ref={searchInputRef}
+                        type="text"
+                        value={productSearchQuery}
+                        onChange={(e) => setProductSearchQuery(e.target.value)}
+                        onKeyDown={handleSearchKeyDown}
+                        className="form-input"
+                        placeholder="Escribe o escanea código de barras..."
+                        autoFocus
+                      />
+                      {searchResults.length > 0 && (
+                        <div className="mt-2 border border-gray-200 rounded-xl max-h-48 overflow-y-auto bg-white">
+                          {searchResults.map(product => (
+                            <div
+                              key={product._id}
+                              onClick={() => {
+                                addToCart(product, 'producto');
+                                setProductSearchQuery('');
+                                setSearchResults([]);
+                              }}
+                              className="p-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-0"
+                            >
+                              <p className="font-medium text-gray-900">{product.name}</p>
+                              <p className="text-sm text-gray-500">SKU: {product.sku}</p>
+                              <p className="text-sm font-medium text-primary-600">
+                                {formatCurrency(product.price)} - Stock: {product.stock}
+                              </p>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
 
                     {/* Products */}
@@ -477,7 +685,12 @@ const Sales = () => {
                       <label className="form-label">Método de pago</label>
                       <select
                         value={paymentMethod}
-                        onChange={(e) => setPaymentMethod(e.target.value)}
+                        onChange={(e) => {
+                          setPaymentMethod(e.target.value);
+                          if (e.target.value !== 'efectivo') {
+                            setAmountReceived('');
+                          }
+                        }}
                         className="form-input"
                       >
                         <option value="efectivo">Efectivo</option>
@@ -485,6 +698,41 @@ const Sales = () => {
                         <option value="transferencia">Transferencia</option>
                       </select>
                     </div>
+
+                    {/* Amount Received and Change (only for cash) */}
+                    {paymentMethod === 'efectivo' && (
+                      <>
+                        <div>
+                          <label className="form-label">Pago recibido</label>
+                          <input
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            value={amountReceived}
+                            onChange={(e) => setAmountReceived(e.target.value)}
+                            className="form-input"
+                            placeholder="Monto recibido..."
+                          />
+                        </div>
+                        {amountReceived && parseFloat(amountReceived) >= calculateTotal() && (
+                          <div className="bg-success-50 border border-success-200 rounded-xl p-3">
+                            <div className="flex justify-between items-center">
+                              <span className="font-medium text-success-900">Cambio:</span>
+                              <span className="text-lg font-bold text-success-600">
+                                {formatCurrency(parseFloat(amountReceived) - calculateTotal())}
+                              </span>
+                            </div>
+                          </div>
+                        )}
+                        {amountReceived && parseFloat(amountReceived) < calculateTotal() && (
+                          <div className="bg-danger-50 border border-danger-200 rounded-xl p-3">
+                            <p className="text-danger-900">
+                              Faltan: {formatCurrency(calculateTotal() - parseFloat(amountReceived))}
+                            </p>
+                          </div>
+                        )}
+                      </>
+                    )}
 
                     {/* Sale Channel */}
                     <div>
