@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const { getCurrentDateGMT7 } = require('../helpers/timezone');
 
 const recordatorioSchema = new mongoose.Schema({
   title: {
@@ -48,7 +49,7 @@ const recordatorioSchema = new mongoose.Schema({
   },
   createdAt: {
     type: Date,
-    default: Date.now
+    default: getCurrentDateGMT7
   }
 });
 

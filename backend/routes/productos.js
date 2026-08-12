@@ -181,7 +181,24 @@ router.get('/:id', async (req, res) => {
 // @desc    Crear nuevo producto
 router.post('/', authenticateToken, requireAdmin, async (req, res) => {
   try {
-    const { category, ...rest } = req.body;
+    const { category, sku, ...rest } = req.body;
+    
+    // Validar SKU obligatorio
+    if (!sku || sku.trim() === '') {
+      return res.status(400).json({
+        success: false,
+        message: 'El SKU es obligatorio'
+      });
+    }
+    
+    // Validar SKU duplicado
+    const existingProduct = await Producto.findOne({ sku: sku.trim() });
+    if (existingProduct) {
+      return res.status(400).json({
+        success: false,
+        message: 'El SKU ya está registrado'
+      });
+    }
     
     // Si category es un ObjectId válido, usarlo directamente
     // Si es un string, buscar la categoría por nombre y usar su ObjectId
@@ -195,6 +212,7 @@ router.post('/', authenticateToken, requireAdmin, async (req, res) => {
     
     const producto = await Producto.create({
       ...rest,
+      sku: sku.trim(),
       category: finalCategory
     });
     
@@ -212,6 +230,12 @@ router.post('/', authenticateToken, requireAdmin, async (req, res) => {
       return res.status(400).json({
         success: false,
         message: messages.join(', ')
+      });
+    }
+    if (error.code === 11000) {
+      return res.status(400).json({
+        success: false,
+        message: 'El SKU ya está registrado'
       });
     }
     res.status(500).json({

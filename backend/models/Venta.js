@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const { getCurrentDateGMT7 } = require('../helpers/timezone');
 
 const itemVentaSchema = new mongoose.Schema({
   type: {
@@ -30,6 +31,11 @@ const itemVentaSchema = new mongoose.Schema({
 
 const ventaSchema = new mongoose.Schema({
   items: [itemVentaSchema],
+  subtotal: {
+    type: Number,
+    required: false,
+    min: 0
+  },
   total: {
     type: Number,
     required: false,
@@ -48,7 +54,13 @@ const ventaSchema = new mongoose.Schema({
   },
   commission: {
     type: Number,
-    required: true,
+    required: false,
+    min: 0,
+    default: 0
+  },
+  cardCommission: {
+    type: Number,
+    required: false,
     min: 0,
     default: 0
   },
@@ -89,7 +101,7 @@ const ventaSchema = new mongoose.Schema({
   },
   date: {
     type: Date,
-    default: Date.now
+    default: getCurrentDateGMT7
   }
 });
 
@@ -100,14 +112,22 @@ ventaSchema.pre('save', function(next) {
     item.subtotal = Math.round((item.quantity * item.unitPrice) * 100) / 100;
   });
   
-  // Calcular total
-  this.total = Math.round(this.items.reduce((sum, item) => sum + item.subtotal, 0) * 100) / 100;
+  // Calcular subtotal total
+  this.subtotal = Math.round(this.items.reduce((sum, item) => sum + item.subtotal, 0) * 100) / 100;
   
-  // Calcular comisión (10% del total) - redondeado a 2 decimales
-  this.commission = Math.round((this.total * 0.1) * 100) / 100;
+  // Calcular comisión de tarjeta (4.6%) solo si paymentMethod es tarjeta
+  if (this.paymentMethod === 'tarjeta') {
+    this.cardCommission = Math.round((this.subtotal * 0.046) * 100) / 100;
+  } else {
+    this.cardCommission = 0;
+  }
   
-  // Calcular ingreso neto
-  this.netIncome = Math.round((this.total - this.commission) * 100) / 100;
+  // Calcular total (subtotal + comisión de tarjeta)
+  this.total = Math.round((this.subtotal + this.cardCommission) * 100) / 100;
+  
+  // Calcular ingreso neto (total - commission - cardCommission)
+  // Nota: commission ahora es un campo manual para uso administrativo
+  this.netIncome = Math.round((this.total - (this.commission || 0) - this.cardCommission) * 100) / 100;
   
   next();
 });

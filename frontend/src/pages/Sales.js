@@ -9,7 +9,9 @@ import {
   DollarSign,
   Trash2,
   PlusCircle,
-  MinusCircle
+  MinusCircle,
+  Edit,
+  XCircle
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -22,8 +24,10 @@ const Sales = () => {
   const [pets, setPets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingSale, setEditingSale] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+  const [selectedDate, setSelectedDate] = useState(''); // Vacío por defecto para mostrar todas
   const [dateRange, setDateRange] = useState({
     startDate: '',
     endDate: '',
@@ -31,14 +35,21 @@ const Sales = () => {
   });
   
   const [cart, setCart] = useState([]);
+  const [editCart, setEditCart] = useState([]);
   const [selectedCustomer, setSelectedCustomer] = useState('');
+  const [editCustomer, setEditCustomer] = useState('');
   const [selectedPet, setSelectedPet] = useState('');
+  const [editPet, setEditPet] = useState('');
   const [paymentMethod, setPaymentMethod] = useState('efectivo');
+  const [editPaymentMethod, setEditPaymentMethod] = useState('efectivo');
   const [saleChannel, setSaleChannel] = useState('local');
+  const [editSaleChannel, setEditSaleChannel] = useState('local');
   const [customCommission, setCustomCommission] = useState('');
   const [useCustomCommission, setUseCustomCommission] = useState(false);
   const [notes, setNotes] = useState('');
+  const [editNotes, setEditNotes] = useState('');
   const [amountReceived, setAmountReceived] = useState('');
+  const [editAmountReceived, setEditAmountReceived] = useState('');
   const [productSearchQuery, setProductSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const searchInputRef = useRef(null);
@@ -195,6 +206,132 @@ const Sales = () => {
     setCart(cart.filter((_, i) => i !== index));
   };
 
+  const handleEditSale = async (sale) => {
+    try {
+      setEditingSale(sale);
+      
+      // Cargar datos de la venta en el formulario de edición
+      setEditCart(sale.items.map(item => ({
+        item: item.item._id || item.item,
+        type: item.type,
+        quantity: item.quantity,
+        unitPrice: item.unitPrice,
+        name: item.item?.name || 'Producto'
+      })));
+      
+      setEditCustomer(sale.customer?._id || sale.customer || '');
+      setEditPet(sale.mascota?._id || sale.mascota || '');
+      setEditPaymentMethod(sale.paymentMethod || 'efectivo');
+      setEditSaleChannel(sale.saleChannel || 'local');
+      setEditNotes(sale.notes || '');
+      setEditAmountReceived(sale.amountReceived?.toString() || '');
+      
+      // Cargar mascotas del cliente si existe
+      if (sale.customer) {
+        await fetchPetsByCustomer(sale.customer._id || sale.customer);
+      }
+      
+      setShowEditModal(true);
+    } catch (error) {
+      console.error('Error al cargar venta para editar:', error);
+      toast.error('Error al cargar venta para editar');
+    }
+  };
+
+  const handleCancelSale = async (sale) => {
+    if (!window.confirm(`¿Estás seguro de cancelar la venta por $${sale.total.toFixed(2)}?`)) {
+      return;
+    }
+
+    try {
+      await salesAPI.cancel(sale._id);
+      toast.success('Venta cancelada correctamente');
+      fetchSales();
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Error al cancelar venta');
+    }
+  };
+
+  const handleSaveEdit = async () => {
+    if (editCart.length === 0) {
+      toast.error('La venta debe tener al menos un item');
+      return;
+    }
+
+    try {
+      const updateData = {
+        items: editCart,
+        customer: editCustomer || null,
+        mascota: editPet || null,
+        paymentMethod: editPaymentMethod,
+        saleChannel: editSaleChannel,
+        notes: editNotes
+      };
+
+      if (editPaymentMethod === 'efectivo' && editAmountReceived) {
+        updateData.amountReceived = parseFloat(editAmountReceived);
+      }
+
+      await salesAPI.update(editingSale._id, updateData);
+      toast.success('Venta actualizada correctamente');
+      setShowEditModal(false);
+      setEditingSale(null);
+      setEditCart([]);
+      fetchSales();
+    } catch (error) {
+      console.error('Error al actualizar venta:', error);
+      toast.error(error.response?.data?.message || 'Error al actualizar venta');
+    }
+  };
+
+  const handleCloseEditModal = () => {
+    setShowEditModal(false);
+    setEditingSale(null);
+    setEditCart([]);
+    setEditCustomer('');
+    setEditPet('');
+    setEditPaymentMethod('efectivo');
+    setEditSaleChannel('local');
+    setEditNotes('');
+    setEditAmountReceived('');
+  };
+
+  const addToEditCart = (item, type) => {
+    const existingItem = editCart.find(cartItem => 
+      cartItem.item === item._id && cartItem.type === type
+    );
+
+    if (existingItem) {
+      setEditCart(editCart.map(cartItem =>
+        cartItem.item === item._id && cartItem.type === type
+          ? { ...cartItem, quantity: cartItem.quantity + 1 }
+          : cartItem
+      ));
+    } else {
+      setEditCart([...editCart, {
+        item: item._id,
+        type,
+        quantity: 1,
+        unitPrice: item.price,
+        name: item.name
+      }]);
+    }
+  };
+
+  const removeFromEditCart = (index) => {
+    setEditCart(editCart.filter((_, i) => i !== index));
+  };
+
+  const updateEditQuantity = (index, quantity) => {
+    if (quantity <= 0) {
+      removeFromEditCart(index);
+    } else {
+      setEditCart(editCart.map((item, i) =>
+        i === index ? { ...item, quantity } : item
+      ));
+    }
+  };
+
   const updateQuantity = (index, quantity) => {
     if (quantity <= 0) {
       removeFromCart(index);
@@ -206,18 +343,34 @@ const Sales = () => {
   };
 
   const calculateTotal = () => {
+    const subtotal = cart.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0);
+    // Calcular comisión de tarjeta (4.6%) solo si paymentMethod es tarjeta
+    const cardCommission = paymentMethod === 'tarjeta' ? subtotal * 0.046 : 0;
+    return subtotal + cardCommission;
+  };
+
+  const calculateSubtotal = () => {
     return cart.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0);
+  };
+
+  const calculateCardCommission = () => {
+    const subtotal = calculateSubtotal();
+    return paymentMethod === 'tarjeta' ? subtotal * 0.046 : 0;
   };
 
   const calculateCommission = () => {
     if (useCustomCommission && customCommission) {
       return parseFloat(customCommission);
     }
-    return calculateTotal() * 0.1;
+    // Ya no calculamos comisión automática del 10%
+    return 0;
   };
 
   const calculateNetIncome = () => {
-    return calculateTotal() - calculateCommission();
+    const subtotal = calculateSubtotal();
+    const cardCommission = calculateCardCommission();
+    const commission = calculateCommission();
+    return subtotal - commission - cardCommission;
   };
 
   const handleSubmitSale = async () => {
@@ -398,11 +551,13 @@ const Sales = () => {
                 <th>Fecha</th>
                 <th>Cliente</th>
                 <th>Items</th>
+                <th>Subtotal</th>
+                <th>Comisión Tarjeta</th>
                 <th>Total</th>
-                <th>Comisión</th>
                 <th>Ingreso Neto</th>
                 <th>Método</th>
                 <th>Estado</th>
+                <th>Acciones</th>
               </tr>
             </thead>
             <tbody>
@@ -424,10 +579,13 @@ const Sales = () => {
                     </div>
                   </td>
                   <td className="text-right font-medium">
-                    {formatCurrency(sale.total)}
+                    {formatCurrency(sale.subtotal || sale.total)}
                   </td>
                   <td className="text-right">
-                    {formatCurrency(sale.commission)}
+                    {sale.cardCommission > 0 ? formatCurrency(sale.cardCommission) : '-'}
+                  </td>
+                  <td className="text-right font-medium">
+                    {formatCurrency(sale.total)}
                   </td>
                   <td className="text-right font-medium text-success-600">
                     {formatCurrency(sale.netIncome)}
@@ -442,6 +600,28 @@ const Sales = () => {
                     }`}>
                       {sale.status}
                     </span>
+                  </td>
+                  <td>
+                    <div className="flex gap-2">
+                      {userRole === 'admin' && sale.status !== 'cancelada' && (
+                        <>
+                          <button
+                            onClick={() => handleEditSale(sale)}
+                            className="text-primary-600 hover:text-primary-900"
+                            title="Editar venta"
+                          >
+                            <Edit className="h-4 w-4" />
+                          </button>
+                          <button
+                            onClick={() => handleCancelSale(sale)}
+                            className="text-danger-600 hover:text-danger-900"
+                            title="Cancelar venta"
+                          >
+                            <XCircle className="h-4 w-4" />
+                          </button>
+                        </>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -642,11 +822,17 @@ const Sales = () => {
                     <div className="border border-gray-200 rounded-xl p-4 space-y-2 bg-white shadow-sm">
                       <div className="flex justify-between">
                         <span>Subtotal:</span>
-                        <span className="font-medium">{formatCurrency(calculateTotal())}</span>
+                        <span className="font-medium">{formatCurrency(calculateSubtotal())}</span>
                       </div>
-                      <div className="flex justify-between">
-                        <span>Comisión:</span>
-                        <span className="font-medium">{formatCurrency(calculateCommission())}</span>
+                      {paymentMethod === 'tarjeta' && (
+                        <div className="flex justify-between text-primary-600">
+                          <span>Comisión por pago con tarjeta (4.6%):</span>
+                          <span className="font-medium">{formatCurrency(calculateCardCommission())}</span>
+                        </div>
+                      )}
+                      <div className="flex justify-between text-lg font-bold border-t border-gray-200 pt-2">
+                        <span>Total:</span>
+                        <span className="text-primary-600">{formatCurrency(calculateTotal())}</span>
                       </div>
                       {userRole === 'admin' && (
                         <div className="pt-2 border-t border-gray-200">
@@ -657,7 +843,7 @@ const Sales = () => {
                               onChange={(e) => setUseCustomCommission(e.target.checked)}
                               className="mr-2"
                             />
-                            Modificar comisión
+                            Modificar comisión manual
                           </label>
                           {useCustomCommission && (
                             <div className="mt-2">
@@ -775,6 +961,278 @@ const Sales = () => {
                       >
                         <DollarSign className="h-4 w-4 mr-2" />
                         Registrar Venta
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Sale Modal */}
+      {showEditModal && editingSale && (
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          <div className="flex items-center justify-center min-h-screen px-4">
+            <div className="modal-overlay" onClick={handleCloseEditModal} />
+            
+            <div className="relative modal-content max-w-4xl w-full max-h-[90vh] overflow-y-auto animate-slide-up">
+              <div className="p-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-6">Editar Venta #{editingSale._id.slice(-6)}</h3>
+                
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                  {/* Products and Services */}
+                  <div className="lg:col-span-2 space-y-6">
+                    {/* Customer Selection */}
+                    <div>
+                      <label className="form-label">Cliente</label>
+                      <select
+                        value={editCustomer}
+                        onChange={async (e) => {
+                          setEditCustomer(e.target.value);
+                          setEditPet('');
+                          if (e.target.value) {
+                            await fetchPetsByCustomer(e.target.value);
+                          }
+                        }}
+                        className="form-input"
+                      >
+                        <option value="">Sin cliente</option>
+                        {customers.map(customer => (
+                          <option key={customer._id} value={customer._id}>
+                            {customer.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* Pet Selection */}
+                    {editCustomer && (
+                      <div>
+                        <label className="form-label">Mascota</label>
+                        <select
+                          value={editPet}
+                          onChange={(e) => setEditPet(e.target.value)}
+                          className="form-input"
+                        >
+                          <option value="">Sin mascota</option>
+                          {pets.map(pet => (
+                            <option key={pet._id} value={pet._id}>
+                              {pet.name} ({pet.type})
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
+
+                    {/* Products */}
+                    <div>
+                      <h4 className="font-medium text-gray-900 mb-3">Productos</h4>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        {products.filter(p => p.stock > 0).map(product => (
+                          <div key={product._id} className="border border-gray-200 rounded-xl p-3 hover:border-primary-300 hover:shadow-sm transition-all duration-200">
+                            <div className="flex justify-between items-start">
+                              <div className="flex-1">
+                                <p className="font-medium text-gray-900">{product.name}</p>
+                                <p className="text-sm text-gray-500">Stock: {product.stock}</p>
+                                <p className="text-sm font-medium text-primary-600">
+                                  {formatCurrency(product.price)}
+                                </p>
+                              </div>
+                              <button
+                                onClick={() => addToEditCart(product, 'producto')}
+                                className="btn btn-primary btn-sm"
+                              >
+                                <PlusCircle className="h-4 w-4" />
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Services */}
+                    <div>
+                      <h4 className="font-medium text-gray-900 mb-3">Servicios</h4>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        {services.map(service => (
+                          <div key={service._id} className="border border-gray-200 rounded-xl p-3 hover:border-primary-300 hover:shadow-sm transition-all duration-200">
+                            <div className="flex justify-between items-start">
+                              <div className="flex-1">
+                                <p className="font-medium text-gray-900">{service.name}</p>
+                                <p className="text-sm text-gray-500">{service.duration} min</p>
+                                <p className="text-sm font-medium text-primary-600">
+                                  {formatCurrency(service.price)}
+                                </p>
+                              </div>
+                              <button
+                                onClick={() => addToEditCart(service, 'servicio')}
+                                className="btn btn-primary btn-sm"
+                              >
+                                <PlusCircle className="h-4 w-4" />
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Edit Cart */}
+                  <div className="space-y-4">
+                    <div>
+                      <h4 className="font-semibold text-gray-900 mb-3">Carrito</h4>
+                      <div className="border border-gray-200 rounded-xl p-4 space-y-3 bg-gray-50">
+                        {editCart.length === 0 ? (
+                          <p className="text-gray-500 text-center py-4">Carrito vacío</p>
+                        ) : (
+                          editCart.map((item, index) => (
+                            <div key={index} className="flex items-center justify-between">
+                              <div className="flex-1">
+                                <p className="font-medium text-gray-900">{item.name}</p>
+                                <p className="text-sm text-gray-500">
+                                  {formatCurrency(item.unitPrice)} c/u
+                                </p>
+                              </div>
+                              <div className="flex items-center space-x-2">
+                                <button
+                                  onClick={() => updateEditQuantity(index, item.quantity - 1)}
+                                  className="text-gray-400 hover:text-gray-600"
+                                >
+                                  <MinusCircle className="h-4 w-4" />
+                                </button>
+                                <span className="w-8 text-center">{item.quantity}</span>
+                                <button
+                                  onClick={() => updateEditQuantity(index, item.quantity + 1)}
+                                  className="text-gray-400 hover:text-gray-600"
+                                >
+                                  <PlusCircle className="h-4 w-4" />
+                                </button>
+                                <button
+                                  onClick={() => removeFromEditCart(index)}
+                                  className="text-danger-600 hover:text-danger-900"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </button>
+                              </div>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Totals */}
+                    <div className="border-t border-gray-200 pt-4 space-y-2">
+                      <div className="flex justify-between text-gray-600">
+                        <span>Subtotal:</span>
+                        <span>{formatCurrency(editCart.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0))}</span>
+                      </div>
+                      {editPaymentMethod === 'tarjeta' && (
+                        <div className="flex justify-between text-gray-600">
+                          <span>Comisión tarjeta (4.6%):</span>
+                          <span>{formatCurrency(editCart.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0) * 0.046)}</span>
+                        </div>
+                      )}
+                      <div className="flex justify-between font-bold text-lg text-gray-900 pt-2 border-t border-gray-200">
+                        <span>Total:</span>
+                        <span>
+                          {editPaymentMethod === 'tarjeta' 
+                            ? formatCurrency(editCart.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0) * 1.046)
+                            : formatCurrency(editCart.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0))
+                          }
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Payment Method */}
+                    <div>
+                      <label className="form-label">Método de pago</label>
+                      <select
+                        value={editPaymentMethod}
+                        onChange={(e) => {
+                          setEditPaymentMethod(e.target.value);
+                          if (e.target.value !== 'efectivo') {
+                            setEditAmountReceived('');
+                          }
+                        }}
+                        className="form-input"
+                      >
+                        <option value="efectivo">Efectivo</option>
+                        <option value="tarjeta">Tarjeta</option>
+                        <option value="transferencia">Transferencia</option>
+                      </select>
+                    </div>
+
+                    {/* Amount Received and Change (only for cash) */}
+                    {editPaymentMethod === 'efectivo' && (
+                      <>
+                        <div>
+                          <label className="form-label">Pago recibido</label>
+                          <input
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            value={editAmountReceived}
+                            onChange={(e) => setEditAmountReceived(e.target.value)}
+                            className="form-input"
+                            placeholder="Monto recibido..."
+                          />
+                        </div>
+                        {editAmountReceived && parseFloat(editAmountReceived) >= (editPaymentMethod === 'tarjeta' ? editCart.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0) * 1.046 : editCart.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0)) && (
+                          <div className="bg-success-50 border border-success-200 rounded-xl p-3">
+                            <div className="flex justify-between items-center">
+                              <span className="font-medium text-success-900">Cambio:</span>
+                              <span className="text-lg font-bold text-success-600">
+                                {formatCurrency(parseFloat(editAmountReceived) - (editPaymentMethod === 'tarjeta' ? editCart.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0) * 1.046 : editCart.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0)))}
+                              </span>
+                            </div>
+                          </div>
+                        )}
+                      </>
+                    )}
+
+                    {/* Sale Channel */}
+                    <div>
+                      <label className="form-label">Canal de venta</label>
+                      <select
+                        value={editSaleChannel}
+                        onChange={(e) => setEditSaleChannel(e.target.value)}
+                        className="form-input"
+                      >
+                        <option value="local">Local comercial</option>
+                        <option value="mercado_libre">Mercado Libre</option>
+                        <option value="redes_sociales">Redes Sociales</option>
+                      </select>
+                    </div>
+
+                    {/* Notes */}
+                    <div>
+                      <label className="form-label">Notas</label>
+                      <textarea
+                        value={editNotes}
+                        onChange={(e) => setEditNotes(e.target.value)}
+                        className="form-input"
+                        rows={3}
+                        placeholder="Notas adicionales..."
+                      />
+                    </div>
+
+                    {/* Actions */}
+                    <div className="flex space-x-3">
+                      <button
+                        onClick={handleCloseEditModal}
+                        className="flex-1 btn btn-secondary btn-md"
+                      >
+                        Cancelar
+                      </button>
+                      <button
+                        onClick={handleSaveEdit}
+                        disabled={editCart.length === 0}
+                        className="flex-1 btn btn-primary btn-md"
+                      >
+                        <DollarSign className="h-4 w-4 mr-2" />
+                        Actualizar Venta
                       </button>
                     </div>
                   </div>

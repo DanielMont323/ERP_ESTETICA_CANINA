@@ -2,19 +2,24 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { purchasesAPI, suppliersAPI, productsAPI, supplierProductsAPI } from '../services/api';
 import toast from 'react-hot-toast';
 import { SkeletonTable } from '../components/Skeleton';
+import { useAuth } from '../contexts/AuthContext';
 import {
   Search,
   Plus,
   X,
-  TrendingDown
+  TrendingDown,
+  Edit
 } from 'lucide-react';
 
 const Purchases = () => {
+  const { user } = useAuth();
   const [purchases, setPurchases] = useState([]);
   const [suppliers, setSuppliers] = useState([]);
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [selectedPurchase, setSelectedPurchase] = useState(null);
   const [selectedSupplier, setSelectedSupplier] = useState('');
   const [skuSearch, setSkuSearch] = useState('');
   const [formData, setFormData] = useState({
@@ -35,6 +40,7 @@ const Purchases = () => {
     unitCost: 0
   });
   const [discountInfo, setDiscountInfo] = useState(null);
+  const [selectedSupplierInfo, setSelectedSupplierInfo] = useState(null);
 
   const fetchData = useCallback(async () => {
     try {
@@ -137,6 +143,18 @@ const Purchases = () => {
     }
   };
 
+  const handleSupplierChange = async (supplierId) => {
+    setFormData({...formData, proveedor: supplierId});
+    setDiscountInfo(null);
+    
+    if (supplierId) {
+      const supplier = suppliers.find(s => s._id === supplierId);
+      setSelectedSupplierInfo(supplier);
+    } else {
+      setSelectedSupplierInfo(null);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
@@ -146,10 +164,19 @@ const Purchases = () => {
       }
 
       console.log('Enviando datos de compra:', formData);
-      const response = await purchasesAPI.create(formData);
+      
+      let response;
+      if (isEditMode) {
+        response = await purchasesAPI.update(selectedPurchase._id, formData);
+      } else {
+        response = await purchasesAPI.create(formData);
+      }
+      
       console.log('Respuesta del servidor:', response);
-      toast.success('Compra creada correctamente');
+      toast.success(isEditMode ? 'Compra actualizada correctamente' : 'Compra creada correctamente');
       setShowModal(false);
+      setIsEditMode(false);
+      setSelectedPurchase(null);
       setFormData({
         proveedor: '',
         type: 'contado',
@@ -157,14 +184,50 @@ const Purchases = () => {
         user: 'default_user',
         items: [],
         notes: '',
-        invoice: ''
+        invoice: '',
+        receiptNumber: '',
+        hasIVA: false,
+        ivaRate: 0.16
       });
       fetchData();
     } catch (error) {
-      console.error('Error al crear compra:', error);
+      console.error('Error al guardar compra:', error);
       console.error('Detalles del error:', error.response?.data);
-      toast.error(`Error: ${error.response?.data?.message || 'Error al crear compra'}`);
+      toast.error(`Error: ${error.response?.data?.message || 'Error al guardar compra'}`);
     }
+  };
+
+  const handleEditClick = (purchase) => {
+    setSelectedPurchase(purchase);
+    setIsEditMode(true);
+    
+    // Cargar datos de la compra en el formulario
+    setFormData({
+      proveedor: purchase.proveedor?._id || '',
+      type: purchase.type || 'contado',
+      paymentMethod: purchase.paymentMethod || 'efectivo',
+      user: purchase.user || 'default_user',
+      items: purchase.items || [],
+      notes: purchase.notes || '',
+      invoice: purchase.invoice || '',
+      receiptNumber: purchase.receiptNumber || '',
+      hasIVA: purchase.hasIVA || false,
+      ivaRate: purchase.ivaRate || 0.16
+    });
+    
+    // Cargar información del proveedor para descuento
+    if (purchase.proveedor) {
+      const supplierInfo = suppliers.find(s => s._id === purchase.proveedor._id);
+      if (supplierInfo) {
+        setSelectedSupplierInfo(supplierInfo);
+        setDiscountInfo({
+          discountPercentage: supplierInfo.earlyPaymentDiscount || 0,
+          creditDays: supplierInfo.creditDays || 0
+        });
+      }
+    }
+    
+    setShowModal(true);
   };
 
   const formatCurrency = (amount) => {
@@ -182,6 +245,20 @@ const Purchases = () => {
 
   const calculateBaseTotal = () => {
     return formData.items.reduce((sum, item) => sum + (item.quantity * item.unitCost), 0);
+  };
+
+  const calculateEarlyPaymentDiscount = () => {
+    if (formData.type !== 'credito' || !selectedSupplierInfo || !selectedSupplierInfo.earlyPaymentDiscount) {
+      return 0;
+    }
+    const baseTotal = calculateBaseTotal();
+    return baseTotal * (selectedSupplierInfo.earlyPaymentDiscount / 100);
+  };
+
+  const calculateTotalWithDiscount = () => {
+    const baseTotal = calculateBaseTotal();
+    const discount = calculateEarlyPaymentDiscount();
+    return baseTotal - discount;
   };
 
   const filteredPurchases = selectedSupplier 
@@ -258,6 +335,7 @@ const Purchases = () => {
                 <th>Total Final</th>
                 <th>Tipo</th>
                 <th>Estado</th>
+                {user?.role === 'admin' && <th>Acciones</th>}
               </tr>
             </thead>
             <tbody>
@@ -294,6 +372,18 @@ const Purchases = () => {
                       {purchase.status}
                     </span>
                   </td>
+                  {user?.role === 'admin' && (
+                    <td>
+                      <button
+                        onClick={() => handleEditClick(purchase)}
+                        disabled={purchase.status === 'cancelada'}
+                        className="text-blue-600 hover:text-blue-800 disabled:text-gray-400 disabled:cursor-not-allowed"
+                        title="Editar compra"
+                      >
+                        <Edit className="h-4 w-4" />
+                      </button>
+                    </td>
+                  )}
                 </tr>
               ))}
             </tbody>
@@ -310,8 +400,14 @@ const Purchases = () => {
             <div className="relative modal-content max-w-4xl w-full max-h-[90vh] overflow-y-auto animate-slide-up">
               <div className="p-6">
                 <div className="flex justify-between items-center mb-4">
-                  <h2 className="text-xl font-semibold text-gray-900">Nueva Compra</h2>
-                  <button onClick={() => setShowModal(false)} className="text-gray-400 hover:text-gray-600 transition-colors">
+                  <h2 className="text-xl font-semibold text-gray-900">
+                    {isEditMode ? 'Editar Compra' : 'Nueva Compra'}
+                  </h2>
+                  <button onClick={() => {
+                    setShowModal(false);
+                    setIsEditMode(false);
+                    setSelectedPurchase(null);
+                  }} className="text-gray-400 hover:text-gray-600 transition-colors">
                     <X className="h-6 w-6" />
                   </button>
                 </div>
@@ -323,7 +419,7 @@ const Purchases = () => {
                     <select
                       required
                       value={formData.proveedor}
-                      onChange={(e) => setFormData({...formData, proveedor: e.target.value})}
+                      onChange={(e) => handleSupplierChange(e.target.value)}
                       className="form-input"
                     >
                       <option value="">Seleccionar proveedor</option>
@@ -333,6 +429,18 @@ const Purchases = () => {
                         </option>
                       ))}
                     </select>
+                    {selectedSupplierInfo && (
+                      <div className="mt-2 text-sm space-y-1">
+                        <div className="text-gray-600">
+                          Crédito: {selectedSupplierInfo.creditDays > 0 ? `${selectedSupplierInfo.creditDays} días` : 'Contado'}
+                        </div>
+                        {selectedSupplierInfo.earlyPaymentDiscount > 0 && (
+                          <div className="text-green-600 font-medium">
+                            Descuento pronto pago: {selectedSupplierInfo.earlyPaymentDiscount}%
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                   <div>
                     <label className="form-label">Tipo de compra</label>
@@ -475,6 +583,47 @@ const Purchases = () => {
                       </table>
                     </div>
                   )}
+
+                  {/* Purchase Summary - Always show when there are items */}
+                  {formData.items.length > 0 && (
+                    <div className="border border-gray-200 rounded-xl p-4 bg-gray-50">
+                      <h4 className="font-semibold text-gray-900 mb-3">Resumen de Compra</h4>
+                      <div className="text-sm space-y-2">
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Subtotal / Total sin descuento:</span>
+                          <span className="font-medium">{formatCurrency(calculateBaseTotal())}</span>
+                        </div>
+                        {formData.type === 'credito' && calculateEarlyPaymentDiscount() > 0 && (
+                          <>
+                            <div className="flex justify-between text-green-600">
+                              <span className="text-gray-600">Descuento pronto pago ({selectedSupplierInfo?.earlyPaymentDiscount}%):</span>
+                              <span className="font-medium">-{formatCurrency(calculateEarlyPaymentDiscount())}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-gray-600">Total por pronto pago:</span>
+                              <span className="font-semibold text-green-600">{formatCurrency(calculateTotalWithDiscount())}</span>
+                            </div>
+                            <div className="flex justify-between text-green-600 text-xs pt-1 border-t border-green-200">
+                              <span>Ahorro:</span>
+                              <span className="font-medium">{formatCurrency(calculateEarlyPaymentDiscount())}</span>
+                            </div>
+                          </>
+                        )}
+                        {formData.type === 'credito' && calculateEarlyPaymentDiscount() === 0 && (
+                          <div className="flex justify-between text-gray-500 text-xs">
+                            <span>Descuento pronto pago:</span>
+                            <span>No disponible</span>
+                          </div>
+                        )}
+                        {formData.type === 'contado' && (
+                          <div className="flex justify-between text-gray-500 text-xs">
+                            <span>Descuento pronto pago:</span>
+                            <span>No aplica en contado</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* IVA Section - Solo para compras a crédito */}
@@ -513,17 +662,20 @@ const Purchases = () => {
                           <div className="bg-white border border-gray-200 rounded-lg p-3 mt-2">
                             <div className="text-sm space-y-1">
                               <div className="flex justify-between">
-                                <span className="text-gray-600">Subtotal:</span>
-                                <span className="font-medium">{formatCurrency(calculateBaseTotal())}</span>
+                                <span className="text-gray-600">Base para IVA:</span>
+                                <span className="font-medium">{formatCurrency(formData.type === 'credito' && calculateEarlyPaymentDiscount() > 0 ? calculateTotalWithDiscount() : calculateBaseTotal())}</span>
                               </div>
                               <div className="flex justify-between">
                                 <span className="text-gray-600">IVA ({(formData.ivaRate * 100).toFixed(0)}%):</span>
-                                <span className="font-medium">{formatCurrency(calculateBaseTotal() * formData.ivaRate)}</span>
+                                <span className="font-medium">{formatCurrency((formData.type === 'credito' && calculateEarlyPaymentDiscount() > 0 ? calculateTotalWithDiscount() : calculateBaseTotal()) * formData.ivaRate)}</span>
                               </div>
                               <div className="flex justify-between border-t border-gray-200 pt-1">
                                 <span className="font-semibold">Total con IVA:</span>
                                 <span className="font-semibold text-primary-600">
-                                  {formatCurrency(calculateBaseTotal() * (1 + formData.ivaRate))}
+                                  {formData.type === 'credito' && calculateEarlyPaymentDiscount() > 0
+                                    ? formatCurrency((calculateTotalWithDiscount() * (1 + formData.ivaRate)))
+                                    : formatCurrency(calculateBaseTotal() * (1 + formData.ivaRate))
+                                  }
                                 </span>
                               </div>
                             </div>

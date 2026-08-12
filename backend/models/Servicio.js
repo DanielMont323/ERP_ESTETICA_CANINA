@@ -1,5 +1,18 @@
 const mongoose = require('mongoose');
 
+const insumoServicioSchema = new mongoose.Schema({
+  producto: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Producto',
+    required: true
+  },
+  cantidad: {
+    type: Number,
+    required: true,
+    min: 0
+  }
+});
+
 const servicioSchema = new mongoose.Schema({
   name: {
     type: String,
@@ -25,6 +38,7 @@ const servicioSchema = new mongoose.Schema({
     ref: 'CategoriaServicio',
     required: [true, 'La categoría es obligatoria']
   },
+  insumos: [insumoServicioSchema],
   discountPercentage: {
     type: Number,
     default: 0,

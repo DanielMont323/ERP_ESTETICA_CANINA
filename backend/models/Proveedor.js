@@ -41,6 +41,12 @@ const proveedorSchema = new mongoose.Schema({
     min: 0,
     default: 0
   },
+  earlyPaymentDiscount: {
+    type: Number,
+    min: 0,
+    max: 100,
+    default: 0
+  },
   creditLimit: {
     type: Number,
     min: 0,

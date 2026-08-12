@@ -181,14 +181,47 @@ router.post('/pagar-masivo', authenticateToken, async (req, res) => {
     for (const cuenta of cuentas) {
       subtotalTotal += cuenta.subtotal || cuenta.montoBase || cuenta.monto;
       ivaTotal += cuenta.ivaAmount || 0;
-      totalAPagar += cuenta.saldo;
+      
+      // Calcular importe exigible para cada cuenta (con descuento si aplica)
+      const currentDate = new Date();
+      let importeExigible = cuenta.montoBase || cuenta.monto;
+      if (cuenta.discountDeadline && 
+          currentDate <= cuenta.discountDeadline && 
+          cuenta.descuentoDisponible > 0 && 
+          !cuenta.descuentoAplicado) {
+        importeExigible = cuenta.montoBase - cuenta.descuentoDisponible;
+      }
+      
+      // Calcular pagos anteriores
+      const pagosAnteriores = cuenta.payments.reduce((sum, pago) => sum + (pago.amount || 0), 0);
+      
+      // Usar el saldo actual basado en el importe exigible
+      const saldoActual = importeExigible - pagosAnteriores;
+      totalAPagar += Math.max(0, saldoActual);
     }
     
     // Procesar pagos
     const resultados = [];
     for (const cuenta of cuentas) {
+      // Calcular importe exigible para esta cuenta
+      const currentDate = new Date();
+      let importeExigible = cuenta.montoBase || cuenta.monto;
+      if (cuenta.discountDeadline && 
+          currentDate <= cuenta.discountDeadline && 
+          cuenta.descuentoDisponible > 0 && 
+          !cuenta.descuentoAplicado) {
+        importeExigible = cuenta.montoBase - cuenta.descuentoDisponible;
+      }
+      
+      // Calcular pagos anteriores
+      const pagosAnteriores = cuenta.payments.reduce((sum, pago) => sum + (pago.amount || 0), 0);
+      
+      // Calcular saldo actual
+      const saldoActual = importeExigible - pagosAnteriores;
+      const montoAPagar = Math.max(0, saldoActual);
+      
       // Registrar pago
-      await cuenta.addPayment(cuenta.saldo, paymentMethod, user, notes);
+      await cuenta.addPayment(montoAPagar, paymentMethod, user, notes);
       
       // Actualizar deuda del proveedor
       if (cuenta.proveedor) {

@@ -25,8 +25,7 @@ const VaccinationCards = () => {
   const [loadingVaccines, setLoadingVaccines] = useState(false);
   const [vaccineForm, setVaccineForm] = useState({
     vacunaId: '',
-    fecha: '',
-    proximaDosis: '',
+    diasProximaDosis: '',
     observaciones: ''
   });
 
@@ -71,8 +70,7 @@ const VaccinationCards = () => {
       // Enviar vacunaId como vacuna para el backend
       const dataToSend = {
         vacuna: vaccineForm.vacunaId,
-        fecha: vaccineForm.fecha,
-        proximaDosis: vaccineForm.proximaDosis,
+        diasProximaDosis: vaccineForm.diasProximaDosis ? parseInt(vaccineForm.diasProximaDosis) : null,
         observaciones: vaccineForm.observaciones
       };
       
@@ -81,7 +79,7 @@ const VaccinationCards = () => {
       await vaccinationCardAPI.addVaccine(selectedCard._id, dataToSend);
       toast.success('Vacuna agregada correctamente');
       setShowVaccineModal(false);
-      setVaccineForm({ vacunaId: '', fecha: '', proximaDosis: '', observaciones: '' });
+      setVaccineForm({ vacunaId: '', diasProximaDosis: '', observaciones: '' });
       fetchCards();
     } catch (error) {
       console.error('Error al agregar vacuna:', error);
@@ -109,6 +107,21 @@ const VaccinationCards = () => {
   const formatDate = (dateString) => {
     if (!dateString) return '-';
     return new Date(dateString).toLocaleDateString('es-MX');
+  };
+
+  const calculateNextDoseDate = (days) => {
+    if (!days || days <= 0) return null;
+    const today = new Date();
+    const nextDate = new Date(today);
+    nextDate.setDate(nextDate.getDate() + parseInt(days));
+    return formatDate(nextDate);
+  };
+
+  const getCurrentDateGMT7 = () => {
+    const now = new Date();
+    const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
+    const gmt7 = new Date(utc - (7 * 3600000));
+    return formatDate(gmt7);
   };
 
   const filteredCards = cards.filter(card =>
@@ -284,22 +297,29 @@ const VaccinationCards = () => {
                 <div>
                   <label className="form-label">Fecha de aplicación</label>
                   <input
-                    type="date"
-                    required
-                    value={vaccineForm.fecha}
-                    onChange={(e) => setVaccineForm({...vaccineForm, fecha: e.target.value})}
-                    className="form-input"
+                    type="text"
+                    value={getCurrentDateGMT7()}
+                    disabled
+                    className="form-input bg-gray-100"
                   />
+                  <p className="text-xs text-gray-500 mt-1">Fecha automática (GMT-7 Tepic)</p>
                 </div>
                 
                 <div>
-                  <label className="form-label">Próxima dosis (opcional)</label>
+                  <label className="form-label">Días para próxima dosis (opcional)</label>
                   <input
-                    type="date"
-                    value={vaccineForm.proximaDosis}
-                    onChange={(e) => setVaccineForm({...vaccineForm, proximaDosis: e.target.value})}
+                    type="number"
+                    min="0"
+                    value={vaccineForm.diasProximaDosis}
+                    onChange={(e) => setVaccineForm({...vaccineForm, diasProximaDosis: e.target.value})}
                     className="form-input"
+                    placeholder="Ej: 30"
                   />
+                  {vaccineForm.diasProximaDosis && vaccineForm.diasProximaDosis > 0 && (
+                    <p className="text-sm text-gray-600 mt-1">
+                      Próxima dosis: <span className="font-medium">{calculateNextDoseDate(vaccineForm.diasProximaDosis)}</span>
+                    </p>
+                  )}
                 </div>
                 
                 <div>
@@ -318,7 +338,7 @@ const VaccinationCards = () => {
                     type="button"
                     onClick={() => {
                       setShowVaccineModal(false);
-                      setVaccineForm({ vacunaId: '', fecha: '', proximaDosis: '', observaciones: '' });
+                      setVaccineForm({ vacunaId: '', diasProximaDosis: '', observaciones: '' });
                     }}
                     className="btn btn-secondary btn-md"
                   >

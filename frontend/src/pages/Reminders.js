@@ -14,11 +14,13 @@ import {
 
 const Reminders = () => {
   const [reminders, setReminders] = useState([]);
+  const [automaticReminders, setAutomaticReminders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteReminderId, setDeleteReminderId] = useState(null);
   const [editingReminder, setEditingReminder] = useState(null);
+  const [showAutomatic, setShowAutomatic] = useState(false);
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -30,6 +32,7 @@ const Reminders = () => {
 
   useEffect(() => {
     fetchReminders();
+    fetchAutomaticReminders();
   }, []);
 
   const fetchReminders = async () => {
@@ -40,6 +43,15 @@ const Reminders = () => {
       toast.error('Error al cargar recordatorios');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchAutomaticReminders = async () => {
+    try {
+      const response = await remindersAPI.getAutomaticAll();
+      setAutomaticReminders(response.data.data);
+    } catch (error) {
+      console.error('Error al cargar recordatorios automáticos:', error);
     }
   };
 
@@ -107,6 +119,16 @@ const Reminders = () => {
     }
   };
 
+  const getUrgencyColor = (urgency) => {
+    switch (urgency) {
+      case 'vencida': return 'danger';
+      case 'hoy': return 'danger';
+      case 'manana': return 'warning';
+      case 'proxima': return 'info';
+      default: return 'info';
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
@@ -153,69 +175,127 @@ const Reminders = () => {
             Gestiona tus recordatorios y tareas pendientes
           </p>
         </div>
-        <button onClick={handleCreateReminder} className="btn btn-primary btn-md">
-          <Plus className="h-4 w-4 mr-2" />
-          Nuevo Recordatorio
-        </button>
+        <div className="flex items-center space-x-3">
+          <button 
+            onClick={() => setShowAutomatic(!showAutomatic)}
+            className={`btn btn-md ${showAutomatic ? 'btn-primary' : 'btn-secondary'}`}
+          >
+            {showAutomatic ? 'Ver Manuales' : 'Ver Automáticos'}
+          </button>
+          <button onClick={handleCreateReminder} className="btn btn-primary btn-md">
+            <Plus className="h-4 w-4 mr-2" />
+            Nuevo Recordatorio
+          </button>
+        </div>
       </div>
 
-      {/* Reminders Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {reminders.map((reminder) => (
-          <div key={reminder._id} className="card">
-            <div className="card-body">
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <h3 className="text-lg font-medium text-gray-900">{reminder.title}</h3>
-                  {reminder.description && (
-                    <p className="mt-1 text-sm text-gray-600">{reminder.description}</p>
-                  )}
-                  <div className="mt-3 space-y-2">
-                    <div className="flex items-center text-sm text-gray-600">
-                      <Calendar className="h-4 w-4 mr-2" />
-                      {new Date(reminder.date).toLocaleDateString('es-MX')}
-                      {isOverdue(reminder.date) && (
-                        <AlertTriangle className="h-4 w-4 ml-2 text-danger-600" />
-                      )}
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="capitalize badge badge-info">
-                        {reminder.type}
-                      </span>
-                      <span className={`capitalize badge badge-${getPriorityColor(reminder.priority)}`}>
-                        {reminder.priority}
-                      </span>
+      {/* Automatic Reminders */}
+      {showAutomatic && (
+        <div className="space-y-4">
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <p className="text-sm text-blue-800">
+              <strong>Recordatorios automáticos:</strong> Generados automáticamente desde cuentas por pagar y carnets de vacunación.
+            </p>
+          </div>
+          
+          {automaticReminders.length === 0 ? (
+            <div className="text-center py-8 text-gray-500">
+              No hay recordatorios automáticos pendientes
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {automaticReminders.map((reminder) => (
+                <div key={reminder.id} className="card">
+                  <div className="card-body">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <h3 className="text-lg font-medium text-gray-900">{reminder.title}</h3>
+                        {reminder.description && (
+                          <p className="mt-1 text-sm text-gray-600">{reminder.description}</p>
+                        )}
+                        <div className="mt-3 space-y-2">
+                          <div className="flex items-center text-sm text-gray-600">
+                            <Calendar className="h-4 w-4 mr-2" />
+                            {new Date(reminder.date).toLocaleDateString('es-MX')}
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span className={`capitalize badge badge-${getUrgencyColor(reminder.urgency)}`}>
+                              {reminder.urgencyText}
+                            </span>
+                            <span className="text-xs text-gray-500 capitalize">
+                              {reminder.type.replace('_', ' ')}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
-                <div className="flex items-center space-x-2">
-                  {reminder.status === 'pendiente' && (
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Manual Reminders */}
+      {!showAutomatic && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {reminders.map((reminder) => (
+            <div key={reminder._id} className="card">
+              <div className="card-body">
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <h3 className="text-lg font-medium text-gray-900">{reminder.title}</h3>
+                    {reminder.description && (
+                      <p className="mt-1 text-sm text-gray-600">{reminder.description}</p>
+                    )}
+                    <div className="mt-3 space-y-2">
+                      <div className="flex items-center text-sm text-gray-600">
+                        <Calendar className="h-4 w-4 mr-2" />
+                        {new Date(reminder.date).toLocaleDateString('es-MX')}
+                        {isOverdue(reminder.date) && (
+                          <AlertTriangle className="h-4 w-4 ml-2 text-danger-600" />
+                        )}
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="capitalize badge badge-info">
+                          {reminder.type}
+                        </span>
+                        <span className={`capitalize badge badge-${getPriorityColor(reminder.priority)}`}>
+                          {reminder.priority}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    {reminder.status === 'pendiente' && (
+                      <button 
+                        onClick={() => handleCompleteReminder(reminder._id)}
+                        className="text-success-600 hover:text-success-900"
+                        title="Marcar como completado"
+                      >
+                        <CheckCircle className="h-4 w-4" />
+                      </button>
+                    )}
                     <button 
-                      onClick={() => handleCompleteReminder(reminder._id)}
-                      className="text-success-600 hover:text-success-900"
-                      title="Marcar como completado"
+                      onClick={() => handleEditReminder(reminder)}
+                      className="text-primary-600 hover:text-primary-900"
                     >
-                      <CheckCircle className="h-4 w-4" />
+                      <Edit className="h-4 w-4" />
                     </button>
-                  )}
-                  <button 
-                    onClick={() => handleEditReminder(reminder)}
-                    className="text-primary-600 hover:text-primary-900"
-                  >
-                    <Edit className="h-4 w-4" />
-                  </button>
-                  <button 
-                    onClick={() => handleDeleteReminder(reminder._id)}
-                    className="text-danger-600 hover:text-danger-900"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
+                    <button 
+                      onClick={() => handleDeleteReminder(reminder._id)}
+                      className="text-danger-600 hover:text-danger-900"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
 
       {/* Modal */}
       {showModal && (

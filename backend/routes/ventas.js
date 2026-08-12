@@ -4,7 +4,10 @@ const Producto = require('../models/Producto');
 const Servicio = require('../models/Servicio');
 const Cliente = require('../models/Cliente');
 const Mascota = require('../models/Mascota');
+const CarnetVacunacion = require('../models/CarnetVacunacion');
+const Recordatorio = require('../models/Recordatorio');
 const { authenticateToken, requireAdmin } = require('../middleware/auth');
+const { getCurrentDateGMT7 } = require('../helpers/timezone');
 const router = express.Router();
 
 // @route   GET /api/ventas
@@ -167,7 +170,7 @@ router.get('/:id', async (req, res) => {
 // @desc    Crear nueva venta
 router.post('/', async (req, res) => {
   try {
-    const { items, paymentMethod, customer, mascota, user, notes, amountReceived } = req.body;
+    const { items, paymentMethod, customer, mascota, user, notes, amountReceived, saleChannel, commission } = req.body;
 
     // 1. Validar que haya items
     if (!items || items.length === 0) {
@@ -175,6 +178,37 @@ router.post('/', async (req, res) => {
         success: false,
         message: 'La venta debe tener al menos un item'
       });
+    }
+
+    // 1.5. Detectar si hay vacunas en la venta
+    let hasVaccines = false;
+    const vaccineProducts = [];
+    
+    for (const item of items) {
+      if (item.type === 'producto') {
+        const producto = await Producto.findById(item.item);
+        if (producto) {
+          // Verificar si la categoría es "Vacunas" (case insensitive)
+          // category es Mixed: puede ser String o ObjectId
+          let category = producto.category;
+          if (category && typeof category === 'object') {
+            // Si es ObjectId, buscar la categoría por nombre
+            const CategoriaProducto = require('../models/CategoriaProducto');
+            const categoriaDoc = await CategoriaProducto.findById(category);
+            category = categoriaDoc ? categoriaDoc.name : '';
+          } else if (category && typeof category === 'string') {
+            // Si es String, usar directamente
+            category = category;
+          } else {
+            category = '';
+          }
+          
+          if (category && category.toString().toLowerCase() === 'vacunas') {
+            hasVaccines = true;
+            vaccineProducts.push({ producto, quantity: item.quantity });
+          }
+        }
+      }
     }
 
     // 2. Validar relación cliente-mascota
@@ -200,6 +234,12 @@ router.post('/', async (req, res) => {
           message: 'La mascota no pertenece al cliente seleccionado'
         });
       }
+    } else if (hasVaccines) {
+      // Si hay vacunas pero no hay mascota, rechazar
+      return res.status(400).json({
+        success: false,
+        message: 'Para vender vacunas debe seleccionar una mascota'
+      });
     }
 
     // 3. Validar monto recibido para efectivo
@@ -236,10 +276,12 @@ router.post('/', async (req, res) => {
     const venta = await Venta.create({
       items,
       paymentMethod,
+      saleChannel,
       customer,
       mascota,
       user,
-      notes
+      notes,
+      commission
     });
 
     // 6. Calcular y validar cambio para efectivo
@@ -269,6 +311,83 @@ router.post('/', async (req, res) => {
           producto.stock -= item.quantity;
           await producto.save();
         }
+      } else if (item.type === 'servicio') {
+        // Descontar insumos del inventario para servicios
+        const servicio = await Servicio.findById(item.item);
+        if (servicio && servicio.insumos && servicio.insumos.length > 0) {
+          for (const insumo of servicio.insumos) {
+            const producto = await Producto.findById(insumo.producto);
+            if (producto) {
+              const cantidadUsada = insumo.cantidad * item.quantity;
+              producto.stock -= cantidadUsada;
+              if (producto.stock < 0) producto.stock = 0;
+              await producto.save();
+            }
+          }
+        }
+      }
+    }
+
+    // 8. Registrar vacunas en el carnet si aplica
+    if (hasVaccines && mascota) {
+      try {
+        const mascotaDoc = await Mascota.findById(mascota).populate('owner');
+        const clienteDoc = await Cliente.findById(customer);
+        
+        // Buscar o crear carnet de vacunación
+        let carnet = await CarnetVacunacion.findOne({ mascota });
+        
+        if (!carnet) {
+          // Crear carnet si no existe
+          carnet = await CarnetVacunacion.create({
+            mascota,
+            nombreMascota: mascotaDoc.name,
+            especie: mascotaDoc.type,
+            raza: mascotaDoc.breed,
+            propietario: customer,
+            nombrePropietario: clienteDoc ? clienteDoc.name : 'Desconocido',
+            vacunas: []
+          });
+        }
+        
+        // Agregar vacunas al carnet
+        for (const { producto, quantity } of vaccineProducts) {
+          for (let i = 0; i < quantity; i++) {
+            const vacunaEntry = {
+              vacuna: producto._id,
+              nombre: producto.name,
+              fecha: new Date(),
+              venta: venta._id
+            };
+            carnet.vacunas.push(vacunaEntry);
+            
+            // Crear recordatorio automático para próxima dosis (30 días después)
+            try {
+              const proximaDosis = new Date();
+              proximaDosis.setDate(proximaDosis.getDate() + 30);
+              
+              await Recordatorio.create({
+                title: `Próxima vacuna - ${producto.name}`,
+                description: `Próxima dosis de ${producto.name} para ${mascotaDoc.name}`,
+                date: proximaDosis,
+                type: 'vacuna',
+                priority: 'media',
+                relatedId: mascota,
+                relatedModel: 'Mascota',
+                status: 'pendiente',
+                user: user
+              });
+            } catch (reminderError) {
+              console.error('Error al crear recordatorio automático de vacuna:', reminderError);
+              // No fallar la venta si falla el recordatorio
+            }
+          }
+        }
+        
+        await carnet.save();
+      } catch (error) {
+        console.error('Error al registrar vacunas en carnet:', error);
+        // No fallar la venta si falla el registro del carnet, solo loggear el error
       }
     }
 
@@ -302,7 +421,7 @@ router.post('/', async (req, res) => {
 // @desc    Actualizar venta (solo status o notas para usuarios normales, campos sensibles solo para admin)
 router.put('/:id', authenticateToken, async (req, res) => {
   try {
-    const { status, notes, items, total, commission, discount, customer, mascota, amountReceived, change } = req.body;
+    const { status, notes, items, total, commission, discount, customer, mascota, amountReceived, change, paymentMethod, saleChannel } = req.body;
     
     const venta = await Venta.findById(req.params.id);
     if (!venta) {
@@ -313,7 +432,7 @@ router.put('/:id', authenticateToken, async (req, res) => {
     }
 
     // Campos sensibles que solo admin puede modificar
-    const sensitiveFields = ['items', 'total', 'commission', 'discount', 'customer', 'mascota', 'amountReceived', 'change'];
+    const sensitiveFields = ['items', 'total', 'commission', 'discount', 'customer', 'mascota', 'amountReceived', 'change', 'paymentMethod', 'saleChannel'];
     const hasSensitiveFields = sensitiveFields.some(field => req.body[field] !== undefined);
 
     if (hasSensitiveFields) {
@@ -352,14 +471,109 @@ router.put('/:id', authenticateToken, async (req, res) => {
       }
       
       // Admin puede modificar campos sensibles
-      if (items) venta.items = items;
-      if (total !== undefined) venta.total = total;
-      if (commission !== undefined) venta.commission = commission;
-      if (discount !== undefined) venta.discount = discount;
+      if (items) {
+        // Guardar items originales para ajustar inventario
+        const originalItems = venta.items;
+        
+        // Devolver stock de items originales (solo productos)
+        for (const originalItem of originalItems) {
+          if (originalItem.type === 'producto') {
+            const producto = await Producto.findById(originalItem.item);
+            if (producto) {
+              producto.stock += originalItem.quantity;
+              await producto.save();
+            }
+          }
+        }
+        
+        // Verificar stock disponible para nuevos items
+        for (const newItem of items) {
+          if (newItem.type === 'producto') {
+            const producto = await Producto.findById(newItem.item);
+            if (!producto) {
+              // Si no existe producto, revertir stock y rechazar
+              for (const originalItem of originalItems) {
+                if (originalItem.type === 'producto') {
+                  const prod = await Producto.findById(originalItem.item);
+                  if (prod) {
+                    prod.stock -= originalItem.quantity;
+                    await prod.save();
+                  }
+                }
+              }
+              return res.status(404).json({
+                success: false,
+                message: `Producto con ID ${newItem.item} no encontrado`
+              });
+            }
+            
+            if (producto.stock < newItem.quantity) {
+              // Si no hay suficiente stock, revertir stock y rechazar
+              for (const originalItem of originalItems) {
+                if (originalItem.type === 'producto') {
+                  const prod = await Producto.findById(originalItem.item);
+                  if (prod) {
+                    prod.stock -= originalItem.quantity;
+                    await prod.save();
+                  }
+                }
+              }
+              return res.status(400).json({
+                success: false,
+                message: `Stock insuficiente para ${producto.name}. Stock disponible: ${producto.stock}`
+              });
+            }
+          }
+        }
+        
+        // Descontar stock de nuevos items
+        for (const newItem of items) {
+          if (newItem.type === 'producto') {
+            const producto = await Producto.findById(newItem.item);
+            if (producto) {
+              producto.stock -= newItem.quantity;
+              await producto.save();
+            }
+          }
+        }
+        
+        venta.items = items;
+      }
+      if (paymentMethod !== undefined) venta.paymentMethod = paymentMethod;
+      if (saleChannel !== undefined) venta.saleChannel = saleChannel;
       if (customer !== undefined) venta.customer = customer;
       if (mascota !== undefined) venta.mascota = mascota;
       if (amountReceived !== undefined) venta.amountReceived = amountReceived;
       if (change !== undefined) venta.change = change;
+      
+      // Si se modifican items o paymentMethod, recalcular totales en backend
+      if (items || paymentMethod !== undefined) {
+        // Calcular subtotal de cada item
+        venta.items.forEach(item => {
+          item.subtotal = Math.round((item.quantity * item.unitPrice) * 100) / 100;
+        });
+        
+        // Calcular subtotal total
+        venta.subtotal = Math.round(venta.items.reduce((sum, item) => sum + item.subtotal, 0) * 100) / 100;
+        
+        // Calcular comisión de tarjeta (4.6%) solo si paymentMethod es tarjeta
+        if (venta.paymentMethod === 'tarjeta') {
+          venta.cardCommission = Math.round((venta.subtotal * 0.046) * 100) / 100;
+        } else {
+          venta.cardCommission = 0;
+        }
+        
+        // Calcular total (subtotal + comisión de tarjeta)
+        venta.total = Math.round((venta.subtotal + venta.cardCommission) * 100) / 100;
+        
+        // Calcular ingreso neto (total - commission - cardCommission)
+        venta.netIncome = Math.round((venta.total - (venta.commission || 0) - venta.cardCommission) * 100) / 100;
+      }
+      
+      // Si se envían manualmente, usar esos valores (solo admin puede hacerlo)
+      if (total !== undefined) venta.total = total;
+      if (commission !== undefined) venta.commission = commission;
+      if (discount !== undefined) venta.discount = discount;
     }
 
     // Cualquier usuario puede modificar status y notas
@@ -396,8 +610,8 @@ router.put('/:id', authenticateToken, async (req, res) => {
 });
 
 // @route   DELETE /api/ventas/:id
-// @desc    Cancelar venta y devolver stock
-router.delete('/:id', async (req, res) => {
+// @desc    Cancelar venta y devolver stock (solo admin)
+router.delete('/:id', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const venta = await Venta.findById(req.params.id);
     

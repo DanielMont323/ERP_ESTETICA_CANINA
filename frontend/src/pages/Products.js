@@ -60,6 +60,13 @@ const Products = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    // Validar SKU obligatorio
+    if (!formData.sku || formData.sku.trim() === '') {
+      toast.error('El SKU es obligatorio');
+      return;
+    }
+    
     try {
       const data = {
         ...formData,

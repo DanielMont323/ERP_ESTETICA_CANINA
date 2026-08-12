@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const { getCurrentDateGMT7 } = require('../helpers/timezone');
 
 const vacunaSchema = new mongoose.Schema({
   // Compatibilidad: acepta ObjectId (nuevo) o String (histórico)
@@ -17,9 +18,17 @@ const vacunaSchema = new mongoose.Schema({
   proximaDosis: {
     type: Date
   },
+  diasProximaDosis: {
+    type: Number,
+    min: 0
+  },
   observaciones: {
     type: String,
     trim: true
+  },
+  venta: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Venta'
   }
 });
 
@@ -54,17 +63,17 @@ const carnetVacunacionSchema = new mongoose.Schema({
   vacunas: [vacunaSchema],
   createdAt: {
     type: Date,
-    default: Date.now
+    default: getCurrentDateGMT7
   },
   updatedAt: {
     type: Date,
-    default: Date.now
+    default: getCurrentDateGMT7
   }
 });
 
 // Actualizar updatedAt antes de guardar
 carnetVacunacionSchema.pre('save', function(next) {
-  this.updatedAt = Date.now();
+  this.updatedAt = getCurrentDateGMT7();
   next();
 });
 

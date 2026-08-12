@@ -4,6 +4,7 @@ const Mascota = require('../models/Mascota');
 const Vacuna = require('../models/Vacuna');
 const mongoose = require('mongoose');
 const { authenticateToken } = require('../middleware/auth');
+const { getCurrentDateGMT7 } = require('../helpers/timezone');
 const router = express.Router();
 
 // @route   GET /api/carnet-vacunacion
@@ -167,9 +168,9 @@ router.post('/:id/vacunas', authenticateToken, async (req, res) => {
   try {
     console.log('req.body completo:', req.body);
     
-    const { vacuna, fecha, proximaDosis, observaciones } = req.body;
+    const { vacuna, fecha, proximaDosis, diasProximaDosis, observaciones } = req.body;
     
-    console.log('Datos recibidos:', { vacuna, fecha, proximaDosis, observaciones });
+    console.log('Datos recibidos:', { vacuna, fecha, proximaDosis, diasProximaDosis, observaciones });
     
     const carnet = await CarnetVacunacion.findById(req.params.id);
     if (!carnet) {
@@ -203,11 +204,25 @@ router.post('/:id/vacunas', authenticateToken, async (req, res) => {
       }
     }
 
+    // Fecha de aplicación automática (GMT-7)
+    const fechaAplicacion = getCurrentDateGMT7();
+
+    // Calcular próxima dosis si se proporcionan días
+    let proximaDosisCalculada = null;
+    if (diasProximaDosis && diasProximaDosis > 0) {
+      proximaDosisCalculada = new Date(fechaAplicacion);
+      proximaDosisCalculada.setDate(proximaDosisCalculada.getDate() + diasProximaDosis);
+    }
+
+    // Si se proporciona proximaDosis manualmente (compatibilidad), usarla
+    const proximaDosisFinal = proximaDosis || proximaDosisCalculada;
+
     const nuevaVacuna = {
       vacuna,
       nombre: nombreFinal,
-      fecha,
-      proximaDosis,
+      fecha: fechaAplicacion,
+      proximaDosis: proximaDosisFinal,
+      diasProximaDosis: diasProximaDosis || null,
       observaciones
     };
 

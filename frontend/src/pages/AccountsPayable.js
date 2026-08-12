@@ -66,8 +66,14 @@ const AccountsPayable = () => {
 
   const handlePaymentClick = (account) => {
     setSelectedAccount(account);
+    
+    // Calcular importe exigible (con descuento si aplica)
+    const importeExigible = account.discountInfo?.available && account.descuentoDisponible > 0 
+      ? (account.montoBase - account.descuentoDisponible) 
+      : (account.montoBase || account.monto);
+    
     setPaymentData({
-      amount: account.saldo,
+      amount: account.saldo || importeExigible,
       paymentMethod: 'efectivo',
       notes: ''
     });
@@ -429,8 +435,22 @@ const AccountsPayable = () => {
                     </span>
                   </div>
                   <div className="flex justify-between border-t border-gray-300 pt-2">
-                    <span className="font-semibold">Total:</span>
-                    <span className="font-semibold text-lg">{formatCurrency(selectedAccount.monto)}</span>
+                    <span className="font-semibold">Total Original:</span>
+                    <span className="font-semibold">{formatCurrency(selectedAccount.montoBase || selectedAccount.monto)}</span>
+                  </div>
+                  {selectedAccount.discountInfo?.available && selectedAccount.descuentoDisponible > 0 && (
+                    <div className="flex justify-between text-green-600">
+                      <span className="font-medium">Descuento Pronto Pago:</span>
+                      <span className="font-medium">-{formatCurrency(selectedAccount.descuentoDisponible)}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between border-t border-gray-300 pt-2">
+                    <span className="font-semibold text-lg">Importe a Pagar:</span>
+                    <span className="font-semibold text-lg text-primary-600">
+                      {formatCurrency(selectedAccount.discountInfo?.available && selectedAccount.descuentoDisponible > 0 
+                        ? (selectedAccount.montoBase - selectedAccount.descuentoDisponible) 
+                        : (selectedAccount.montoBase || selectedAccount.monto))}
+                    </span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">Saldo Pendiente:</span>
@@ -446,11 +466,13 @@ const AccountsPayable = () => {
                   type="number"
                   step="0.01"
                   min="0.01"
-                  max={selectedAccount.saldo}
-                  required
+                  max={selectedAccount.discountInfo?.available && selectedAccount.descuentoDisponible > 0 
+                    ? (selectedAccount.montoBase - selectedAccount.descuentoDisponible) 
+                    : (selectedAccount.montoBase || selectedAccount.monto)}
                   value={paymentData.amount}
                   onChange={(e) => setPaymentData({ ...paymentData, amount: e.target.value })}
                   className="form-input text-lg"
+                  required
                 />
               </div>
               

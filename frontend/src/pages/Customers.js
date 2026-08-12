@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { customersAPI } from '../services/api';
+import { customersAPI, salesAPI } from '../services/api';
 import toast from 'react-hot-toast';
 import { Skeleton, SkeletonCard } from '../components/Skeleton';
 import ConfirmModal from '../components/ConfirmModal';
@@ -11,7 +11,10 @@ import {
   Trash2,
   Phone,
   Mail,
-  MapPin
+  MapPin,
+  ChevronDown,
+  ChevronUp,
+  ShoppingCart
 } from 'lucide-react';
 
 const Customers = () => {
@@ -22,6 +25,9 @@ const Customers = () => {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteCustomerId, setDeleteCustomerId] = useState(null);
   const [editingCustomer, setEditingCustomer] = useState(null);
+  const [expandedCustomerId, setExpandedCustomerId] = useState(null);
+  const [customerSales, setCustomerSales] = useState({});
+  const [loadingSales, setLoadingSales] = useState({});
   const [formData, setFormData] = useState({
     name: '',
     phone: '',
@@ -102,6 +108,30 @@ const Customers = () => {
       address: '',
       notes: ''
     });
+  };
+
+  const fetchCustomerSales = async (customerId) => {
+    if (customerSales[customerId] || loadingSales[customerId]) return;
+    
+    setLoadingSales(prev => ({ ...prev, [customerId]: true }));
+    try {
+      const response = await salesAPI.getAll({ customer: customerId });
+      setCustomerSales(prev => ({ ...prev, [customerId]: response.data.data }));
+    } catch (error) {
+      console.error('Error al cargar ventas de cliente:', error);
+      setCustomerSales(prev => ({ ...prev, [customerId]: [] }));
+    } finally {
+      setLoadingSales(prev => ({ ...prev, [customerId]: false }));
+    }
+  };
+
+  const toggleExpand = (customerId) => {
+    if (expandedCustomerId === customerId) {
+      setExpandedCustomerId(null);
+    } else {
+      setExpandedCustomerId(customerId);
+      fetchCustomerSales(customerId);
+    }
   };
 
   const filteredCustomers = customers.filter(customer => 
@@ -198,6 +228,17 @@ const Customers = () => {
                 </div>
                 <div className="flex items-center space-x-2">
                   <button
+                    onClick={() => toggleExpand(customer._id)}
+                    className="text-primary-600 hover:text-primary-900"
+                    title="Ver historial de ventas"
+                  >
+                    {expandedCustomerId === customer._id ? (
+                      <ChevronUp className="h-4 w-4" />
+                    ) : (
+                      <ChevronDown className="h-4 w-4" />
+                    )}
+                  </button>
+                  <button
                     onClick={() => handleEdit(customer)}
                     className="text-primary-600 hover:text-primary-900"
                   >
@@ -211,6 +252,44 @@ const Customers = () => {
                   </button>
                 </div>
               </div>
+
+              {/* Sales History */}
+              {expandedCustomerId === customer._id && (
+                <div className="mt-4 pt-4 border-t border-gray-200">
+                  <h4 className="font-medium text-gray-900 mb-3 flex items-center">
+                    <ShoppingCart className="h-4 w-4 mr-2" />
+                    Historial de Ventas
+                  </h4>
+                  {loadingSales[customer._id] ? (
+                    <div className="text-sm text-gray-500">Cargando ventas...</div>
+                  ) : customerSales[customer._id]?.length > 0 ? (
+                    <div className="space-y-2">
+                      {customerSales[customer._id].map((sale) => (
+                        <div key={sale._id} className="text-sm bg-gray-50 p-2 rounded">
+                          <div className="flex justify-between">
+                            <span className="font-medium">
+                              {new Date(sale.date).toLocaleDateString('es-MX')}
+                            </span>
+                            <span className="text-gray-600">
+                              ${sale.total?.toFixed(2) || '0.00'}
+                            </span>
+                          </div>
+                          <div className="text-gray-500 text-xs">
+                            {sale.items?.map((item, idx) => (
+                              <span key={idx}>
+                                {item.quantity}x {item.item?.name || 'Producto'}
+                                {idx < sale.items.length - 1 && ', '}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-sm text-gray-500">No hay ventas registradas</div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         ))}

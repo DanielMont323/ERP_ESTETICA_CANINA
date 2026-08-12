@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const { getCurrentDateGMT7 } = require('../helpers/timezone');
 
 const itemCompraSchema = new mongoose.Schema({
   product: {
@@ -70,6 +71,12 @@ const compraSchema = new mongoose.Schema({
     default: 0,
     min: 0
   },
+  earlyPaymentDiscount: {
+    type: Number,
+    default: 0,
+    min: 0,
+    max: 100
+  },
   discountDeadline: {
     type: Date
   },
@@ -113,12 +120,12 @@ const compraSchema = new mongoose.Schema({
   },
   date: {
     type: Date,
-    default: Date.now
+    default: getCurrentDateGMT7
   }
 });
 
 // Calcular totales antes de guardar
-compraSchema.pre('save', function(next) {
+compraSchema.pre('save', async function(next) {
   // Calcular subtotal y descuentos de cada item
   let baseTotal = 0;
   let totalDiscount = 0;
@@ -127,7 +134,7 @@ compraSchema.pre('save', function(next) {
     // Calcular subtotal base (sin descuento)
     const baseSubtotal = item.quantity * item.baseUnitCost;
     
-    // Calcular descuento si aplica
+    // Calcular descuento si aplica (solo descuento por item, no por pronto pago)
     let discountAmount = 0;
     if (item.discountPercentage > 0 && !item.discountApplied) {
       discountAmount = baseSubtotal * (item.discountPercentage / 100);
@@ -141,22 +148,46 @@ compraSchema.pre('save', function(next) {
     totalDiscount += discountAmount;
   });
   
-  // Establecer totales
+  // Establecer totales base
   this.baseTotal = baseTotal;
-  this.totalDiscount = totalDiscount;
-  this.total = baseTotal - totalDiscount;
   
-  // Establecer fecha límite de descuento
-  if (this.items.some(item => item.discountDays > 0)) {
-    const maxDiscountDays = Math.max(...this.items.map(item => item.discountDays));
-    this.discountDeadline = new Date(this.date);
-    this.discountDeadline.setDate(this.discountDeadline.getDate() + maxDiscountDays);
+  // Aplicar descuento por pronto pago del proveedor si es crédito
+  if (this.type === 'credito' && this.earlyPaymentDiscount > 0) {
+    const earlyPaymentDiscountAmount = baseTotal * (this.earlyPaymentDiscount / 100);
+    this.totalDiscount = totalDiscount + earlyPaymentDiscountAmount;
+    this.total = baseTotal - this.totalDiscount;
+  } else {
+    this.totalDiscount = totalDiscount;
+    this.total = baseTotal - totalDiscount;
   }
   
-  // Establecer fecha de vencimiento para compras a crédito
-  if (this.type === 'credito' && !this.dueDate) {
-    this.dueDate = new Date();
-    this.dueDate.setDate(this.dueDate.getDate() + 30); // 30 días por defecto
+  // Establecer fecha límite de descuento (ya viene del backend si es crédito)
+  // No recalcular aquí porque ya se establece en el endpoint
+  
+  // Establecer fecha de vencimiento para compras a crédito usando creditDays del proveedor
+  if (this.type === 'credito' && !this.dueDate && this.proveedor) {
+    try {
+      const Proveedor = require('./Proveedor');
+      const proveedor = await Proveedor.findById(this.proveedor);
+      if (proveedor && proveedor.creditDays > 0) {
+        const { getCurrentDateGMT7 } = require('../helpers/timezone');
+        const purchaseDate = getCurrentDateGMT7();
+        this.dueDate = new Date(purchaseDate);
+        this.dueDate.setDate(this.dueDate.getDate() + proveedor.creditDays);
+      } else {
+        // Fallback a 30 días si no tiene creditDays configurado
+        const { getCurrentDateGMT7 } = require('../helpers/timezone');
+        const purchaseDate = getCurrentDateGMT7();
+        this.dueDate = new Date(purchaseDate);
+        this.dueDate.setDate(this.dueDate.getDate() + 30);
+      }
+    } catch (error) {
+      // Si hay error al obtener proveedor, usar 30 días por defecto
+      const { getCurrentDateGMT7 } = require('../helpers/timezone');
+      const purchaseDate = getCurrentDateGMT7();
+      this.dueDate = new Date(purchaseDate);
+      this.dueDate.setDate(this.dueDate.getDate() + 30);
+    }
   }
   
   next();

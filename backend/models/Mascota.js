@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const { getCurrentDateGMT7 } = require('../helpers/timezone');
 
 const mascotaSchema = new mongoose.Schema({
   name: {
@@ -45,11 +46,12 @@ const mascotaSchema = new mongoose.Schema({
   medicalHistory: [{
     date: {
       type: Date,
-      default: Date.now
+      default: getCurrentDateGMT7
     },
     description: {
       type: String,
-      required: true
+      required: true,
+      trim: true
     },
     veterinarian: {
       type: String,
@@ -83,7 +85,7 @@ const mascotaSchema = new mongoose.Schema({
   },
   createdAt: {
     type: Date,
-    default: Date.now
+    default: getCurrentDateGMT7
   }
 });
 

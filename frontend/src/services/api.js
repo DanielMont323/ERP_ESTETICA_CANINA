@@ -93,6 +93,7 @@ export const salesAPI = {
   create: (data) => api.post('/ventas', data),
   update: (id, data) => api.put(`/ventas/${id}`, data),
   delete: (id) => api.delete(`/ventas/${id}`),
+  cancel: (id) => api.delete(`/ventas/${id}`),
   getDaily: (date) => api.get(`/ventas/daily/${date}`),
   getByPet: (petId) => api.get(`/ventas/by-mascota/${petId}`),
 };
@@ -199,9 +200,13 @@ export const remindersAPI = {
   update: (id, data) => api.put(`/recordatorios/${id}`, data),
   delete: (id) => api.delete(`/recordatorios/${id}`),
   complete: (id) => api.patch(`/recordatorios/${id}/complete`),
+  getAutomaticAccounts: () => api.get('/recordatorios/automatic/accounts'),
+  getAutomaticVaccines: () => api.get('/recordatorios/automatic/vaccines'),
+  getAutomaticAll: () => api.get('/recordatorios/automatic/all'),
   getUpcoming: () => api.get('/recordatorios/upcoming'),
   getOverdue: () => api.get('/recordatorios/overdue'),
   getCalendar: (year, month) => api.get(`/recordatorios/calendar/${year}/${month}`),
+  getDashboard: () => api.get('/recordatorios/dashboard'),
 };
 
 // Reports services

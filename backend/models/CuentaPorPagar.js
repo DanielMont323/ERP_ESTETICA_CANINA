@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const { getCurrentDateGMT7 } = require('../helpers/timezone');
 
 const cuentaPorPagarSchema = new mongoose.Schema({
   proveedor: {
@@ -84,7 +85,7 @@ const cuentaPorPagarSchema = new mongoose.Schema({
     },
     date: {
       type: Date,
-      default: Date.now
+      default: getCurrentDateGMT7
     },
     paymentMethod: {
       type: String,
@@ -107,12 +108,20 @@ const cuentaPorPagarSchema = new mongoose.Schema({
   },
   createdAt: {
     type: Date,
-    default: Date.now
+    default: getCurrentDateGMT7
   }
 });
 
 // Pre-save hook para calcular IVA automáticamente
 cuentaPorPagarSchema.pre('save', function(next) {
+  // Solo recalcular si el monto no está establecido o si es una nueva cuenta sin IVA explícito
+  const isNew = this.isNew;
+  
+  // Si es una actualización y ya tiene monto establecido, no recalcular
+  if (!isNew && this.monto > 0) {
+    return next();
+  }
+  
   // Calcular IVA si aplica
   if (this.hasIVA) {
     // Usar subtotal o montoBase como fallback para cuentas antiguas
@@ -150,48 +159,60 @@ cuentaPorPagarSchema.methods.checkDueDate = function() {
 // Registrar pago
 cuentaPorPagarSchema.methods.addPayment = function(amount, paymentMethod, user, notes) {
   const currentDate = new Date();
-  let finalAmount = amount;
-  let discountApplied = false;
-  let savings = 0;
-
-  // Aplicar descuento si está dentro del plazo y no se ha aplicado aún
+  
+  // Calcular el importe exigible (monto que realmente se debe pagar)
+  let importeExigible = this.montoBase;
+  let discountAvailable = false;
+  
+  // Verificar si el descuento está disponible
   if (this.discountDeadline && 
       currentDate <= this.discountDeadline && 
       this.descuentoDisponible > 0 && 
       !this.descuentoAplicado) {
-    
-    // Calcular proporción del descuento basado en el monto del pago
-    const discountProportion = amount / this.saldo;
-    const discountAmount = this.descuentoDisponible * discountProportion;
-    
-    finalAmount = amount - discountAmount;
-    savings = discountAmount;
-    discountApplied = true;
-    
-    // Actualizar estado de descuento
-    this.descuentoAplicado = true;
-    this.ahorroRealizado += savings;
-    
-    // Si es pago completo, actualizar el monto total
-    if (amount >= this.saldo) {
-      this.monto = this.montoBase - this.descuentoDisponible;
-      this.saldo = this.montoBase - this.descuentoDisponible - (amount - savings);
-    } else {
-      this.saldo -= finalAmount;
-    }
-  } else {
-    this.saldo -= amount;
+    discountAvailable = true;
+    importeExigible = this.montoBase - this.descuentoDisponible;
   }
-
+  
+  // Calcular pagos anteriores
+  const pagosAnteriores = this.payments.reduce((sum, pago) => sum + (pago.amount || 0), 0);
+  
+  // Calcular saldo actual basado en el importe exigible
+  let saldoActual = importeExigible - pagosAnteriores;
+  if (saldoActual < 0) saldoActual = 0;
+  
+  // Validar que el pago no exceda el saldo
+  if (amount > saldoActual) {
+    throw new Error(`El pago excede el saldo pendiente. Saldo: ${saldoActual}, Pago: ${amount}`);
+  }
+  
+  // Calcular nuevo saldo
+  const nuevoSaldo = saldoActual - amount;
+  
+  // Si el descuento está disponible y es el primer pago, marcarlo como aplicado
+  if (discountAvailable && !this.descuentoAplicado) {
+    this.descuentoAplicado = true;
+    this.ahorroRealizado = this.descuentoDisponible;
+  }
+  
+  // Actualizar saldo
+  this.saldo = nuevoSaldo;
+  
+  // Actualizar monto total si se aplicó descuento
+  if (this.descuentoAplicado) {
+    this.monto = this.montoBase - this.descuentoDisponible;
+  }
+  
+  // Registrar el pago
   this.payments.push({
-    amount: finalAmount,
+    amount: amount,
     originalAmount: amount,
-    discountAmount: savings,
+    discountAmount: discountAvailable ? this.descuentoDisponible : 0,
     paymentMethod,
     notes,
     user
   });
   
+  // Actualizar estado si el saldo es 0
   if (this.saldo <= 0) {
     this.status = 'pagado';
     this.saldo = 0;

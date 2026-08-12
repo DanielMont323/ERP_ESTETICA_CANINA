@@ -26,6 +26,11 @@ const productoSchema = new mongoose.Schema({
     min: 0,
     default: 0
   },
+  unit: {
+    type: String,
+    enum: ['pieza', 'ml', 'litro', 'kg', 'gramo'],
+    default: 'pieza'
+  },
   minStock: {
     type: Number,
     default: 5,
@@ -34,10 +39,7 @@ const productoSchema = new mongoose.Schema({
   sku: {
     type: String,
     unique: true,
-    required: true,
-    default: function() {
-      return 'PRD-' + Date.now() + '-' + Math.random().toString(36).substr(2, 5).toUpperCase();
-    }
+    required: [true, 'El SKU es obligatorio']
   },
   discountPercentage: {
     type: Number,

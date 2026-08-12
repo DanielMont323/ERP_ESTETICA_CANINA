@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { petsAPI, customersAPI, salesAPI } from '../services/api';
+import { petsAPI, customersAPI, salesAPI, vaccinationCardAPI } from '../services/api';
 import toast from 'react-hot-toast';
 import { Skeleton, SkeletonCard } from '../components/Skeleton';
 import ConfirmModal from '../components/ConfirmModal';
@@ -11,7 +11,8 @@ import {
   Trash2,
   ChevronDown,
   ChevronUp,
-  ShoppingCart
+  ShoppingCart,
+  FileText
 } from 'lucide-react';
 
 const Pets = () => {
@@ -149,6 +150,44 @@ const Pets = () => {
     } catch (error) {
       console.error('Error al eliminar mascota:', error);
       toast.error('Error al eliminar mascota');
+    } finally {
+      setShowDeleteModal(false);
+      setDeletePetId(null);
+    }
+  };
+
+  const handleCreateVaccinationCard = async (pet) => {
+    try {
+      // Verificar si ya existe carnet
+      const existingCard = await vaccinationCardAPI.getByPet(pet._id);
+      if (existingCard.data.data) {
+        toast.error('La mascota ya tiene un carnet de vacunación');
+        return;
+      }
+
+      // Verificar que la mascota tenga propietario
+      if (!pet.owner) {
+        toast.error('La mascota debe tener un propietario para crear el carnet');
+        return;
+      }
+
+      // Crear carnet
+      await vaccinationCardAPI.create({
+        mascota: pet._id,
+        nombreMascota: pet.name,
+        especie: pet.type,
+        raza: pet.breed,
+        propietario: pet.owner._id || pet.owner,
+        nombrePropietario: pet.owner.name || 'Desconocido',
+        vacunas: []
+      });
+
+      toast.success('Carnet de vacunación creado correctamente');
+      // Recargar datos para actualizar la interfaz
+      await fetchData();
+    } catch (error) {
+      console.error('Error al crear carnet:', error);
+      toast.error(error.response?.data?.message || 'Error al crear carnet de vacunación');
     }
   };
 
@@ -250,6 +289,13 @@ const Pets = () => {
                     ) : (
                       <ChevronDown className="h-4 w-4" />
                     )}
+                  </button>
+                  <button 
+                    onClick={() => handleCreateVaccinationCard(pet)}
+                    className="text-success-600 hover:text-success-900"
+                    title="Crear carnet de vacunación"
+                  >
+                    <FileText className="h-4 w-4" />
                   </button>
                   <button 
                     onClick={() => handleEditPet(pet)}

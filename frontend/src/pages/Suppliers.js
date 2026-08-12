@@ -25,6 +25,7 @@ const Suppliers = () => {
     email: '',
     address: '',
     creditDays: 0,
+    earlyPaymentDiscount: 0,
     currentDebt: 0
   });
 
@@ -59,6 +60,7 @@ const Suppliers = () => {
       email: '',
       address: '',
       creditDays: 0,
+      earlyPaymentDiscount: 0,
       currentDebt: 0
     });
     setShowModal(true);
@@ -73,6 +75,7 @@ const Suppliers = () => {
       email: supplier.email || '',
       address: supplier.address || '',
       creditDays: supplier.creditDays,
+      earlyPaymentDiscount: supplier.earlyPaymentDiscount || 0,
       currentDebt: supplier.currentDebt
     });
     setShowModal(true);
@@ -175,6 +178,11 @@ const Suppliers = () => {
                       <DollarSign className="h-4 w-4 mr-2" />
                       Crédito: {supplier.creditDays} días
                     </div>
+                    {supplier.earlyPaymentDiscount > 0 && (
+                      <div className="flex items-center text-sm text-green-600">
+                        Descuento pronto pago: {supplier.earlyPaymentDiscount}%
+                      </div>
+                    )}
                     <div className="flex items-center text-sm text-gray-600">
                       Deuda actual: {formatCurrency(supplier.currentDebt)}
                     </div>
@@ -269,6 +277,32 @@ const Suppliers = () => {
                     onChange={(e) => setFormData({...formData, creditDays: parseInt(e.target.value)})}
                     className="form-input"
                   />
+                </div>
+                <div>
+                  <label className="form-label">Descuento por pronto pago (%)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    max="100"
+                    step="0.1"
+                    value={formData.earlyPaymentDiscount}
+                    onChange={(e) => {
+                      const value = parseFloat(e.target.value);
+                      if (value < 0) {
+                        toast.error('No puede ser menor a 0%');
+                        return;
+                      }
+                      if (value > 100) {
+                        toast.error('No puede ser mayor a 100%');
+                        return;
+                      }
+                      setFormData({...formData, earlyPaymentDiscount: value || 0});
+                    }}
+                    className="form-input"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Porcentaje de descuento que aplica el proveedor si la cuenta se paga dentro del periodo de crédito.
+                  </p>
                 </div>
                 <div className="flex justify-end space-x-2">
                   <button
