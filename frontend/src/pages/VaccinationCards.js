@@ -10,7 +10,8 @@ import {
   Trash2,
   Search,
   Dog,
-  User
+  User,
+  Pill
 } from 'lucide-react';
 
 const VaccinationCards = () => {
@@ -215,7 +216,7 @@ const VaccinationCards = () => {
                   
                   {card.vacunas.length === 0 ? (
                     <p className="text-gray-500 text-sm text-center py-4">
-                      No hay vacunas registradas
+                      No hay vacunas/desparasitantes registrados
                     </p>
                   ) : (
                     <div className="space-y-3">
@@ -224,8 +225,19 @@ const VaccinationCards = () => {
                           <div className="flex items-start justify-between">
                             <div className="flex-1">
                               <div className="flex items-center">
-                                <Syringe className="h-4 w-4 text-primary-600 mr-2" />
+                                {vaccine.tipo === 'desparasitante' ? (
+                                  <Pill className="h-4 w-4 text-purple-600 mr-2" />
+                                ) : (
+                                  <Syringe className="h-4 w-4 text-primary-600 mr-2" />
+                                )}
                                 <p className="font-medium text-gray-900">{vaccine.nombre}</p>
+                                <span className={`ml-2 text-xs px-2 py-1 rounded ${
+                                  vaccine.tipo === 'desparasitante' 
+                                    ? 'bg-purple-100 text-purple-800' 
+                                    : 'bg-primary-100 text-primary-800'
+                                }`}>
+                                  {vaccine.tipo === 'desparasitante' ? 'Desparasitante' : 'Vacuna'}
+                                </span>
                               </div>
                               <div className="mt-2 space-y-1 text-sm text-gray-600">
                                 <div className="flex items-center">

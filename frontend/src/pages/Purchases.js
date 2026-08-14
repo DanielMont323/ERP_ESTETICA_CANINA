@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { purchasesAPI, suppliersAPI, productsAPI, supplierProductsAPI } from '../services/api';
 import toast from 'react-hot-toast';
 import { SkeletonTable } from '../components/Skeleton';
@@ -41,6 +41,9 @@ const Purchases = () => {
   });
   const [discountInfo, setDiscountInfo] = useState(null);
   const [selectedSupplierInfo, setSelectedSupplierInfo] = useState(null);
+  const [productSearchQuery, setProductSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
+  const productSearchInputRef = useRef(null);
 
   const fetchData = useCallback(async () => {
     try {
@@ -62,6 +65,32 @@ const Purchases = () => {
     fetchProducts();
   }, [fetchData]);
 
+  // Atajo ESC para cerrar modal
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape' && showModal) {
+        setShowModal(false);
+        setIsEditMode(false);
+        setSelectedPurchase(null);
+        setProductSearchQuery('');
+        setSearchResults([]);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [showModal]);
+
+  // Listener para evento personalizado de F2
+  useEffect(() => {
+    const handleOpenPurchaseModal = () => {
+      setShowModal(true);
+    };
+
+    window.addEventListener('openPurchaseModal', handleOpenPurchaseModal);
+    return () => window.removeEventListener('openPurchaseModal', handleOpenPurchaseModal);
+  }, []);
+
   const fetchSuppliers = async () => {
     try {
       const suppliersRes = await suppliersAPI.getAll();
@@ -77,6 +106,84 @@ const Purchases = () => {
       setProducts(productsRes.data.data);
     } catch (error) {
       console.error('Error al cargar productos:', error);
+    }
+  };
+
+  // Búsqueda de productos con debounce
+  useEffect(() => {
+    const timer = setTimeout(async () => {
+      if (productSearchQuery.trim()) {
+        try {
+          const response = await productsAPI.search(productSearchQuery);
+          setSearchResults(response.data.data);
+        } catch (error) {
+          console.error('Error searching products:', error);
+          setSearchResults([]);
+        }
+      } else {
+        setSearchResults([]);
+      }
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [productSearchQuery]);
+
+  // Manejo de ENTER para escaneo de SKU
+  const handleProductSearchKeyDown = async (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      
+      if (!productSearchQuery.trim()) return;
+
+      try {
+        const response = await productsAPI.search(productSearchQuery);
+        const results = response.data.data;
+
+        if (results.length === 1) {
+          // Producto único encontrado - agregar automáticamente
+          const product = results[0];
+          await handleProductChange(product._id);
+          
+          // Verificar si ya existe en items para incrementar cantidad
+          const existingItemIndex = formData.items.findIndex(
+            item => item.product === product._id
+          );
+
+          if (existingItemIndex >= 0) {
+            // Incrementar cantidad
+            const updatedItems = [...formData.items];
+            updatedItems[existingItemIndex].quantity += 1;
+            setFormData({ ...formData, items: updatedItems });
+            toast.success(`${product.name} cantidad incrementada a ${updatedItems[existingItemIndex].quantity}`);
+          } else {
+            // Agregar nuevo item
+            const newItem = {
+              product: product._id,
+              quantity: 1,
+              unitCost: product.cost || 0
+            };
+            setFormData({ ...formData, items: [...formData.items, newItem] });
+            toast.success(`${product.name} agregado a la compra`);
+          }
+
+          setProductSearchQuery('');
+          setSearchResults([]);
+          
+          // Mantener foco en el campo para escaneo continuo
+          setTimeout(() => {
+            productSearchInputRef.current?.focus();
+          }, 100);
+        } else if (results.length === 0) {
+          toast.error('Producto no encontrado');
+          setProductSearchQuery('');
+          setSearchResults([]);
+        } else {
+          // Múltiples resultados - mostrar en lista dropdown
+          setSearchResults(results);
+        }
+      } catch (error) {
+        toast.error('Error al buscar producto');
+      }
     }
   };
 
@@ -177,6 +284,8 @@ const Purchases = () => {
       setShowModal(false);
       setIsEditMode(false);
       setSelectedPurchase(null);
+      setProductSearchQuery('');
+      setSearchResults([]);
       setFormData({
         proveedor: '',
         type: 'contado',
@@ -407,6 +516,8 @@ const Purchases = () => {
                     setShowModal(false);
                     setIsEditMode(false);
                     setSelectedPurchase(null);
+                    setProductSearchQuery('');
+                    setSearchResults([]);
                   }} className="text-gray-400 hover:text-gray-600 transition-colors">
                     <X className="h-6 w-6" />
                   </button>
@@ -483,6 +594,49 @@ const Purchases = () => {
                 <div className="border border-gray-200 rounded-xl p-4 mb-4 bg-gray-50">
                   <h3 className="font-semibold text-gray-900 mb-3">Agregar Productos</h3>
                   
+                  {/* Campo de búsqueda por nombre o SKU con lector de código de barras */}
+                  <div className="mb-4">
+                    <label className="form-label">Buscar producto por nombre o SKU...</label>
+                    <input
+                      ref={productSearchInputRef}
+                      type="text"
+                      value={productSearchQuery}
+                      onChange={(e) => setProductSearchQuery(e.target.value)}
+                      onKeyDown={handleProductSearchKeyDown}
+                      className="form-input"
+                      placeholder="Escribe o escanea código de barras..."
+                      autoFocus
+                    />
+                    {searchResults.length > 0 && (
+                      <div className="mt-2 border border-gray-200 rounded-xl max-h-48 overflow-y-auto bg-white">
+                        {searchResults.map(product => (
+                          <div
+                            key={product._id}
+                            onClick={async () => {
+                              await handleProductChange(product._id);
+                              const newItem = {
+                                product: product._id,
+                                quantity: 1,
+                                unitCost: product.cost || 0
+                              };
+                              setFormData({ ...formData, items: [...formData.items, newItem] });
+                              setProductSearchQuery('');
+                              setSearchResults([]);
+                              toast.success(`${product.name} agregado a la compra`);
+                            }}
+                            className="p-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-0"
+                          >
+                            <p className="font-medium text-gray-900">{product.name}</p>
+                            <p className="text-sm text-gray-500">SKU: {product.sku}</p>
+                            <p className="text-sm font-medium text-primary-600">
+                              Costo: {formatCurrency(product.cost)}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
                   <div className="grid grid-cols-4 gap-4 mb-4">
                     <div>
                       <label className="form-label">Producto</label>
@@ -724,7 +878,11 @@ const Purchases = () => {
                 <div className="flex justify-end space-x-2">
                   <button
                     type="button"
-                    onClick={() => setShowModal(false)}
+                    onClick={() => {
+                      setShowModal(false);
+                      setProductSearchQuery('');
+                      setSearchResults([]);
+                    }}
                     className="btn btn-secondary btn-md"
                   >
                     Cancelar

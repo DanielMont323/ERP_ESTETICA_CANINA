@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { servicesAPI, serviceCategoriesAPI } from '../services/api';
+import { servicesAPI, serviceCategoriesAPI, productsAPI } from '../services/api';
 import toast from 'react-hot-toast';
 import { Skeleton, SkeletonCard } from '../components/Skeleton';
 import ConfirmModal from '../components/ConfirmModal';
+import { useAuth } from '../contexts/AuthContext';
 import {
   Plus,
   Clock,
@@ -12,8 +13,11 @@ import {
 } from 'lucide-react';
 
 const Services = () => {
+  const { user } = useAuth();
+  const userRole = user?.role || 'user';
   const [services, setServices] = useState([]);
   const [categories, setCategories] = useState([]);
+  const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -25,12 +29,14 @@ const Services = () => {
     price: '',
     duration: '',
     category: '',
-    discountPercentage: '0'
+    discountPercentage: '0',
+    insumos: []
   });
 
   useEffect(() => {
     fetchServices();
     fetchCategories();
+    fetchProducts();
   }, []);
 
   const fetchServices = async () => {
@@ -53,6 +59,15 @@ const Services = () => {
     }
   };
 
+  const fetchProducts = async () => {
+    try {
+      const response = await productsAPI.getAll({ active: true });
+      setProducts(response.data.data);
+    } catch (error) {
+      console.error('Error al cargar productos:', error);
+    }
+  };
+
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat('es-MX', {
       style: 'currency',
@@ -68,7 +83,8 @@ const Services = () => {
       price: '',
       duration: '',
       category: '',
-      discountPercentage: '0'
+      discountPercentage: '0',
+      insumos: []
     });
     setShowModal(true);
   };
@@ -81,7 +97,8 @@ const Services = () => {
       price: service.price,
       duration: service.duration,
       category: service.category?._id || service.category,
-      discountPercentage: (service.discountPercentage || 0).toString()
+      discountPercentage: (service.discountPercentage || 0).toString(),
+      insumos: service.insumos || []
     });
     setShowModal(true);
   };
@@ -116,6 +133,26 @@ const Services = () => {
     } catch (error) {
       toast.error('Error al guardar servicio');
     }
+  };
+
+  const addInsumo = () => {
+    setFormData({
+      ...formData,
+      insumos: [...formData.insumos, { producto: '', cantidad: 1 }]
+    });
+  };
+
+  const removeInsumo = (index) => {
+    setFormData({
+      ...formData,
+      insumos: formData.insumos.filter((_, i) => i !== index)
+    });
+  };
+
+  const updateInsumo = (index, field, value) => {
+    const updatedInsumos = [...formData.insumos];
+    updatedInsumos[index][field] = field === 'cantidad' ? parseFloat(value) : value;
+    setFormData({ ...formData, insumos: updatedInsumos });
   };
 
   if (loading) {
@@ -292,6 +329,68 @@ const Services = () => {
                     placeholder="0 para sin descuento"
                   />
                 </div>
+
+                {/* Insumos - Solo ADMIN */}
+                {userRole === 'admin' && (
+                  <div className="border border-gray-200 rounded-xl p-4 bg-gray-50">
+                    <div className="flex items-center justify-between mb-3">
+                      <label className="form-label mb-0">Insumos requeridos</label>
+                      <button
+                        type="button"
+                        onClick={addInsumo}
+                        className="btn btn-primary btn-sm"
+                      >
+                        <Plus className="h-4 w-4 mr-1" />
+                        Agregar insumo
+                      </button>
+                    </div>
+                    
+                    {formData.insumos.length === 0 ? (
+                      <p className="text-sm text-gray-500 text-center py-2">
+                        No hay insumos configurados
+                      </p>
+                    ) : (
+                      <div className="space-y-3">
+                        {formData.insumos.map((insumo, index) => (
+                          <div key={index} className="flex items-center gap-2">
+                            <div className="flex-1">
+                              <select
+                                value={insumo.producto}
+                                onChange={(e) => updateInsumo(index, 'producto', e.target.value)}
+                                className="form-input"
+                              >
+                                <option value="">Seleccionar producto...</option>
+                                {products.map(product => (
+                                  <option key={product._id} value={product._id}>
+                                    {product.name} ({product.unit})
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
+                            <div className="w-24">
+                              <input
+                                type="number"
+                                min="0"
+                                step="0.01"
+                                value={insumo.cantidad}
+                                onChange={(e) => updateInsumo(index, 'cantidad', e.target.value)}
+                                className="form-input"
+                                placeholder="Cant."
+                              />
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => removeInsumo(index)}
+                              className="text-danger-600 hover:text-danger-900"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
                 <div className="flex justify-end space-x-2">
                   <button
                     type="button"

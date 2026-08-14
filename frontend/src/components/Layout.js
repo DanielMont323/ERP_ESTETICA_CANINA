@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Outlet, Link, useLocation } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import {
   Home,
@@ -27,7 +27,45 @@ import {
 const Layout = () => {
   const { user, logout } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  // Atajos de teclado globales
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      // No disparar atajos si el usuario está escribiendo en un input, textarea o select
+      const target = e.target;
+      const isInput = target.tagName === 'INPUT' || 
+                     target.tagName === 'TEXTAREA' || 
+                     target.tagName === 'SELECT' ||
+                     target.isContentEditable;
+      
+      if (isInput) return;
+
+      // F1: Nueva Venta
+      if (e.key === 'F1') {
+        e.preventDefault();
+        if (location.pathname !== '/sales') {
+          navigate('/sales');
+        }
+        // Disparar evento personalizado para abrir modal
+        window.dispatchEvent(new CustomEvent('openSaleModal'));
+      }
+      
+      // F2: Nueva Compra
+      if (e.key === 'F2') {
+        e.preventDefault();
+        if (location.pathname !== '/purchases') {
+          navigate('/purchases');
+        }
+        // Disparar evento personalizado para abrir modal
+        window.dispatchEvent(new CustomEvent('openPurchaseModal'));
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [location.pathname, navigate]);
 
   const navigation = [
     { name: 'Dashboard', href: '/dashboard', icon: Home },

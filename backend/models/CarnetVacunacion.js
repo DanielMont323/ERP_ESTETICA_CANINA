@@ -11,6 +11,11 @@ const vacunaSchema = new mongoose.Schema({
     type: String,
     trim: true
   },
+  tipo: {
+    type: String,
+    enum: ['vacuna', 'desparasitante'],
+    default: 'vacuna'
+  },
   fecha: {
     type: Date,
     required: true

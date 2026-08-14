@@ -54,6 +54,12 @@ const Sales = () => {
   const [searchResults, setSearchResults] = useState([]);
   const searchInputRef = useRef(null);
   const userRole = user?.role || 'user';
+  
+  // Campos manuales para Mercado Libre (solo ADMIN)
+  const [manualSubtotal, setManualSubtotal] = useState('');
+  const [manualTotal, setManualTotal] = useState('');
+  const [manualNetIncome, setManualNetIncome] = useState('');
+  const [useManualFinancials, setUseManualFinancials] = useState(false);
 
   const fetchSales = useCallback(async () => {
     try {
@@ -79,6 +85,34 @@ const Sales = () => {
     fetchServices();
     fetchCustomers();
   }, [selectedDate, dateRange.useRange, dateRange.startDate, dateRange.endDate, fetchSales]);
+
+  // Atajo ESC para cerrar modales
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        if (showModal) {
+          setShowModal(false);
+        }
+        if (showEditModal) {
+          setShowEditModal(false);
+          setEditingSale(null);
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [showModal, showEditModal]);
+
+  // Listener para evento personalizado de F1
+  useEffect(() => {
+    const handleOpenSaleModal = () => {
+      setShowModal(true);
+    };
+
+    window.addEventListener('openSaleModal', handleOpenSaleModal);
+    return () => window.removeEventListener('openSaleModal', handleOpenSaleModal);
+  }, []);
 
   const fetchProducts = async () => {
     try {
@@ -342,18 +376,17 @@ const Sales = () => {
     }
   };
 
-  const calculateTotal = () => {
-    const subtotal = cart.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0);
-    // Calcular comisión de tarjeta (4.6%) solo si paymentMethod es tarjeta
-    const cardCommission = paymentMethod === 'tarjeta' ? subtotal * 0.046 : 0;
-    return subtotal + cardCommission;
-  };
-
   const calculateSubtotal = () => {
+    if (useManualFinancials && saleChannel === 'mercado_libre' && manualSubtotal !== '') {
+      return parseFloat(manualSubtotal);
+    }
     return cart.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0);
   };
 
   const calculateCardCommission = () => {
+    if (useManualFinancials && saleChannel === 'mercado_libre') {
+      return 0; // Mercado Libre maneja sus propias comisiones
+    }
     const subtotal = calculateSubtotal();
     return paymentMethod === 'tarjeta' ? subtotal * 0.046 : 0;
   };
@@ -362,11 +395,22 @@ const Sales = () => {
     if (useCustomCommission && customCommission) {
       return parseFloat(customCommission);
     }
-    // Ya no calculamos comisión automática del 10%
     return 0;
   };
 
+  const calculateTotal = () => {
+    if (useManualFinancials && saleChannel === 'mercado_libre' && manualTotal !== '') {
+      return parseFloat(manualTotal);
+    }
+    const subtotal = calculateSubtotal();
+    const cardCommission = calculateCardCommission();
+    return subtotal + cardCommission;
+  };
+
   const calculateNetIncome = () => {
+    if (useManualFinancials && saleChannel === 'mercado_libre' && manualNetIncome !== '') {
+      return parseFloat(manualNetIncome);
+    }
     const subtotal = calculateSubtotal();
     const cardCommission = calculateCardCommission();
     const commission = calculateCommission();
@@ -415,6 +459,13 @@ const Sales = () => {
         saleData.commission = parseFloat(customCommission);
       }
 
+      // Mercado Libre: enviar valores financieros manuales si están activos
+      if (saleChannel === 'mercado_libre' && useManualFinancials && userRole === 'admin') {
+        if (manualSubtotal !== '') saleData.subtotal = parseFloat(manualSubtotal);
+        if (manualTotal !== '') saleData.total = parseFloat(manualTotal);
+        if (manualNetIncome !== '') saleData.netIncome = parseFloat(manualNetIncome);
+      }
+
       await salesAPI.create(saleData);
       toast.success('Venta registrada correctamente');
       
@@ -431,6 +482,10 @@ const Sales = () => {
       setAmountReceived('');
       setProductSearchQuery('');
       setSearchResults([]);
+      setManualSubtotal('');
+      setManualTotal('');
+      setManualNetIncome('');
+      setUseManualFinancials(false);
       setShowModal(false);
       fetchSales();
     } catch (error) {
@@ -925,7 +980,16 @@ const Sales = () => {
                       <label className="form-label">Canal de venta</label>
                       <select
                         value={saleChannel}
-                        onChange={(e) => setSaleChannel(e.target.value)}
+                        onChange={(e) => {
+                          setSaleChannel(e.target.value);
+                          // Reset manual financials when changing channel
+                          if (e.target.value !== 'mercado_libre') {
+                            setUseManualFinancials(false);
+                            setManualSubtotal('');
+                            setManualTotal('');
+                            setManualNetIncome('');
+                          }
+                        }}
                         className="form-input"
                       >
                         <option value="local">Local comercial</option>
@@ -933,6 +997,61 @@ const Sales = () => {
                         <option value="redes_sociales">Redes Sociales</option>
                       </select>
                     </div>
+
+                    {/* Mercado Libre - Manual Financials (Solo ADMIN) */}
+                    {saleChannel === 'mercado_libre' && userRole === 'admin' && (
+                      <div className="border border-primary-200 rounded-xl p-4 bg-primary-50">
+                        <label className="flex items-center text-sm font-medium text-primary-900 mb-3">
+                          <input
+                            type="checkbox"
+                            checked={useManualFinancials}
+                            onChange={(e) => setUseManualFinancials(e.target.checked)}
+                            className="mr-2 h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
+                          />
+                          Editar valores financieros manualmente
+                        </label>
+                        {useManualFinancials && (
+                          <div className="space-y-3">
+                            <div>
+                              <label className="form-label text-sm">Subtotal</label>
+                              <input
+                                type="number"
+                                min="0"
+                                step="0.01"
+                                value={manualSubtotal}
+                                onChange={(e) => setManualSubtotal(e.target.value)}
+                                className="form-input"
+                                placeholder="0.00"
+                              />
+                            </div>
+                            <div>
+                              <label className="form-label text-sm">Total</label>
+                              <input
+                                type="number"
+                                min="0"
+                                step="0.01"
+                                value={manualTotal}
+                                onChange={(e) => setManualTotal(e.target.value)}
+                                className="form-input"
+                                placeholder="0.00"
+                              />
+                            </div>
+                            <div>
+                              <label className="form-label text-sm">Ingreso Neto</label>
+                              <input
+                                type="number"
+                                min="0"
+                                step="0.01"
+                                value={manualNetIncome}
+                                onChange={(e) => setManualNetIncome(e.target.value)}
+                                className="form-input"
+                                placeholder="0.00"
+                              />
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
 
                     {/* Notes */}
                     <div>

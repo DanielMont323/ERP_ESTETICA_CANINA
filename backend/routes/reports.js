@@ -7,6 +7,7 @@ const Producto = require('../models/Producto');
 const Cliente = require('../models/Cliente');
 const Proveedor = require('../models/Proveedor');
 const Recordatorio = require('../models/Recordatorio');
+const { startOfDayGMT7, endOfDayGMT7, toGMT7 } = require('../helpers/timezone');
 const router = express.Router();
 
 // @route   GET /api/reports/income-statement
@@ -17,45 +18,45 @@ router.get('/income-statement', async (req, res) => {
     
     let dateFilter = {};
     
-    // Filtros de periodo predefinidos
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    // Filtros de periodo predefinidos usando GMT-7
+    const todayGMT7 = startOfDayGMT7(new Date());
     
-    if (period === 'today') {
-      const tomorrow = new Date(today);
-      tomorrow.setDate(tomorrow.getDate() + 1);
+    if (period === 'day' || period === 'today') {
+      const endOfToday = endOfDayGMT7(new Date());
       dateFilter = {
-        date: { $gte: today, $lt: tomorrow }
+        date: { $gte: todayGMT7, $lte: endOfToday }
       };
     } else if (period === 'week') {
-      const startOfWeek = new Date(today);
-      startOfWeek.setDate(today.getDate() - today.getDay());
-      startOfWeek.setHours(0, 0, 0, 0);
-      const endOfWeek = new Date(startOfWeek);
-      endOfWeek.setDate(startOfWeek.getDate() + 7);
+      const startOfWeek = new Date(todayGMT7);
+      startOfWeek.setDate(todayGMT7.getDate() - todayGMT7.getDay());
+      const startOfWeekGMT7 = startOfDayGMT7(startOfWeek);
+      const endOfWeek = new Date(startOfWeekGMT7);
+      endOfWeek.setDate(startOfWeekGMT7.getDate() + 6);
+      const endOfWeekGMT7 = endOfDayGMT7(endOfWeek);
       dateFilter = {
-        date: { $gte: startOfWeek, $lt: endOfWeek }
+        date: { $gte: startOfWeekGMT7, $lte: endOfWeekGMT7 }
       };
     } else if (period === 'month') {
-      const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-      const endOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
-      endOfMonth.setHours(23, 59, 59, 999);
+      const startOfMonth = new Date(todayGMT7.getFullYear(), todayGMT7.getMonth(), 1);
+      const startOfMonthGMT7 = startOfDayGMT7(startOfMonth);
+      const endOfMonth = new Date(todayGMT7.getFullYear(), todayGMT7.getMonth() + 1, 0);
+      const endOfMonthGMT7 = endOfDayGMT7(endOfMonth);
       dateFilter = {
-        date: { $gte: startOfMonth, $lte: endOfMonth }
+        date: { $gte: startOfMonthGMT7, $lte: endOfMonthGMT7 }
       };
     } else if (period === 'year') {
-      const startOfYear = new Date(today.getFullYear(), 0, 1);
-      const endOfYear = new Date(today.getFullYear(), 11, 31);
-      endOfYear.setHours(23, 59, 59, 999);
+      const startOfYear = new Date(todayGMT7.getFullYear(), 0, 1);
+      const startOfYearGMT7 = startOfDayGMT7(startOfYear);
+      const endOfYear = new Date(todayGMT7.getFullYear(), 11, 31);
+      const endOfYearGMT7 = endOfDayGMT7(endOfYear);
       dateFilter = {
-        date: { $gte: startOfYear, $lte: endOfYear }
+        date: { $gte: startOfYearGMT7, $lte: endOfYearGMT7 }
       };
     } else if (startDate && endDate) {
+      const startGMT7 = startOfDayGMT7(new Date(startDate));
+      const endGMT7 = endOfDayGMT7(new Date(endDate));
       dateFilter = {
-        date: {
-          $gte: new Date(startDate),
-          $lte: new Date(endDate)
-        }
+        date: { $gte: startGMT7, $lte: endGMT7 }
       };
     }
 
@@ -141,45 +142,45 @@ router.get('/sales-summary', async (req, res) => {
     
     let dateFilter = {};
     
-    // Filtros de periodo predefinidos
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    // Filtros de periodo predefinidos usando GMT-7
+    const todayGMT7 = startOfDayGMT7(new Date());
     
-    if (period === 'today') {
-      const tomorrow = new Date(today);
-      tomorrow.setDate(tomorrow.getDate() + 1);
+    if (period === 'day' || period === 'today') {
+      const endOfToday = endOfDayGMT7(new Date());
       dateFilter = {
-        date: { $gte: today, $lt: tomorrow }
+        date: { $gte: todayGMT7, $lte: endOfToday }
       };
     } else if (period === 'week') {
-      const startOfWeek = new Date(today);
-      startOfWeek.setDate(today.getDate() - today.getDay());
-      startOfWeek.setHours(0, 0, 0, 0);
-      const endOfWeek = new Date(startOfWeek);
-      endOfWeek.setDate(startOfWeek.getDate() + 7);
+      const startOfWeek = new Date(todayGMT7);
+      startOfWeek.setDate(todayGMT7.getDate() - todayGMT7.getDay());
+      const startOfWeekGMT7 = startOfDayGMT7(startOfWeek);
+      const endOfWeek = new Date(startOfWeekGMT7);
+      endOfWeek.setDate(startOfWeekGMT7.getDate() + 6);
+      const endOfWeekGMT7 = endOfDayGMT7(endOfWeek);
       dateFilter = {
-        date: { $gte: startOfWeek, $lt: endOfWeek }
+        date: { $gte: startOfWeekGMT7, $lte: endOfWeekGMT7 }
       };
     } else if (period === 'month') {
-      const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-      const endOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
-      endOfMonth.setHours(23, 59, 59, 999);
+      const startOfMonth = new Date(todayGMT7.getFullYear(), todayGMT7.getMonth(), 1);
+      const startOfMonthGMT7 = startOfDayGMT7(startOfMonth);
+      const endOfMonth = new Date(todayGMT7.getFullYear(), todayGMT7.getMonth() + 1, 0);
+      const endOfMonthGMT7 = endOfDayGMT7(endOfMonth);
       dateFilter = {
-        date: { $gte: startOfMonth, $lte: endOfMonth }
+        date: { $gte: startOfMonthGMT7, $lte: endOfMonthGMT7 }
       };
     } else if (period === 'year') {
-      const startOfYear = new Date(today.getFullYear(), 0, 1);
-      const endOfYear = new Date(today.getFullYear(), 11, 31);
-      endOfYear.setHours(23, 59, 59, 999);
+      const startOfYear = new Date(todayGMT7.getFullYear(), 0, 1);
+      const startOfYearGMT7 = startOfDayGMT7(startOfYear);
+      const endOfYear = new Date(todayGMT7.getFullYear(), 11, 31);
+      const endOfYearGMT7 = endOfDayGMT7(endOfYear);
       dateFilter = {
-        date: { $gte: startOfYear, $lte: endOfYear }
+        date: { $gte: startOfYearGMT7, $lte: endOfYearGMT7 }
       };
     } else if (startDate && endDate) {
+      const startGMT7 = startOfDayGMT7(new Date(startDate));
+      const endGMT7 = endOfDayGMT7(new Date(endDate));
       dateFilter = {
-        date: {
-          $gte: new Date(startDate),
-          $lte: new Date(endDate)
-        }
+        date: { $gte: startGMT7, $lte: endGMT7 }
       };
     }
 

@@ -2,23 +2,34 @@ import React, { useState, useEffect } from 'react';
 import { reportsAPI } from '../services/api';
 import toast from 'react-hot-toast';
 import Skeleton, { SkeletonCard } from '../components/Skeleton';
-import {
-  BarChart3,
-  Download
-} from 'lucide-react';
+import { Download } from 'lucide-react';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line } from 'recharts';
 
 const Reports = () => {
   const [incomeStatement, setIncomeStatement] = useState(null);
   const [salesSummary, setSalesSummary] = useState(null);
   const [loading, setLoading] = useState(true);
   const [selectedPeriod, setSelectedPeriod] = useState('month');
+  const [dateRange, setDateRange] = useState({
+    startDate: '',
+    endDate: '',
+    useRange: false
+  });
 
   useEffect(() => {
     const fetchReportData = async () => {
       try {
+        const params = {};
+        if (dateRange.useRange) {
+          if (dateRange.startDate) params.startDate = dateRange.startDate;
+          if (dateRange.endDate) params.endDate = dateRange.endDate;
+        } else {
+          params.period = selectedPeriod;
+        }
+
         const [incomeRes, salesRes] = await Promise.all([
-          reportsAPI.getIncomeStatement(),
-          reportsAPI.getSalesSummary({ period: selectedPeriod })
+          reportsAPI.getIncomeStatement(params),
+          reportsAPI.getSalesSummary(params)
         ]);
         
         setIncomeStatement(incomeRes.data.data);
@@ -31,7 +42,7 @@ const Reports = () => {
     };
 
     fetchReportData();
-  }, [selectedPeriod]);
+  }, [selectedPeriod, dateRange]);
 
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat('es-MX', {
@@ -72,14 +83,41 @@ const Reports = () => {
         </div>
         <div className="flex items-center space-x-3">
           <select
-            value={selectedPeriod}
-            onChange={(e) => setSelectedPeriod(e.target.value)}
+            value={dateRange.useRange ? 'custom' : selectedPeriod}
+            onChange={(e) => {
+              const value = e.target.value;
+              if (value === 'custom') {
+                setDateRange({ ...dateRange, useRange: true });
+              } else {
+                setDateRange({ startDate: '', endDate: '', useRange: false });
+                setSelectedPeriod(value);
+              }
+            }}
             className="form-input"
           >
             <option value="day">Diario</option>
+            <option value="week">Semanal</option>
             <option value="month">Mensual</option>
             <option value="year">Anual</option>
+            <option value="custom">Rango personalizado</option>
           </select>
+          {dateRange.useRange && (
+            <>
+              <input
+                type="date"
+                value={dateRange.startDate}
+                onChange={(e) => setDateRange({ ...dateRange, startDate: e.target.value })}
+                className="form-input"
+              />
+              <input
+                type="date"
+                value={dateRange.endDate}
+                onChange={(e) => setDateRange({ ...dateRange, endDate: e.target.value })}
+                className="form-input"
+                min={dateRange.startDate}
+              />
+            </>
+          )}
           <button className="btn btn-secondary btn-md">
             <Download className="h-4 w-4 mr-2" />
             Exportar
@@ -91,7 +129,7 @@ const Reports = () => {
       {incomeStatement && (
         <div className="card">
           <div className="card-header">
-            <h3 className="text-lg font-medium text-gray-900">Estado de Resultados</h3>
+            <h3 className="text-lg font-medium text-gray-900">Resumen de Resultados Financieros</h3>
           </div>
           <div className="card-body">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -106,7 +144,7 @@ const Reports = () => {
                     <span>Comisiones:</span>
                     <span className="font-medium text-danger-600">-{formatCurrency(incomeStatement.ingresos.totalComision)}</span>
                   </div>
-                  <div className="flex justify-between text-lg font-bold">
+                  <div className="flex justify-between text-lg font-bold border-t border-gray-200 pt-2">
                     <span>Ingreso neto:</span>
                     <span className="text-success-600">{formatCurrency(incomeStatement.ingresos.totalIngresoNeto)}</span>
                   </div>
@@ -114,7 +152,7 @@ const Reports = () => {
               </div>
               
               <div>
-                <h4 className="font-medium text-gray-900 mb-3">Costos</h4>
+                <h4 className="font-medium text-gray-900 mb-3">Gastos</h4>
                 <div className="space-y-2">
                   <div className="flex justify-between">
                     <span>Compras:</span>
@@ -128,11 +166,19 @@ const Reports = () => {
                     <span>Costos variables:</span>
                     <span className="font-medium">{formatCurrency(incomeStatement.costos.costosVariables)}</span>
                   </div>
+                  <div className="flex justify-between text-lg font-bold border-t border-gray-200 pt-2">
+                    <span>Total gastos:</span>
+                    <span className="text-danger-600">{formatCurrency(
+                      incomeStatement.costos.totalCompras + 
+                      incomeStatement.costos.costosFijos + 
+                      incomeStatement.costos.costosVariables
+                    )}</span>
+                  </div>
                 </div>
               </div>
               
               <div>
-                <h4 className="font-medium text-gray-900 mb-3">Utilidad</h4>
+                <h4 className="font-medium text-gray-900 mb-3">Resultado Neto</h4>
                 <div className="space-y-2">
                   <div className="flex justify-between">
                     <span>Utilidad bruta:</span>
@@ -142,9 +188,13 @@ const Reports = () => {
                     <span>Utilidad operativa:</span>
                     <span className="font-medium">{formatCurrency(incomeStatement.utilidad.utilidadOperativa)}</span>
                   </div>
-                  <div className="flex justify-between">
-                    <span>Margen bruto:</span>
-                    <span className="font-medium">{incomeStatement.utilidad.margenBruto}%</span>
+                  <div className="flex justify-between text-lg font-bold border-t border-gray-200 pt-2">
+                    <span>Resultado neto:</span>
+                    <span className={`font-bold ${
+                      incomeStatement.utilidad.utilidadOperativa >= 0 ? 'text-success-600' : 'text-danger-600'
+                    }`}>
+                      {formatCurrency(incomeStatement.utilidad.utilidadOperativa)}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -195,14 +245,75 @@ const Reports = () => {
         </div>
       )}
 
-      {/* Placeholder for charts */}
-      <div className="card">
-        <div className="card-body">
-          <div className="text-center py-8">
-            <BarChart3 className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <p className="text-gray-500">Gráficos interactivos próximamente</p>
+      {/* Charts */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Gráfica 1: Ingresos vs Gastos */}
+        {incomeStatement && (
+          <div className="card">
+            <div className="card-header">
+              <h3 className="text-lg font-medium text-gray-900">Ingresos vs Gastos</h3>
+            </div>
+            <div className="card-body">
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={[
+                  { name: 'Ingresos', valor: incomeStatement.ingresos.totalIngresoNeto },
+                  { name: 'Gastos', valor: incomeStatement.costos.totalCompras + incomeStatement.costos.costosFijos + incomeStatement.costos.costosVariables }
+                ]}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="name" />
+                  <YAxis />
+                  <Tooltip formatter={(value) => formatCurrency(value)} />
+                  <Legend />
+                  <Bar dataKey="valor" fill="#3b82f6" name="Monto" />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
           </div>
-        </div>
+        )}
+
+        {/* Gráfica 2: Resultado Neto */}
+        {incomeStatement && (
+          <div className="card">
+            <div className="card-header">
+              <h3 className="text-lg font-medium text-gray-900">Resultado Neto</h3>
+            </div>
+            <div className="card-body">
+              <ResponsiveContainer width="100%" height={300}>
+                <LineChart data={[
+                  { name: 'Resultado Neto', valor: incomeStatement.utilidad.utilidadOperativa }
+                ]}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="name" />
+                  <YAxis />
+                  <Tooltip formatter={(value) => formatCurrency(value)} />
+                  <Legend />
+                  <Line type="monotone" dataKey="valor" stroke={incomeStatement.utilidad.utilidadOperativa >= 0 ? "#16a34a" : "#dc2626"} strokeWidth={2} />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        )}
+
+        {/* Gráfica 3: Ventas por Categoría */}
+        {salesSummary && salesSummary.topProducts && (
+          <div className="card lg:col-span-2">
+            <div className="card-header">
+              <h3 className="text-lg font-medium text-gray-900">Productos Más Vendidos</h3>
+            </div>
+            <div className="card-body">
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={salesSummary.topProducts.slice(0, 5)}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="name" />
+                  <YAxis />
+                  <Tooltip formatter={(value) => formatCurrency(value)} />
+                  <Legend />
+                  <Bar dataKey="totalRevenue" fill="#8b5cf6" name="Ingresos" />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
