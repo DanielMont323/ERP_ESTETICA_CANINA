@@ -54,7 +54,9 @@ export const productsAPI = {
   delete: (id) => api.delete(`/productos/${id}`),
   updateStock: (id, data) => api.patch(`/productos/${id}/stock`, data),
   getLowStock: () => api.get('/productos/low-stock'),
-  search: (query) => api.get('/productos/search', { params: { q: query } }),
+  search: (query, includeInactive) => api.get('/productos/search', { params: { q: query, includeInactive } }),
+  restore: (id) => api.patch(`/productos/${id}/restore`),
+  getArchived: () => api.get('/productos/archived'),
 };
 
 // Product Categories services
@@ -213,9 +215,14 @@ export const remindersAPI = {
 export const reportsAPI = {
   getIncomeStatement: (params) => api.get('/reports/income-statement', { params }),
   getSalesSummary: (params) => api.get('/reports/sales-summary', { params }),
+  getSalesBehavior: (params) => api.get('/reports/sales-behavior', { params }),
   getInventory: () => api.get('/reports/inventory'),
   getCustomers: (params) => api.get('/reports/customers', { params }),
   getDashboard: () => api.get('/reports/dashboard'),
+  exportSales: (params) => api.get('/reports/export-sales', { 
+    params,
+    responseType: 'blob'
+  }),
 };
 
 export default api;

@@ -18,6 +18,12 @@ import { useAuth } from '../contexts/AuthContext';
 const Sales = () => {
   const { user } = useAuth();
   const [sales, setSales] = useState([]);
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 50,
+    total: 0,
+    pages: 1
+  });
   const [products, setProducts] = useState([]);
   const [services, setServices] = useState([]);
   const [customers, setCustomers] = useState([]);
@@ -63,7 +69,10 @@ const Sales = () => {
 
   const fetchSales = useCallback(async () => {
     try {
-      let params = {};
+      let params = {
+        page: pagination.page,
+        limit: pagination.limit
+      };
       if (dateRange.useRange) {
         if (dateRange.startDate) params.startDate = dateRange.startDate;
         if (dateRange.endDate) params.endDate = dateRange.endDate;
@@ -72,19 +81,23 @@ const Sales = () => {
       }
       const response = await salesAPI.getAll(params);
       setSales(response.data.data);
+      setPagination(response.data.pagination || pagination);
     } catch (error) {
       toast.error('Error al cargar ventas');
     } finally {
       setLoading(false);
     }
-  }, [selectedDate, dateRange]);
+  }, [selectedDate, dateRange, pagination.page, pagination.limit]);
 
   useEffect(() => {
     fetchSales();
+  }, [selectedDate, dateRange.useRange, dateRange.startDate, dateRange.endDate, fetchSales]);
+
+  useEffect(() => {
     fetchProducts();
     fetchServices();
     fetchCustomers();
-  }, [selectedDate, dateRange.useRange, dateRange.startDate, dateRange.endDate, fetchSales]);
+  }, []);
 
   // Atajo ESC para cerrar modales
   useEffect(() => {
@@ -231,7 +244,9 @@ const Sales = () => {
         type,
         quantity: 1,
         unitPrice: item.price,
-        name: item.name
+        name: item.name,
+        category: item.category,
+        nextDoseDate: ''
       }]);
     }
   };
@@ -439,7 +454,8 @@ const Sales = () => {
           type: item.type,
           item: item.item,
           quantity: item.quantity,
-          unitPrice: item.unitPrice
+          unitPrice: item.unitPrice,
+          nextDoseDate: item.nextDoseDate || null
         })),
         paymentMethod,
         saleChannel,
@@ -599,8 +615,8 @@ const Sales = () => {
 
       {/* Sales Table */}
       <div className="card">
-        <div className="overflow-x-auto">
-          <table className="table">
+        <div className="table-container">
+          <table className="table table-responsive">
             <thead>
               <tr>
                 <th>Fecha</th>
@@ -690,6 +706,54 @@ const Sales = () => {
             </div>
           )}
         </div>
+        
+        {/* Pagination Controls */}
+        {pagination.pages > 1 && (
+          <div className="flex items-center justify-between px-6 py-4 border-t border-gray-200">
+            <div className="text-sm text-gray-500">
+              Mostrando {((pagination.page - 1) * pagination.limit) + 1} a {Math.min(pagination.page * pagination.limit, pagination.total)} de {pagination.total} ventas
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setPagination({ ...pagination, page: pagination.page - 1 })}
+                disabled={pagination.page === 1}
+                className="btn btn-secondary btn-sm disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Anterior
+              </button>
+              <div className="flex items-center gap-1">
+                {Array.from({ length: Math.min(5, pagination.pages) }, (_, i) => {
+                  let pageNum;
+                  if (pagination.pages <= 5) {
+                    pageNum = i + 1;
+                  } else if (pagination.page <= 3) {
+                    pageNum = i + 1;
+                  } else if (pagination.page >= pagination.pages - 2) {
+                    pageNum = pagination.pages - 4 + i;
+                  } else {
+                    pageNum = pagination.page - 2 + i;
+                  }
+                  return (
+                    <button
+                      key={pageNum}
+                      onClick={() => setPagination({ ...pagination, page: pageNum })}
+                      className={`btn btn-sm ${pagination.page === pageNum ? 'btn-primary' : 'btn-secondary'}`}
+                    >
+                      {pageNum}
+                    </button>
+                  );
+                })}
+              </div>
+              <button
+                onClick={() => setPagination({ ...pagination, page: pagination.page + 1 })}
+                disabled={pagination.page === pagination.pages}
+                className="btn btn-secondary btn-sm disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Siguiente
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* New Sale Modal */}
@@ -698,7 +762,7 @@ const Sales = () => {
           <div className="flex items-center justify-center min-h-screen px-4">
             <div className="modal-overlay" onClick={() => setShowModal(false)} />
             
-            <div className="relative modal-content max-w-4xl w-full max-h-[90vh] overflow-y-auto animate-slide-up">
+            <div className="relative modal-content max-w-4xl w-full sm:max-w-4xl max-h-[90vh] overflow-y-auto animate-slide-up">
               <div className="p-6">
                 <h3 className="text-lg font-semibold text-gray-900 mb-6">Nueva Venta</h3>
                 
@@ -838,37 +902,69 @@ const Sales = () => {
                         {cart.length === 0 ? (
                           <p className="text-gray-500 text-center py-4">Carrito vacío</p>
                         ) : (
-                          cart.map((item, index) => (
-                            <div key={index} className="flex items-center justify-between">
-                              <div className="flex-1">
-                                <p className="font-medium text-gray-900">{item.name}</p>
-                                <p className="text-sm text-gray-500">
-                                  {formatCurrency(item.unitPrice)} c/u
-                                </p>
+                          cart.map((item, index) => {
+                            let categoryLower = '';
+                            if (item.category) {
+                              if (typeof item.category === 'object' && item.category.name) {
+                                categoryLower = item.category.name.toString().toLowerCase();
+                              } else {
+                                categoryLower = item.category.toString().toLowerCase();
+                              }
+                            }
+                            
+                            const isVaccine = categoryLower === 'vacunas' || categoryLower === 'vacuna';
+                            const isDewormer = categoryLower === 'desparasitantes' || categoryLower === 'desparasitante';
+                            const showNextDose = (isVaccine || isDewormer) && item.type === 'producto';
+
+                            return (
+                              <div key={index} className="space-y-2">
+                                <div className="flex items-center justify-between">
+                                  <div className="flex-1">
+                                    <p className="font-medium text-gray-900">{item.name}</p>
+                                    <p className="text-sm text-gray-500">
+                                      {formatCurrency(item.unitPrice)} c/u
+                                    </p>
+                                  </div>
+                                  <div className="flex items-center space-x-2">
+                                    <button
+                                      onClick={() => updateQuantity(index, item.quantity - 1)}
+                                      className="text-gray-400 hover:text-gray-600"
+                                    >
+                                      <MinusCircle className="h-4 w-4" />
+                                    </button>
+                                    <span className="w-8 text-center">{item.quantity}</span>
+                                    <button
+                                      onClick={() => updateQuantity(index, item.quantity + 1)}
+                                      className="text-gray-400 hover:text-gray-600"
+                                    >
+                                      <PlusCircle className="h-4 w-4" />
+                                    </button>
+                                    <button
+                                      onClick={() => removeFromCart(index)}
+                                      className="text-danger-600 hover:text-danger-900"
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </button>
+                                  </div>
+                                </div>
+                                {showNextDose && (
+                                  <div className="pl-2">
+                                    <label className="text-xs text-gray-600">Próxima dosis:</label>
+                                    <input
+                                      type="date"
+                                      value={item.nextDoseDate || ''}
+                                      onChange={(e) => {
+                                        const newCart = [...cart];
+                                        newCart[index].nextDoseDate = e.target.value;
+                                        setCart(newCart);
+                                      }}
+                                      className="form-input text-sm py-1"
+                                    />
+                                  </div>
+                                )}
                               </div>
-                              <div className="flex items-center space-x-2">
-                                <button
-                                  onClick={() => updateQuantity(index, item.quantity - 1)}
-                                  className="text-gray-400 hover:text-gray-600"
-                                >
-                                  <MinusCircle className="h-4 w-4" />
-                                </button>
-                                <span className="w-8 text-center">{item.quantity}</span>
-                                <button
-                                  onClick={() => updateQuantity(index, item.quantity + 1)}
-                                  className="text-gray-400 hover:text-gray-600"
-                                >
-                                  <PlusCircle className="h-4 w-4" />
-                                </button>
-                                <button
-                                  onClick={() => removeFromCart(index)}
-                                  className="text-danger-600 hover:text-danger-900"
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </button>
-                              </div>
-                            </div>
-                          ))
+                            );
+                          })
                         )}
                       </div>
                     </div>
@@ -1096,7 +1192,7 @@ const Sales = () => {
           <div className="flex items-center justify-center min-h-screen px-4">
             <div className="modal-overlay" onClick={handleCloseEditModal} />
             
-            <div className="relative modal-content max-w-4xl w-full max-h-[90vh] overflow-y-auto animate-slide-up">
+            <div className="relative modal-content max-w-4xl w-full sm:max-w-4xl max-h-[90vh] overflow-y-auto animate-slide-up">
               <div className="p-6">
                 <h3 className="text-lg font-semibold text-gray-900 mb-6">Editar Venta #{editingSale._id.slice(-6)}</h3>
                 

@@ -202,9 +202,8 @@ const AccountsPayable = () => {
 
       {/* Accounts Table */}
       <div className="card">
-        {/* Desktop Table View */}
-        <div className="hidden md:block overflow-x-auto">
-          <table className="table">
+        <div className="table-container">
+          <table className="table table-responsive">
             <thead>
               <tr>
                 <th>
@@ -405,7 +404,7 @@ const AccountsPayable = () => {
           <div className="flex items-center justify-center min-h-screen px-4">
             <div className="modal-overlay" onClick={() => setShowPaymentModal(false)} />
             
-            <div className="relative modal-content max-w-md w-full max-h-[90vh] overflow-y-auto animate-slide-up">
+            <div className="relative modal-content max-w-md w-full sm:max-w-md max-h-[90vh] overflow-y-auto animate-slide-up">
               <div className="flex items-center justify-between p-4 md:p-6 border-b border-gray-200 sticky top-0 bg-white rounded-t-xl">
                 <h3 className="text-lg font-semibold text-gray-900">Registrar Pago</h3>
                 <button
@@ -531,7 +530,7 @@ const AccountsPayable = () => {
           <div className="flex items-center justify-center min-h-screen px-4">
             <div className="modal-overlay" onClick={() => setShowMassivePaymentModal(false)} />
             
-            <div className="relative modal-content max-w-md w-full max-h-[90vh] overflow-y-auto animate-slide-up">
+            <div className="relative modal-content max-w-md w-full sm:max-w-md max-h-[90vh] overflow-y-auto animate-slide-up">
               <div className="flex items-center justify-between p-4 md:p-6 border-b border-gray-200 sticky top-0 bg-white rounded-t-xl">
                 <h3 className="text-lg font-semibold text-gray-900">Pagar Cuentas Seleccionadas</h3>
                 <button

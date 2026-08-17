@@ -103,6 +103,14 @@
   .table tbody tr {
     @apply hover:bg-gray-50 transition-colors duration-150;
   }
+
+  .table-container {
+    @apply overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0;
+  }
+
+  .table-responsive {
+    @apply min-w-full;
+  }
   
   .badge {
     @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;

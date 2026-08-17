@@ -65,18 +65,35 @@ router.get('/', async (req, res) => {
       .limit(limit * 1)
       .skip((page - 1) * limit);
 
-    // Populate items manualmente según el tipo
-    for (const venta of ventas) {
-      for (const item of venta.items) {
+    // Populate items y manejar productos/servicios eliminados
+    const allProductIds = new Set();
+    const allServiceIds = new Set();
+    
+    ventas.forEach(venta => {
+      venta.items.forEach(item => {
         if (item.type === 'producto') {
-          const producto = await Producto.findById(item.item).select('name price');
-          item.item = producto;
+          allProductIds.add(item.item);
         } else if (item.type === 'servicio') {
-          const servicio = await Servicio.findById(item.item).select('name price');
-          item.item = servicio;
+          allServiceIds.add(item.item);
         }
-      }
-    }
+      });
+    });
+
+    const productos = await Producto.find({ _id: { $in: Array.from(allProductIds) } }).select('name price');
+    const servicios = await Servicio.find({ _id: { $in: Array.from(allServiceIds) } }).select('name price');
+    
+    const productoMap = new Map(productos.map(p => [p._id.toString(), p]));
+    const servicioMap = new Map(servicios.map(s => [s._id.toString(), s]));
+
+    ventas.forEach(venta => {
+      venta.items.forEach(item => {
+        if (item.type === 'producto') {
+          item.item = productoMap.get(item.item.toString()) || { name: 'Producto no disponible', price: 0 };
+        } else if (item.type === 'servicio') {
+          item.item = servicioMap.get(item.item.toString()) || { name: 'Servicio no disponible', price: 0 };
+        }
+      });
+    });
 
     const total = await Venta.countDocuments(query);
 
@@ -116,10 +133,10 @@ router.get('/by-mascota/:mascotaId', authenticateToken, async (req, res) => {
       for (const item of venta.items) {
         if (item.type === 'producto') {
           const producto = await Producto.findById(item.item).select('name price');
-          item.item = producto;
+          item.item = producto || { name: 'Producto no disponible', price: 0 };
         } else if (item.type === 'servicio') {
           const servicio = await Servicio.findById(item.item).select('name price');
-          item.item = servicio;
+          item.item = servicio || { name: 'Servicio no disponible', price: 0 };
         }
       }
     }
@@ -230,10 +247,10 @@ router.post('/', authenticateToken, async (req, res) => {
           
           if (categoryLower === 'vacunas' || categoryLower === 'vacuna') {
             hasVaccines = true;
-            vaccineProducts.push({ producto, quantity: item.quantity });
+            vaccineProducts.push({ producto, quantity: item.quantity, nextDoseDate: item.nextDoseDate });
           } else if (categoryLower === 'desparasitantes' || categoryLower === 'desparasitante') {
             hasDewormers = true;
-            dewormerProducts.push({ producto, quantity: item.quantity });
+            dewormerProducts.push({ producto, quantity: item.quantity, nextDoseDate: item.nextDoseDate });
           }
         }
       }
@@ -382,54 +399,34 @@ router.post('/', authenticateToken, async (req, res) => {
         }
         
         // Agregar vacunas al carnet
-        for (const { producto, quantity } of vaccineProducts) {
+        for (const { producto, quantity, nextDoseDate } of vaccineProducts) {
           for (let i = 0; i < quantity; i++) {
             const vacunaEntry = {
               vacuna: producto._id,
               nombre: producto.name,
               tipo: 'vacuna',
               fecha: getCurrentDateGMT7(),
+              proximaDosis: nextDoseDate || null,
               venta: venta._id
             };
             carnet.vacunas.push(vacunaEntry);
             
-            // Crear recordatorio automático para próxima dosis (30 días después)
-            try {
-              const proximaDosis = new Date(getCurrentDateGMT7());
-              proximaDosis.setDate(proximaDosis.getDate() + 30);
-              
-              await Recordatorio.create({
-                title: `Próxima vacuna - ${producto.name}`,
-                description: `Próxima dosis de ${producto.name} para ${mascotaDoc.name}`,
-                date: proximaDosis,
-                type: 'vacuna',
-                priority: 'media',
-                relatedId: mascota,
-                relatedModel: 'Mascota',
-                status: 'pendiente',
-                user: user
-              });
-            } catch (reminderError) {
-              console.error('Error al crear recordatorio automático de vacuna:', reminderError);
-              // No fallar la venta si falla el recordatorio
-            }
+            // NO crear recordatorio automático - el usuario indica la próxima dosis manualmente
           }
         }
         
         // Agregar desparasitantes al carnet
-        for (const { producto, quantity } of dewormerProducts) {
+        for (const { producto, quantity, nextDoseDate } of dewormerProducts) {
           for (let i = 0; i < quantity; i++) {
             const desparasitanteEntry = {
               vacuna: producto._id,
               nombre: producto.name,
               tipo: 'desparasitante',
               fecha: getCurrentDateGMT7(),
+              proximaDosis: nextDoseDate || null,
               venta: venta._id
             };
             carnet.vacunas.push(desparasitanteEntry);
-            
-            // NO crear recordatorio automático para desparasitantes
-            // La próxima aplicación debe configurarse manualmente según el producto específico
           }
         }
         
@@ -638,10 +635,10 @@ router.put('/:id', authenticateToken, async (req, res) => {
     for (const item of venta.items) {
       if (item.type === 'producto') {
         const producto = await Producto.findById(item.item).select('name price');
-        item.item = producto;
+        item.item = producto || { name: 'Producto no disponible', price: 0 };
       } else if (item.type === 'servicio') {
         const servicio = await Servicio.findById(item.item).select('name price');
-        item.item = servicio;
+        item.item = servicio || { name: 'Servicio no disponible', price: 0 };
       }
     }
 

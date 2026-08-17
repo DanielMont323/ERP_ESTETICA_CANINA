@@ -26,6 +26,9 @@ const itemVentaSchema = new mongoose.Schema({
     type: Number,
     required: false,
     min: 0
+  },
+  nextDoseDate: {
+    type: Date
   }
 });
 

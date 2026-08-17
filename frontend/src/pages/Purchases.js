@@ -61,9 +61,12 @@ const Purchases = () => {
 
   useEffect(() => {
     fetchData();
+  }, [fetchData]);
+
+  useEffect(() => {
     fetchSuppliers();
     fetchProducts();
-  }, [fetchData]);
+  }, []);
 
   // Atajo ESC para cerrar modal
   useEffect(() => {
@@ -432,8 +435,8 @@ const Purchases = () => {
 
       {/* Purchases Table */}
       <div className="card">
-        <div className="overflow-x-auto">
-          <table className="table">
+        <div className="table-container">
+          <table className="table table-responsive">
             <thead>
               <tr>
                 <th>Fecha</th>
@@ -506,7 +509,7 @@ const Purchases = () => {
           <div className="flex items-center justify-center min-h-screen px-4">
             <div className="modal-overlay" onClick={() => setShowModal(false)} />
             
-            <div className="relative modal-content max-w-4xl w-full max-h-[90vh] overflow-y-auto animate-slide-up">
+            <div className="relative modal-content max-w-4xl w-full sm:max-w-4xl max-h-[90vh] overflow-y-auto animate-slide-up">
               <div className="p-6">
                 <div className="flex justify-between items-center mb-4">
                   <h2 className="text-xl font-semibold text-gray-900">

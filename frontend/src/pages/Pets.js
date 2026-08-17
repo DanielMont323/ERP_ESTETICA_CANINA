@@ -394,7 +394,7 @@ const Pets = () => {
           <div className="flex items-center justify-center min-h-screen px-4">
             <div className="modal-overlay" onClick={() => setShowModal(false)} />
             
-            <div className="relative modal-content max-w-md w-full p-6 animate-slide-up">
+            <div className="relative modal-content max-w-md w-full sm:max-w-md p-6 animate-slide-up">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">
                 {editingPet ? 'Editar Mascota' : 'Nueva Mascota'}
               </h3>

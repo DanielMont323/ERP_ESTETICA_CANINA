@@ -51,6 +51,17 @@ const productoSchema = new mongoose.Schema({
     type: Boolean,
     default: true
   },
+  isDeleted: {
+    type: Boolean,
+    default: false
+  },
+  deletedAt: {
+    type: Date
+  },
+  deletedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Usuario'
+  },
   createdAt: {
     type: Date,
     default: Date.now
@@ -74,5 +85,14 @@ productoSchema.pre('save', function(next) {
   this.updatedAt = Date.now();
   next();
 });
+
+// Índices para optimizar consultas
+productoSchema.index({ name: 1 });
+productoSchema.index({ category: 1 });
+productoSchema.index({ isActive: 1 });
+productoSchema.index({ isDeleted: 1 });
+productoSchema.index({ stock: 1 });
+productoSchema.index({ isActive: 1, isDeleted: 1 });
+productoSchema.index({ name: 1, isActive: 1, isDeleted: 1 });
 
 module.exports = mongoose.model('Producto', productoSchema);

@@ -1,22 +1,28 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { productsAPI, productCategoriesAPI } from '../services/api';
 import toast from 'react-hot-toast';
 import { SkeletonTable } from '../components/Skeleton';
 import ConfirmModal from '../components/ConfirmModal';
+import { useAuth } from '../contexts/AuthContext';
 import {
   Plus,
   Search,
   Edit,
   Trash2,
   Package,
-  AlertTriangle
+  AlertTriangle,
+  EyeOff
 } from 'lucide-react';
 
 const Products = () => {
+  const { user } = useAuth();
+  const userRole = user?.role || 'user';
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [showInactive, setShowInactive] = useState(false);
+  const [showDeleted, setShowDeleted] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteProductId, setDeleteProductId] = useState(null);
@@ -35,13 +41,51 @@ const Products = () => {
 
   useEffect(() => {
     fetchProducts();
+  }, []);
+
+  useEffect(() => {
     fetchCategories();
   }, []);
 
+  useEffect(() => {
+    if (showInactive !== undefined || showDeleted !== undefined) {
+      fetchProducts();
+    }
+  }, [showInactive, showDeleted]);
+
+  useEffect(() => {
+    const debounceTimer = setTimeout(() => {
+      fetchProducts();
+    }, 300);
+    return () => clearTimeout(debounceTimer);
+  }, [searchTerm, filter]);
+
   const fetchProducts = async () => {
     try {
-      const response = await productsAPI.getAll();
-      setProducts(response.data.data);
+      if (showDeleted && userRole === 'admin') {
+        const response = await productsAPI.getArchived();
+        setProducts(response.data.data);
+      } else {
+        const params = {
+          page: 1,
+          limit: 50
+        };
+        if (showInactive && userRole === 'admin') {
+          params.active = 'false';
+        }
+        if (searchTerm) {
+          params.search = searchTerm;
+        }
+        if (filter === 'low-stock') {
+          params.lowStock = 'true';
+        }
+        if (filter === 'out-of-stock') {
+          params.active = 'true'; // Solo activos
+          // Backend no tiene filtro específico para out-of-stock, filtraremos en frontend
+        }
+        const response = await productsAPI.getAll(params);
+        setProducts(response.data.data);
+      }
     } catch (error) {
       toast.error('Error al cargar productos');
     } finally {
@@ -114,13 +158,31 @@ const Products = () => {
     setShowDeleteModal(true);
   };
 
+  const getProductToDelete = () => {
+    return products.find(p => p._id === deleteProductId);
+  };
+
   const confirmDelete = async () => {
     try {
-      await productsAPI.delete(deleteProductId);
-      toast.success('Producto desactivado correctamente');
+      const response = await productsAPI.delete(deleteProductId);
+      if (response.data.action === 'archived') {
+        toast.success('Producto archivado correctamente');
+      } else {
+        toast.success('Producto eliminado definitivamente');
+      }
       fetchProducts();
     } catch (error) {
-      toast.error('Error al desactivar producto');
+      toast.error(error.response?.data?.message || 'Error al eliminar producto');
+    }
+  };
+
+  const handleRestore = async (id) => {
+    try {
+      await productsAPI.restore(id);
+      toast.success('Producto restaurado correctamente');
+      fetchProducts();
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Error al restaurar producto');
     }
   };
 
@@ -138,11 +200,9 @@ const Products = () => {
   };
 
   const filteredProducts = products.filter(product => {
-    const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesFilter = filter === 'all' || 
-      (filter === 'low-stock' && product.stock <= product.minStock) ||
-      (filter === 'out-of-stock' && product.stock === 0);
-    return matchesSearch && matchesFilter && product.isActive;
+    const matchesActive = showInactive && userRole === 'admin' ? true : product.isActive;
+    const matchesOutOfStock = filter === 'out-of-stock' ? product.stock === 0 : true;
+    return matchesActive && matchesOutOfStock;
   });
 
   const formatCurrency = (amount) => {
@@ -217,6 +277,24 @@ const Products = () => {
               >
                 Agotados
               </button>
+              {userRole === 'admin' && (
+                <button
+                  onClick={() => setShowInactive(!showInactive)}
+                  className={`btn btn-sm ${showInactive ? 'btn-info' : 'btn-secondary'}`}
+                >
+                  <EyeOff className="h-4 w-4 mr-1" />
+                  {showInactive ? 'Ocultar Inactivos' : 'Mostrar Inactivos'}
+                </button>
+              )}
+              {userRole === 'admin' && (
+                <button
+                  onClick={() => setShowDeleted(!showDeleted)}
+                  className={`btn btn-sm ${showDeleted ? 'btn-danger' : 'btn-secondary'}`}
+                >
+                  <Trash2 className="h-4 w-4 mr-1" />
+                  {showDeleted ? 'Ocultar Eliminados' : 'Mostrar Eliminados'}
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -224,8 +302,8 @@ const Products = () => {
 
       {/* Products Table */}
       <div className="card">
-        <div className="overflow-x-auto">
-          <table className="table">
+        <div className="table-container">
+          <table className="table table-responsive">
             <thead>
               <tr>
                 <th>Producto</th>
@@ -294,18 +372,34 @@ const Products = () => {
                     </td>
                     <td>
                       <div className="flex items-center space-x-2">
-                        <button
-                          onClick={() => handleEdit(product)}
-                          className="text-primary-600 hover:text-primary-900"
-                        >
-                          <Edit className="h-4 w-4" />
-                        </button>
-                        <button
-                          onClick={() => handleDelete(product._id)}
-                          className="text-danger-600 hover:text-danger-900"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
+                        {showDeleted ? (
+                          <button
+                            onClick={() => handleRestore(product._id)}
+                            className="text-success-600 hover:text-success-900"
+                            title="Restaurar producto"
+                          >
+                            ♻️
+                          </button>
+                        ) : (
+                          <>
+                            <button
+                              onClick={() => handleEdit(product)}
+                              className="text-primary-600 hover:text-primary-900"
+                              title="Editar"
+                            >
+                              <Edit className="h-4 w-4" />
+                            </button>
+                            {userRole === 'admin' && (
+                              <button
+                                onClick={() => handleDelete(product._id)}
+                                className="text-danger-600 hover:text-danger-900"
+                                title="Eliminar"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </button>
+                            )}
+                          </>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -468,9 +562,22 @@ const Products = () => {
           setDeleteProductId(null);
         }}
         onConfirm={confirmDelete}
-        title="Desactivar producto"
-        message="¿Estás seguro de que deseas desactivar este producto? Esta acción se puede deshacer más tarde."
-        confirmText="Desactivar"
+        title="Eliminar producto"
+        message={
+          <div>
+            <p className="mb-2">¿Estás seguro de que deseas eliminar este producto?</p>
+            {getProductToDelete() && (
+              <div className="mt-4 p-3 bg-gray-50 rounded text-sm">
+                <p><strong>Nombre:</strong> {getProductToDelete().name}</p>
+                <p><strong>SKU:</strong> {getProductToDelete().sku}</p>
+              </div>
+            )}
+            <p className="mt-3 text-sm text-gray-600">
+              Si el producto tiene historial de operaciones, será archivado en lugar de eliminarse definitivamente.
+            </p>
+          </div>
+        }
+        confirmText="Eliminar"
         type="danger"
       />
     </div>

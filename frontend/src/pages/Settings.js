@@ -75,7 +75,7 @@ const Settings = () => {
                       : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
                   }`}
                 >
-                  <Icon className="mr-3 h-5 w-5" />
+                  <Icon className="mr-3 h-5 w-5 flex-shrink-0" />
                   {tab.name}
                 </button>
               );

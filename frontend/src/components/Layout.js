@@ -106,14 +106,14 @@ const Layout = () => {
               <X className="h-6 w-6 text-white" />
             </button>
           </div>
-          <Sidebar navigation={navigation} isActive={isActive} />
+          <Sidebar navigation={navigation} isActive={isActive} onMobileClose={() => setSidebarOpen(false)} />
         </div>
       </div>
 
       {/* Static sidebar for desktop */}
       <div className="hidden md:flex md:flex-shrink-0">
         <div className="flex flex-col w-64">
-          <Sidebar navigation={navigation} isActive={isActive} />
+          <Sidebar navigation={navigation} isActive={isActive} onMobileClose={() => {}} />
         </div>
       </div>
 
@@ -189,7 +189,7 @@ const Layout = () => {
   );
 };
 
-const Sidebar = ({ navigation, isActive }) => {
+const Sidebar = ({ navigation, isActive, onMobileClose }) => {
   return (
     <div className="flex flex-col h-full bg-white border-r border-gray-200">
       <div className="flex items-center h-16 flex-shrink-0 px-6 bg-gradient-to-r from-primary-600 to-primary-700 shadow-sm">
@@ -203,6 +203,7 @@ const Sidebar = ({ navigation, isActive }) => {
             <Link
               key={item.name}
               to={item.href}
+              onClick={onMobileClose}
               className={`sidebar-item ${
                 isActive(item.href) ? 'active' : ''
               }`}

@@ -44,7 +44,7 @@ const ConfirmModal = ({
         />
         
         {/* Modal */}
-        <div className="relative modal-content max-w-md w-full p-6 animate-slide-up">
+        <div className="relative modal-content max-w-md w-full p-6 animate-slide-up sm:max-w-md w-full sm:w-auto">
           {/* Close button */}
           <button
             onClick={onClose}
@@ -69,10 +69,10 @@ const ConfirmModal = ({
           </div>
 
           {/* Actions */}
-          <div className="flex justify-center space-x-3">
+          <div className="flex flex-col sm:flex-row justify-center gap-3 sm:space-x-3">
             <button
               onClick={onClose}
-              className="btn btn-secondary btn-md"
+              className="btn btn-secondary btn-md w-full sm:w-auto"
             >
               {cancelText}
             </button>
@@ -81,7 +81,7 @@ const ConfirmModal = ({
                 onConfirm();
                 onClose();
               }}
-              className={`btn btn-md ${style.confirmBtn}`}
+              className={`btn btn-md ${style.confirmBtn} w-full sm:w-auto`}
             >
               {confirmText}
             </button>

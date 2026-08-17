@@ -156,8 +156,8 @@ const VaccinesCatalog = () => {
 
       {/* Vaccines Table */}
       <div className="card">
-        <div className="overflow-x-auto">
-          <table className="table">
+        <div className="table-container">
+          <table className="table table-responsive">
             <thead>
               <tr>
                 <th>Nombre</th>
@@ -223,7 +223,7 @@ const VaccinesCatalog = () => {
         <div className="fixed inset-0 z-50 overflow-y-auto">
           <div className="flex items-center justify-center min-h-screen px-4">
             <div className="modal-overlay" onClick={() => setShowModal(false)} />
-            <div className="relative modal-content max-w-md w-full animate-slide-up">
+            <div className="relative modal-content max-w-md w-full sm:max-w-md animate-slide-up">
               <div className="p-6">
                 <div className="flex justify-between items-center mb-4">
                   <h2 className="text-xl font-semibold text-gray-900">
