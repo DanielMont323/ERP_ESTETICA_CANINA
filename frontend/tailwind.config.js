@@ -6,6 +6,13 @@ module.exports = {
   theme: {
     extend: {
       colors: {
+        // BARBER DOG Brand Colors
+        brand: {
+          cream: '#FDF6D9',
+          burgundy: '#8B3A3A',
+          gold: '#D9A323',
+        },
+        // Functional colors (maintained for UI states)
         primary: {
           50: '#eff6ff',
           100: '#dbeafe',
