@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useKeyboardFormNavigation } from '../hooks/useKeyboardFormNavigation';
+import { useEscapeKey } from '../hooks/useEscapeKey';
 import { customersAPI, salesAPI } from '../services/api';
 import toast from 'react-hot-toast';
 import { Skeleton, SkeletonCard } from '../components/Skeleton';
@@ -36,6 +38,7 @@ const Customers = () => {
     notes: ''
   });
   const nameInputRef = useRef(null);
+  const formRef = useRef(null);
 
   useEffect(() => {
     fetchCustomers();
@@ -62,6 +65,12 @@ const Customers = () => {
     window.addEventListener('openNewCustomer', handleOpenNewCustomer);
     return () => window.removeEventListener('openNewCustomer', handleOpenNewCustomer);
   }, []);
+
+  // Navegación por teclado en formulario
+  useKeyboardFormNavigation(formRef, showModal);
+
+  // Manejo de ESC para cerrar modal
+  useEscapeKey(() => setShowModal(false), showModal);
 
   const fetchCustomers = async () => {
     try {
@@ -336,7 +345,7 @@ const Customers = () => {
                 {editingCustomer ? 'Editar Cliente' : 'Nuevo Cliente'}
               </h3>
               
-              <form onSubmit={handleSubmit}>
+              <form ref={formRef} onSubmit={handleSubmit}>
                 <div className="space-y-4">
                   <div>
                     <label className="form-label">Nombre completo *</label>

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { useKeyboardFormNavigation } from '../hooks/useKeyboardFormNavigation';
 import { salesAPI, productsAPI, servicesAPI, customersAPI, petsAPI } from '../services/api';
 import toast from 'react-hot-toast';
 import { SkeletonTable } from '../components/Skeleton';
@@ -60,6 +61,7 @@ const Sales = () => {
   const [searchResults, setSearchResults] = useState([]);
   const [selectedSearchIndex, setSelectedSearchIndex] = useState(-1);
   const searchInputRef = useRef(null);
+  const formRef = useRef(null);
   const userRole = user?.role || 'user';
 
   // Listener para evento personalizado de F5 contextual (nueva venta)
@@ -75,6 +77,9 @@ const Sales = () => {
     window.addEventListener('openNewSale', handleOpenNewSale);
     return () => window.removeEventListener('openNewSale', handleOpenNewSale);
   }, []);
+
+  // Navegación por teclado en formulario
+  useKeyboardFormNavigation(formRef, showModal);
   
   // Campos manuales para Mercado Libre (solo ADMIN)
   const [manualSubtotal, setManualSubtotal] = useState('');
@@ -818,7 +823,7 @@ const Sales = () => {
           <div className="flex items-center justify-center min-h-screen px-4">
             <div className="modal-overlay" onClick={() => setShowModal(false)} />
             
-            <div className="relative modal-content max-w-4xl w-full sm:max-w-4xl max-h-[90vh] overflow-y-auto animate-slide-up">
+            <div ref={formRef} className="relative modal-content max-w-4xl w-full sm:max-w-4xl max-h-[90vh] overflow-y-auto animate-slide-up">
               <div className="p-6">
                 <h3 className="text-lg font-semibold text-gray-900 mb-6">Nueva Venta</h3>
                 

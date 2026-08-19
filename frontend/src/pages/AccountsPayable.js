@@ -4,6 +4,7 @@ import toast from 'react-hot-toast';
 import { SkeletonTable } from '../components/Skeleton';
 import { AlertTriangle, X } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { useEscapeKey } from '../hooks/useEscapeKey';
 
 const AccountsPayable = () => {
   const { user } = useAuth();
@@ -27,6 +28,12 @@ const AccountsPayable = () => {
   useEffect(() => {
     fetchAccounts();
   }, []);
+
+  // Manejo de ESC para cerrar modal de pago individual
+  useEscapeKey(() => setShowPaymentModal(false), showPaymentModal);
+
+  // Manejo de ESC para cerrar modal de pago masivo
+  useEscapeKey(() => setShowMassivePaymentModal(false), showMassivePaymentModal);
 
   const fetchAccounts = async () => {
     try {

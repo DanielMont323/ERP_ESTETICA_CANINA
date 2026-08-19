@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useKeyboardFormNavigation } from '../hooks/useKeyboardFormNavigation';
 import { purchasesAPI, suppliersAPI, productsAPI, supplierProductsAPI } from '../services/api';
 import toast from 'react-hot-toast';
 import { SkeletonTable } from '../components/Skeleton';
@@ -44,6 +45,7 @@ const Purchases = () => {
   const [productSearchQuery, setProductSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const productSearchInputRef = useRef(null);
+  const formRef = useRef(null);
 
   // Listener para evento personalizado de F4 contextual (nueva compra)
   useEffect(() => {
@@ -60,6 +62,9 @@ const Purchases = () => {
     window.addEventListener('openNewPurchase', handleOpenNewPurchase);
     return () => window.removeEventListener('openNewPurchase', handleOpenNewPurchase);
   }, []);
+
+  // Navegación por teclado en formulario
+  useKeyboardFormNavigation(formRef, showModal);
 
   const fetchData = useCallback(async () => {
     try {
@@ -515,7 +520,7 @@ const Purchases = () => {
           <div className="flex items-center justify-center min-h-screen px-4">
             <div className="modal-overlay" onClick={() => setShowModal(false)} />
             
-            <div className="relative modal-content max-w-4xl w-full sm:max-w-4xl max-h-[90vh] overflow-y-auto animate-slide-up">
+            <div ref={formRef} className="relative modal-content max-w-4xl w-full sm:max-w-4xl max-h-[90vh] overflow-y-auto animate-slide-up">
               <div className="p-6">
                 <div className="flex justify-between items-center mb-4">
                   <h2 className="text-xl font-semibold text-gray-900">

@@ -4,6 +4,8 @@ import toast from 'react-hot-toast';
 import { SkeletonTable } from '../components/Skeleton';
 import ConfirmModal from '../components/ConfirmModal';
 import { useAuth } from '../contexts/AuthContext';
+import { useKeyboardFormNavigation } from '../hooks/useKeyboardFormNavigation';
+import { useEscapeKey } from '../hooks/useEscapeKey';
 import {
   Plus,
   Search,
@@ -42,6 +44,7 @@ const Products = () => {
   });
   const [filter, setFilter] = useState('all');
   const nameInputRef = useRef(null);
+  const formRef = useRef(null);
 
   useEffect(() => {
     fetchProducts();
@@ -71,7 +74,19 @@ const Products = () => {
   // Listener para evento personalizado de F2 contextual (nuevo producto)
   useEffect(() => {
     const handleOpenNewProduct = () => {
-      resetForm();
+      setEditingProduct(null);
+      setFormData({
+        name: '',
+        category: '',
+        supplier: '',
+        cost: '',
+        price: '',
+        stock: '',
+        minStock: '5',
+        idealStock: '',
+        sku: '',
+        discountPercentage: '0'
+      });
       setShowModal(true);
       // Colocar foco en el campo nombre después de que el modal se abra
       setTimeout(() => {
@@ -82,6 +97,12 @@ const Products = () => {
     window.addEventListener('openNewProduct', handleOpenNewProduct);
     return () => window.removeEventListener('openNewProduct', handleOpenNewProduct);
   }, []);
+
+  // Navegación por teclado en formulario
+  useKeyboardFormNavigation(formRef, showModal);
+
+  // Manejo de ESC para cerrar modal
+  useEscapeKey(() => setShowModal(false), showModal);
 
   const fetchProducts = async () => {
     try {
@@ -468,7 +489,7 @@ const Products = () => {
                 {editingProduct ? 'Editar Producto' : 'Nuevo Producto'}
               </h3>
               
-              <form onSubmit={handleSubmit}>
+              <form ref={formRef} onSubmit={handleSubmit}>
                 <div className="space-y-4">
                   <div>
                     <label className="form-label">Nombre del producto</label>

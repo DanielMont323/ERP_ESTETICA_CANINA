@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useKeyboardFormNavigation } from '../hooks/useKeyboardFormNavigation';
+import { useEscapeKey } from '../hooks/useEscapeKey';
 import { petsAPI, customersAPI, salesAPI, vaccinationCardAPI } from '../services/api';
 import toast from 'react-hot-toast';
 import { Skeleton, SkeletonCard } from '../components/Skeleton';
@@ -36,6 +38,7 @@ const Pets = () => {
     ownerId: ''
   });
   const nameInputRef = useRef(null);
+  const formRef = useRef(null);
 
   useEffect(() => {
     fetchData();
@@ -65,6 +68,12 @@ const Pets = () => {
     window.addEventListener('openNewPet', handleOpenNewPet);
     return () => window.removeEventListener('openNewPet', handleOpenNewPet);
   }, []);
+
+  // Navegación por teclado en formulario
+  useKeyboardFormNavigation(formRef, showModal);
+
+  // Manejo de ESC para cerrar modal
+  useEscapeKey(() => setShowModal(false), showModal);
 
   const fetchData = async () => {
     try {
@@ -423,7 +432,7 @@ const Pets = () => {
               <h3 className="text-lg font-semibold text-gray-900 mb-4">
                 {editingPet ? 'Editar Mascota' : 'Nueva Mascota'}
               </h3>
-              <form onSubmit={handleSubmit} className="mt-4 space-y-4">
+              <form ref={formRef} onSubmit={handleSubmit} className="mt-4 space-y-4">
                 <div>
                   <label className="form-label">Nombre</label>
                   <input

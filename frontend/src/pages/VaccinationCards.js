@@ -3,6 +3,7 @@ import { vaccinationCardAPI, vaccinesAPI } from '../services/api';
 import toast from 'react-hot-toast';
 import { Skeleton, SkeletonCard } from '../components/Skeleton';
 import ConfirmModal from '../components/ConfirmModal';
+import { useEscapeKey } from '../hooks/useEscapeKey';
 import {
   Syringe,
   Calendar,
@@ -40,6 +41,9 @@ const VaccinationCards = () => {
       fetchVaccines();
     }
   }, [showVaccineModal]);
+
+  // Manejo de ESC para cerrar modal de agregar vacuna
+  useEscapeKey(() => setShowVaccineModal(false), showVaccineModal);
 
   const fetchVaccines = async () => {
     setLoadingVaccines(true);
