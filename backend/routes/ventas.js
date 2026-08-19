@@ -207,84 +207,114 @@ router.post('/', authenticateToken, async (req, res) => {
       });
     }
 
-    // 1.5. Detectar si hay vacunas o desparasitantes en la venta
+    // 1.5. Detectar si hay vacunas o desparasitantes en la venta y validar mascotas por item
     let hasVaccines = false;
     let hasDewormers = false;
     const vaccineProducts = [];
     const dewormerProducts = [];
     
+    // Función para verificar si un string es un ObjectId válido de MongoDB (24 caracteres hex)
+    const isObjectId = (str) => {
+      return typeof str === 'string' && /^[0-9a-fA-F]{24}$/.test(str);
+    };
+    
+    // Función para obtener el nombre de la categoría
+    const getCategoryName = async (category) => {
+      if (!category) return '';
+      
+      if (category && typeof category === 'object') {
+        // Si es ObjectId, buscar la categoría por nombre
+        const CategoriaProducto = require('../models/CategoriaProducto');
+        const categoriaDoc = await CategoriaProducto.findById(category);
+        return categoriaDoc ? categoriaDoc.name : '';
+      } else if (category && isObjectId(category)) {
+        // Si es String pero parece un ObjectId, buscar en CategoriaProducto
+        const CategoriaProducto = require('../models/CategoriaProducto');
+        const categoriaDoc = await CategoriaProducto.findById(category);
+        return categoriaDoc ? categoriaDoc.name : '';
+      } else if (category && typeof category === 'string') {
+        // Si es String normal, usar directamente
+        return category;
+      }
+      return '';
+    };
+    
+    // Función para verificar si una categoría es vacuna o desparasitante
+    const isVaccineOrDewormer = (categoryName) => {
+      const categoryLower = categoryName.toString().toLowerCase();
+      return categoryLower === 'vacunas' || categoryLower === 'vacuna' ||
+             categoryLower === 'desparasitantes' || categoryLower === 'desparasitante' ||
+             categoryLower.includes('desparasitante');
+    };
+    
     for (const item of items) {
       if (item.type === 'producto') {
         const producto = await Producto.findById(item.item);
         if (producto) {
-          // Verificar si la categoría es "Vacunas" o "Desparasitantes" (case insensitive)
-          // category es Mixed: puede ser String u ObjectId
-          let category = producto.category;
+          const categoryName = await getCategoryName(producto.category);
+          const isVaccineDewormer = isVaccineOrDewormer(categoryName);
           
-          // Función para verificar si un string es un ObjectId válido de MongoDB (24 caracteres hex)
-          const isObjectId = (str) => {
-            return typeof str === 'string' && /^[0-9a-fA-F]{24}$/.test(str);
-          };
-          
-          if (category && typeof category === 'object') {
-            // Si es ObjectId, buscar la categoría por nombre
-            const CategoriaProducto = require('../models/CategoriaProducto');
-            const categoriaDoc = await CategoriaProducto.findById(category);
-            category = categoriaDoc ? categoriaDoc.name : '';
-          } else if (category && isObjectId(category)) {
-            // Si es String pero parece un ObjectId, buscar en CategoriaProducto
-            const CategoriaProducto = require('../models/CategoriaProducto');
-            const categoriaDoc = await CategoriaProducto.findById(category);
-            category = categoriaDoc ? categoriaDoc.name : '';
-          } else if (category && typeof category === 'string') {
-            // Si es String normal, usar directamente
-            category = category;
-          } else {
-            category = '';
-          }
-          
-          const categoryLower = category.toString().toLowerCase();
-          
-          if (categoryLower === 'vacunas' || categoryLower === 'vacuna') {
-            hasVaccines = true;
-            vaccineProducts.push({ producto, quantity: item.quantity, nextDoseDate: item.nextDoseDate });
-          } else if (categoryLower === 'desparasitantes' || categoryLower === 'desparasitante') {
-            hasDewormers = true;
-            dewormerProducts.push({ producto, quantity: item.quantity, nextDoseDate: item.nextDoseDate });
+          if (isVaccineDewormer) {
+            // Validar que el item tenga mascota si es vacuna/desparasitante
+            if (!item.mascota) {
+              return res.status(400).json({
+                success: false,
+                message: `El producto "${producto.name}" es una vacuna/desparasitante y debe tener una mascota asociada`
+              });
+            }
+            
+            // Validar que la mascota pertenezca al cliente
+            if (!customer) {
+              return res.status(400).json({
+                success: false,
+                message: 'Para vender vacunas o desparasitantes debe seleccionar un cliente'
+              });
+            }
+            
+            const mascotaDoc = await Mascota.findById(item.mascota);
+            if (!mascotaDoc) {
+              return res.status(404).json({
+                success: false,
+                message: 'Mascota no encontrada'
+              });
+            }
+            
+            if (!mascotaDoc.owner || mascotaDoc.owner.toString() !== customer) {
+              return res.status(403).json({
+                success: false,
+                message: `La mascota "${mascotaDoc.name}" no pertenece al cliente seleccionado`
+              });
+            }
+            
+            const categoryLower = categoryName.toString().toLowerCase();
+            if (categoryLower === 'vacunas' || categoryLower === 'vacuna') {
+              hasVaccines = true;
+              vaccineProducts.push({ producto, quantity: item.quantity, nextDoseDate: item.nextDoseDate, mascota: item.mascota });
+            } else {
+              hasDewormers = true;
+              dewormerProducts.push({ producto, quantity: item.quantity, nextDoseDate: item.nextDoseDate, mascota: item.mascota });
+            }
           }
         }
       }
     }
 
-    // 2. Validar relación cliente-mascota
-    if (mascota) {
-      if (!customer) {
-        return res.status(400).json({
-          success: false,
-          message: 'Si se selecciona una mascota, debe seleccionar un cliente'
-        });
-      }
+    // Mantener compatibilidad con ventas antiguas que usan mascota a nivel de venta
+    if (mascota && !customer) {
+      return res.status(400).json({
+        success: false,
+        message: 'Si se selecciona una mascota, debe seleccionar un cliente'
+      });
+    }
 
+    if (mascota && customer) {
       const mascotaDoc = await Mascota.findById(mascota);
-      if (!mascotaDoc) {
-        return res.status(404).json({
-          success: false,
-          message: 'Mascota no encontrada'
-        });
-      }
-
-      if (!mascotaDoc.owner || mascotaDoc.owner.toString() !== customer) {
+      if (mascotaDoc && (!mascotaDoc.owner || mascotaDoc.owner.toString() !== customer)) {
         return res.status(403).json({
           success: false,
           message: 'La mascota no pertenece al cliente seleccionado'
         });
       }
-    } else if (hasVaccines || hasDewormers) {
-      // Si hay vacunas o desparasitantes pero no hay mascota, rechazar
-      return res.status(400).json({
-        success: false,
-        message: 'Para vender vacunas o desparasitantes debe seleccionar una mascota'
-      });
     }
 
     // 3. Validar monto recibido para efectivo
@@ -333,6 +363,40 @@ router.post('/', authenticateToken, async (req, res) => {
       ...(saleChannel === 'mercado_libre' && netIncome !== undefined && { netIncome })
     });
 
+    // 5.5. Agregar venta al historial de compras del cliente (solo si hay cliente y hay productos no vacuna/desparasitante)
+    if (customer) {
+      // Verificar si hay productos que no son vacunas/desparasitantes
+      let hasNonVaccineProducts = false;
+      
+      for (const item of items) {
+        if (item.type === 'producto') {
+          const producto = await Producto.findById(item.item);
+          if (producto) {
+            const categoryName = await getCategoryName(producto.category);
+            const isVaccineDewormer = isVaccineOrDewormer(categoryName);
+            
+            if (!isVaccineDewormer) {
+              hasNonVaccineProducts = true;
+              break;
+            }
+          }
+        } else if (item.type === 'servicio') {
+          // Los servicios también se agregan al historial de compras
+          hasNonVaccineProducts = true;
+          break;
+        }
+      }
+      
+      // Solo agregar al historial si hay productos/servicios no vacuna/desparasitante
+      if (hasNonVaccineProducts) {
+        const Cliente = require('../models/Cliente');
+        await Cliente.findByIdAndUpdate(
+          customer,
+          { $push: { purchaseHistory: venta._id } }
+        );
+      }
+    }
+
     // 6. Calcular y validar cambio para efectivo
     if (paymentMethod === 'efectivo' && amountReceived) {
       const calculatedChange = Math.round((amountReceived - venta.total) * 100) / 100;
@@ -378,28 +442,29 @@ router.post('/', authenticateToken, async (req, res) => {
     }
 
     // 8. Registrar vacunas y desparasitantes en el carnet si aplica
-    if ((hasVaccines || hasDewormers) && mascota) {
+    if (hasVaccines || hasDewormers) {
       try {
-        const mascotaDoc = await Mascota.findById(mascota);
-        const clienteDoc = await Cliente.findById(customer);
-        
-        // Buscar o crear carnet de vacunación
-        let carnet = await CarnetVacunacion.findOne({ mascota });
-        
-        if (!carnet) {
-          carnet = new CarnetVacunacion({
-            mascota,
-            nombreMascota: mascotaDoc.name,
-            especie: mascotaDoc.type,
-            raza: mascotaDoc.breed,
-            propietario: customer,
-            nombrePropietario: clienteDoc.name,
-            vacunas: []
-          });
-        }
-        
-        // Agregar vacunas al carnet
-        for (const { producto, quantity, nextDoseDate } of vaccineProducts) {
+        // Procesar cada producto con su mascota específica
+        for (const { producto, quantity, nextDoseDate, mascota } of vaccineProducts) {
+          const mascotaDoc = await Mascota.findById(mascota);
+          const clienteDoc = await Cliente.findById(customer);
+          
+          // Buscar o crear carnet de vacunación para esta mascota específica
+          let carnet = await CarnetVacunacion.findOne({ mascota });
+          
+          if (!carnet) {
+            carnet = new CarnetVacunacion({
+              mascota,
+              nombreMascota: mascotaDoc.name,
+              especie: mascotaDoc.type,
+              raza: mascotaDoc.breed,
+              propietario: customer,
+              nombrePropietario: clienteDoc.name,
+              vacunas: []
+            });
+          }
+          
+          // Agregar vacunas al carnet
           for (let i = 0; i < quantity; i++) {
             const vacunaEntry = {
               vacuna: producto._id,
@@ -410,13 +475,32 @@ router.post('/', authenticateToken, async (req, res) => {
               venta: venta._id
             };
             carnet.vacunas.push(vacunaEntry);
-            
-            // NO crear recordatorio automático - el usuario indica la próxima dosis manualmente
           }
+          
+          await carnet.save();
         }
         
-        // Agregar desparasitantes al carnet
-        for (const { producto, quantity, nextDoseDate } of dewormerProducts) {
+        // Procesar desparasitantes
+        for (const { producto, quantity, nextDoseDate, mascota } of dewormerProducts) {
+          const mascotaDoc = await Mascota.findById(mascota);
+          const clienteDoc = await Cliente.findById(customer);
+          
+          // Buscar o crear carnet de vacunación para esta mascota específica
+          let carnet = await CarnetVacunacion.findOne({ mascota });
+          
+          if (!carnet) {
+            carnet = new CarnetVacunacion({
+              mascota,
+              nombreMascota: mascotaDoc.name,
+              especie: mascotaDoc.type,
+              raza: mascotaDoc.breed,
+              propietario: customer,
+              nombrePropietario: clienteDoc.name,
+              vacunas: []
+            });
+          }
+          
+          // Agregar desparasitantes al carnet
           for (let i = 0; i < quantity; i++) {
             const desparasitanteEntry = {
               vacuna: producto._id,
@@ -428,9 +512,9 @@ router.post('/', authenticateToken, async (req, res) => {
             };
             carnet.vacunas.push(desparasitanteEntry);
           }
+          
+          await carnet.save();
         }
-        
-        await carnet.save();
       } catch (error) {
         console.error('Error al registrar vacunas/desparasitantes en carnet:', error);
         // No fallar la venta si falla el registro del carnet, solo loggear el error

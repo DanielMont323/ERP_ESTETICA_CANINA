@@ -34,6 +34,10 @@ const clienteSchema = new mongoose.Schema({
     type: String,
     trim: true
   },
+  purchaseHistory: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Venta'
+  }],
   isActive: {
     type: Boolean,
     default: true

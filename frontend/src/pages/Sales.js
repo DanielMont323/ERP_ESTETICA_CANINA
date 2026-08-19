@@ -173,6 +173,14 @@ const Sales = () => {
   // Cargar mascotas cuando cambia el cliente seleccionado
   useEffect(() => {
     fetchPetsByCustomer(selectedCustomer);
+    
+    // Limpiar mascotas seleccionadas en el carrito cuando cambia el cliente
+    if (cart.length > 0) {
+      setCart(cart.map(item => ({
+        ...item,
+        mascota: ''
+      })));
+    }
   }, [selectedCustomer, fetchPetsByCustomer]);
 
   // Búsqueda de productos con debounce
@@ -246,7 +254,8 @@ const Sales = () => {
         unitPrice: item.price,
         name: item.name,
         category: item.category,
-        nextDoseDate: ''
+        nextDoseDate: '',
+        mascota: ''
       }]);
     }
   };
@@ -455,12 +464,12 @@ const Sales = () => {
           item: item.item,
           quantity: item.quantity,
           unitPrice: item.unitPrice,
-          nextDoseDate: item.nextDoseDate || null
+          nextDoseDate: item.nextDoseDate || null,
+          mascota: item.mascota || null
         })),
         paymentMethod,
         saleChannel,
         customer: selectedCustomer || null,
-        mascota: selectedPet || null,
         notes,
         user: user?._id || null
       };
@@ -554,7 +563,7 @@ const Sales = () => {
                 id="useRange"
                 checked={dateRange.useRange}
                 onChange={(e) => setDateRange({ ...dateRange, useRange: e.target.checked })}
-                className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
+                className="h-4 w-4 text-brand-burgundy focus:ring-primary-500 border-gray-300 rounded"
               />
               <label htmlFor="useRange" className="text-sm font-medium text-gray-900">
                 Usar rango de fechas
@@ -678,7 +687,7 @@ const Sales = () => {
                         <>
                           <button
                             onClick={() => handleEditSale(sale)}
-                            className="text-primary-600 hover:text-primary-900"
+                            className="text-brand-burgundy hover:text-primary-900"
                             title="Editar venta"
                           >
                             <Edit className="h-4 w-4" />
@@ -786,25 +795,6 @@ const Sales = () => {
                       </select>
                     </div>
 
-                    {/* Pet Selection */}
-                    {selectedCustomer && (
-                      <div>
-                        <label className="form-label">Mascota (opcional)</label>
-                        <select
-                          value={selectedPet}
-                          onChange={(e) => setSelectedPet(e.target.value)}
-                          className="form-input"
-                        >
-                          <option value="">Seleccionar mascota...</option>
-                          {pets.map(pet => (
-                            <option key={pet._id} value={pet._id}>
-                              {pet.name} - {pet.breed}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                    )}
-
                     {/* Product Search */}
                     <div>
                       <label className="form-label">Buscar producto por nombre o SKU...</label>
@@ -832,7 +822,7 @@ const Sales = () => {
                             >
                               <p className="font-medium text-gray-900">{product.name}</p>
                               <p className="text-sm text-gray-500">SKU: {product.sku}</p>
-                              <p className="text-sm font-medium text-primary-600">
+                              <p className="text-sm font-medium text-brand-burgundy">
                                 {formatCurrency(product.price)} - Stock: {product.stock}
                               </p>
                             </div>
@@ -851,7 +841,7 @@ const Sales = () => {
                               <div className="flex-1">
                                 <p className="font-medium text-gray-900">{product.name}</p>
                                 <p className="text-sm text-gray-500">Stock: {product.stock}</p>
-                                <p className="text-sm font-medium text-primary-600">
+                                <p className="text-sm font-medium text-brand-burgundy">
                                   {formatCurrency(product.price)}
                                 </p>
                               </div>
@@ -877,7 +867,7 @@ const Sales = () => {
                               <div className="flex-1">
                                 <p className="font-medium text-gray-900">{service.name}</p>
                                 <p className="text-sm text-gray-500">{service.duration} min</p>
-                                <p className="text-sm font-medium text-primary-600">
+                                <p className="text-sm font-medium text-brand-burgundy">
                                   {formatCurrency(service.price)}
                                 </p>
                               </div>
@@ -913,8 +903,9 @@ const Sales = () => {
                             }
                             
                             const isVaccine = categoryLower === 'vacunas' || categoryLower === 'vacuna';
-                            const isDewormer = categoryLower === 'desparasitantes' || categoryLower === 'desparasitante';
+                            const isDewormer = categoryLower === 'desparasitantes' || categoryLower === 'desparasitante' || categoryLower.includes('desparasitante');
                             const showNextDose = (isVaccine || isDewormer) && item.type === 'producto';
+                            const showMascotaSelector = (isVaccine || isDewormer) && item.type === 'producto';
 
                             return (
                               <div key={index} className="space-y-2">
@@ -947,6 +938,31 @@ const Sales = () => {
                                     </button>
                                   </div>
                                 </div>
+                                {showMascotaSelector && (
+                                  <div className="pl-2 bg-yellow-50 border border-yellow-200 rounded-lg p-2">
+                                    <label className="text-xs font-semibold text-yellow-800">⚠️ Mascota a la que se aplicará (OBLIGATORIO):</label>
+                                    <select
+                                      value={item.mascota || ''}
+                                      onChange={(e) => {
+                                        const newCart = [...cart];
+                                        newCart[index].mascota = e.target.value;
+                                        setCart(newCart);
+                                      }}
+                                      className="form-input text-sm py-1 border-yellow-300 focus:border-yellow-500 focus:ring-yellow-500"
+                                      required
+                                    >
+                                      <option value="">Seleccionar mascota...</option>
+                                      {pets.map(pet => (
+                                        <option key={pet._id} value={pet._id}>
+                                          {pet.name} - {pet.breed}
+                                        </option>
+                                      ))}
+                                    </select>
+                                    {!item.mascota && (
+                                      <p className="text-xs text-red-600 mt-1">⚠️ Debes seleccionar una mascota para este producto</p>
+                                    )}
+                                  </div>
+                                )}
                                 {showNextDose && (
                                   <div className="pl-2">
                                     <label className="text-xs text-gray-600">Próxima dosis:</label>
@@ -976,14 +992,14 @@ const Sales = () => {
                         <span className="font-medium">{formatCurrency(calculateSubtotal())}</span>
                       </div>
                       {paymentMethod === 'tarjeta' && (
-                        <div className="flex justify-between text-primary-600">
+                        <div className="flex justify-between text-brand-burgundy">
                           <span>Comisión por pago con tarjeta (4.6%):</span>
                           <span className="font-medium">{formatCurrency(calculateCardCommission())}</span>
                         </div>
                       )}
                       <div className="flex justify-between text-lg font-bold border-t border-gray-200 pt-2">
                         <span>Total:</span>
-                        <span className="text-primary-600">{formatCurrency(calculateTotal())}</span>
+                        <span className="text-brand-burgundy">{formatCurrency(calculateTotal())}</span>
                       </div>
                       {userRole === 'admin' && (
                         <div className="pt-2 border-t border-gray-200">
@@ -1102,7 +1118,7 @@ const Sales = () => {
                             type="checkbox"
                             checked={useManualFinancials}
                             onChange={(e) => setUseManualFinancials(e.target.checked)}
-                            className="mr-2 h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
+                            className="mr-2 h-4 w-4 text-brand-burgundy focus:ring-primary-500 border-gray-300 rounded"
                           />
                           Editar valores financieros manualmente
                         </label>
@@ -1251,7 +1267,7 @@ const Sales = () => {
                               <div className="flex-1">
                                 <p className="font-medium text-gray-900">{product.name}</p>
                                 <p className="text-sm text-gray-500">Stock: {product.stock}</p>
-                                <p className="text-sm font-medium text-primary-600">
+                                <p className="text-sm font-medium text-brand-burgundy">
                                   {formatCurrency(product.price)}
                                 </p>
                               </div>
@@ -1277,7 +1293,7 @@ const Sales = () => {
                               <div className="flex-1">
                                 <p className="font-medium text-gray-900">{service.name}</p>
                                 <p className="text-sm text-gray-500">{service.duration} min</p>
-                                <p className="text-sm font-medium text-primary-600">
+                                <p className="text-sm font-medium text-brand-burgundy">
                                   {formatCurrency(service.price)}
                                 </p>
                               </div>
