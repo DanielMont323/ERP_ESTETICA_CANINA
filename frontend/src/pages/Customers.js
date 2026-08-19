@@ -229,7 +229,7 @@ const Customers = () => {
                 <div className="flex items-center space-x-2">
                   <button
                     onClick={() => toggleExpand(customer._id)}
-                    className="text-primary-600 hover:text-primary-900"
+                    className="text-brand-burgundy hover:text-primary-900"
                     title="Ver historial de ventas"
                   >
                     {expandedCustomerId === customer._id ? (
@@ -240,7 +240,7 @@ const Customers = () => {
                   </button>
                   <button
                     onClick={() => handleEdit(customer)}
-                    className="text-primary-600 hover:text-primary-900"
+                    className="text-brand-burgundy hover:text-primary-900"
                   >
                     <Edit className="h-4 w-4" />
                   </button>

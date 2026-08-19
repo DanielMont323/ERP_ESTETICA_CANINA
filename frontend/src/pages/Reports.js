@@ -150,7 +150,7 @@ const Reports = () => {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold text-gray-900">REPORTE DE VENTAS</h1>
-          <p className="mt-1 text-sm text-gray-600">
+          <p className="mt-1 text-sm text-brand-burgundy">
             Periodo: {getPeriodDisplay()}
           </p>
         </div>
@@ -208,7 +208,7 @@ const Reports = () => {
             <div className="card-body">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-600">Total Ventas</p>
+                  <p className="text-sm text-brand-burgundy">Total Ventas</p>
                   <p className="text-2xl font-bold text-gray-900 mt-1">{formatCurrency(salesBehavior.totalMonto)}</p>
                 </div>
                 <div className="p-3 bg-blue-100 rounded-lg">
@@ -223,7 +223,7 @@ const Reports = () => {
             <div className="card-body">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-600">Ticket Promedio</p>
+                  <p className="text-sm text-brand-burgundy">Ticket Promedio</p>
                   <p className="text-2xl font-bold text-gray-900 mt-1">{formatCurrency(salesBehavior.ticketPromedio)}</p>
                 </div>
                 <div className="p-3 bg-green-100 rounded-lg">
@@ -238,7 +238,7 @@ const Reports = () => {
             <div className="card-body">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-600">Unidades Vendidas</p>
+                  <p className="text-sm text-brand-burgundy">Unidades Vendidas</p>
                   <p className="text-2xl font-bold text-gray-900 mt-1">{salesBehavior.totalUnidades}</p>
                 </div>
                 <div className="p-3 bg-purple-100 rounded-lg">
@@ -253,7 +253,7 @@ const Reports = () => {
             <div className="card-body">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-600">Canal Principal</p>
+                  <p className="text-sm text-brand-burgundy">Canal Principal</p>
                   <p className="text-lg font-bold text-gray-900 mt-1 truncate">{getChannelName(salesBehavior.canalPrincipal)}</p>
                 </div>
                 <div className="p-3 bg-orange-100 rounded-lg">
@@ -268,7 +268,7 @@ const Reports = () => {
             <div className="card-body">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-600">Método Principal</p>
+                  <p className="text-sm text-brand-burgundy">Método Principal</p>
                   <p className="text-lg font-bold text-gray-900 mt-1 capitalize">{salesBehavior.metodoPagoPrincipal}</p>
                 </div>
                 <div className="p-3 bg-pink-100 rounded-lg">
@@ -283,7 +283,7 @@ const Reports = () => {
             <div className="card-body">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-600">Producto Top</p>
+                  <p className="text-sm text-brand-burgundy">Producto Top</p>
                   <p className="text-lg font-bold text-gray-900 mt-1 truncate">{salesBehavior.productoMasVendido || 'N/A'}</p>
                 </div>
                 <div className="p-3 bg-indigo-100 rounded-lg">
@@ -311,11 +311,11 @@ const Reports = () => {
                 </h4>
                 <div className="space-y-3">
                   <div className="flex justify-between items-center">
-                    <span className="text-gray-600">Ventas totales:</span>
+                    <span className="text-brand-burgundy">Ventas totales:</span>
                     <span className="font-semibold">{formatCurrency(incomeStatement.ingresos.totalVentas)}</span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="text-gray-600">Comisiones:</span>
+                    <span className="text-brand-burgundy">Comisiones:</span>
                     <span className="font-semibold text-danger-600">-{formatCurrency(incomeStatement.ingresos.totalComision)}</span>
                   </div>
                   <div className="flex justify-between items-center text-lg font-bold border-t border-gray-200 pt-3 mt-3">
@@ -332,15 +332,15 @@ const Reports = () => {
                 </h4>
                 <div className="space-y-3">
                   <div className="flex justify-between items-center">
-                    <span className="text-gray-600">Compras:</span>
+                    <span className="text-brand-burgundy">Compras:</span>
                     <span className="font-semibold">{formatCurrency(incomeStatement.costos.totalCompras)}</span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="text-gray-600">Costos fijos:</span>
+                    <span className="text-brand-burgundy">Costos fijos:</span>
                     <span className="font-semibold">{formatCurrency(incomeStatement.costos.costosFijos)}</span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="text-gray-600">Costos variables:</span>
+                    <span className="text-brand-burgundy">Costos variables:</span>
                     <span className="font-semibold">{formatCurrency(incomeStatement.costos.costosVariables)}</span>
                   </div>
                   <div className="flex justify-between items-center text-lg font-bold border-t border-gray-200 pt-3 mt-3">
@@ -361,11 +361,11 @@ const Reports = () => {
                 </h4>
                 <div className="space-y-3">
                   <div className="flex justify-between items-center">
-                    <span className="text-gray-600">Utilidad bruta:</span>
+                    <span className="text-brand-burgundy">Utilidad bruta:</span>
                     <span className="font-semibold">{formatCurrency(incomeStatement.utilidad.utilidadBruta)}</span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="text-gray-600">Utilidad operativa:</span>
+                    <span className="text-brand-burgundy">Utilidad operativa:</span>
                     <span className="font-semibold">{formatCurrency(incomeStatement.utilidad.utilidadOperativa)}</span>
                   </div>
                   <div className="flex justify-between items-center text-lg font-bold border-t border-gray-200 pt-3 mt-3">
@@ -378,7 +378,7 @@ const Reports = () => {
                   </div>
                   {incomeStatement.utilidad.utilidadOperativa !== 0 && (
                     <div className="flex justify-between items-center text-sm mt-2">
-                      <span className="text-gray-600">Margen neto:</span>
+                      <span className="text-brand-burgundy">Margen neto:</span>
                       <span className={`font-semibold ${
                         incomeStatement.utilidad.utilidadOperativa >= 0 ? 'text-success-600' : 'text-danger-600'
                       }`}>
@@ -499,11 +499,11 @@ const Reports = () => {
                       <span className="text-sm text-gray-500">{channel.count} ventas</span>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span className="text-gray-600">Total:</span>
+                      <span className="text-brand-burgundy">Total:</span>
                       <span className="font-semibold">{formatCurrency(channel.total)}</span>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span className="text-gray-600">Ingreso Neto:</span>
+                      <span className="text-brand-burgundy">Ingreso Neto:</span>
                       <span className="font-semibold text-success-600">{formatCurrency(channel.netIncome)}</span>
                     </div>
                   </div>

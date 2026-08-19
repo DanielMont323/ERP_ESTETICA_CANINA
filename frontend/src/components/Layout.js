@@ -21,7 +21,8 @@ import {
   Bell,
   Search,
   Syringe,
-  Tag
+  Tag,
+  Box
 } from 'lucide-react';
 
 const Layout = () => {
@@ -71,6 +72,7 @@ const Layout = () => {
     { name: 'Dashboard', href: '/dashboard', icon: Home },
     { name: 'Productos', href: '/products', icon: Package },
     { name: 'Categorías Productos', href: '/product-categories', icon: Tag },
+    { name: 'Pedidos Proveedores', href: '/low-stock-orders', icon: Box },
     { name: 'Ventas', href: '/sales', icon: ShoppingCart },
     { name: 'Compras', href: '/purchases', icon: PurchasesIcon },
     { name: 'Clientes', href: '/customers', icon: Users },
@@ -130,14 +132,22 @@ const Layout = () => {
           </button>
           
           <div className="flex-1 px-4 flex justify-between">
-            <div className="flex-1 flex">
-              <div className="w-full flex md:ml-0">
+            <div className="flex-1 flex items-center">
+              <div className="flex items-center space-x-3">
+                <img 
+                  src="/logo.png" 
+                  alt="BARBER DOG" 
+                  className="h-14 w-auto object-contain"
+                />
+                <span className="text-xl font-bold text-brand-burgundy hidden sm:block">BARBER DOG</span>
+              </div>
+              <div className="w-full flex md:ml-4">
                 <div className="relative w-full text-gray-400 focus-within:text-gray-600">
                   <div className="absolute inset-y-0 left-0 flex items-center pointer-events-none pl-3">
                     <Search className="h-5 w-5" />
                   </div>
                   <input
-                    className="block w-full h-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 sm:text-sm transition-all duration-200"
+                    className="block w-full h-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-brand-burgundy focus:border-brand-burgundy sm:text-sm transition-all duration-200"
                     placeholder="Buscar..."
                     type="search"
                   />
@@ -191,9 +201,14 @@ const Layout = () => {
 
 const Sidebar = ({ navigation, isActive, onMobileClose }) => {
   return (
-    <div className="flex flex-col h-full bg-white border-r border-gray-200">
-      <div className="flex items-center h-16 flex-shrink-0 px-6 bg-gradient-to-r from-primary-600 to-primary-700 shadow-sm">
-        <h1 className="text-xl font-bold text-white tracking-tight">ERP System</h1>
+    <div className="flex flex-col h-full bg-brand-burgundy border-r border-brand-burgundy">
+      <div className="flex items-center h-16 flex-shrink-0 px-4 bg-brand-burgundy shadow-sm">
+        <img 
+          src="/logo.png" 
+          alt="BARBER DOG" 
+          className="h-12 w-auto object-contain mr-3"
+        />
+        <h1 className="text-xl font-bold text-brand-cream tracking-tight">BARBER DOG</h1>
       </div>
       
       <nav className="flex-1 px-3 py-6 space-y-1">

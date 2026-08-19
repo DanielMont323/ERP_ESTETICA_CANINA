@@ -143,7 +143,7 @@ const Dashboard = () => {
 
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-semibold text-gray-900">Dashboard</h1>
+        <h1 className="text-2xl font-semibold text-brand-burgundy">Dashboard</h1>
         <p className="mt-1 text-sm text-gray-600">
           Bienvenido al sistema ERP. Aquí tienes un resumen de tu negocio.
         </p>
@@ -157,7 +157,7 @@ const Dashboard = () => {
           change={dashboardData?.sales?.growth?.total}
           changeType={dashboardData?.sales?.growth?.total >= 0 ? 'positive' : 'negative'}
           icon={DollarSign}
-          color="bg-primary-600"
+          color="bg-brand-burgundy"
         />
         <StatCard
           title="Número de ventas"
@@ -191,7 +191,7 @@ const Dashboard = () => {
           >
             <div className="flex items-center justify-between">
               <div className="flex items-center">
-                <div className="p-2 rounded-full bg-primary-100 text-primary-600 mr-3">
+                <div className="p-2 rounded-full bg-brand-cream text-brand-burgundy mr-3">
                   <Dog className="h-5 w-5" />
                 </div>
                 <div>
@@ -218,7 +218,7 @@ const Dashboard = () => {
                   {remindersData.vaccines.map((vaccine) => (
                     <div 
                       key={vaccine.id} 
-                      className="p-3 bg-primary-50 rounded-lg cursor-pointer hover:bg-primary-100 transition-colors"
+                      className="p-3 bg-brand-cream rounded-lg cursor-pointer hover:bg-brand-cream transition-colors"
                       onClick={() => navigate('/vaccination-cards')}
                     >
                       <div className="flex items-center justify-between">
@@ -227,7 +227,7 @@ const Dashboard = () => {
                           <p className="text-sm text-gray-600">{vaccine.title}</p>
                         </div>
                         <div className="text-right">
-                          <p className="text-sm font-medium text-primary-600">
+                          <p className="text-sm font-medium text-brand-burgundy">
                             {new Date(vaccine.date).toLocaleDateString('es-MX')}
                           </p>
                           <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
@@ -390,30 +390,30 @@ const Dashboard = () => {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <button 
               onClick={() => navigate('/sales')}
-              className="p-4 border-2 border-dashed border-gray-300 rounded-xl hover:border-primary-500 hover:bg-primary-50 hover:shadow-sm transition-all duration-200 cursor-pointer group"
+              className="p-4 border-2 border-dashed border-gray-300 rounded-xl hover:border-brand-burgundy hover:bg-brand-cream hover:shadow-sm transition-all duration-200 cursor-pointer group"
             >
-              <ShoppingCart className="h-8 w-8 text-primary-600 mx-auto mb-2 group-hover:scale-110 transition-transform" />
+              <ShoppingCart className="h-8 w-8 text-brand-burgundy mx-auto mb-2 group-hover:scale-110 transition-transform" />
               <p className="text-sm font-medium text-gray-900">Nueva venta</p>
             </button>
             <button 
               onClick={() => navigate('/products')}
-              className="p-4 border-2 border-dashed border-gray-300 rounded-xl hover:border-primary-500 hover:bg-primary-50 hover:shadow-sm transition-all duration-200 cursor-pointer group"
+              className="p-4 border-2 border-dashed border-gray-300 rounded-xl hover:border-brand-burgundy hover:bg-brand-cream hover:shadow-sm transition-all duration-200 cursor-pointer group"
             >
-              <Package className="h-8 w-8 text-primary-600 mx-auto mb-2 group-hover:scale-110 transition-transform" />
+              <Package className="h-8 w-8 text-brand-burgundy mx-auto mb-2 group-hover:scale-110 transition-transform" />
               <p className="text-sm font-medium text-gray-900">Agregar producto</p>
             </button>
             <button 
               onClick={() => navigate('/customers')}
-              className="p-4 border-2 border-dashed border-gray-300 rounded-xl hover:border-primary-500 hover:bg-primary-50 hover:shadow-sm transition-all duration-200 cursor-pointer group"
+              className="p-4 border-2 border-dashed border-gray-300 rounded-xl hover:border-brand-burgundy hover:bg-brand-cream hover:shadow-sm transition-all duration-200 cursor-pointer group"
             >
-              <Users className="h-8 w-8 text-primary-600 mx-auto mb-2 group-hover:scale-110 transition-transform" />
+              <Users className="h-8 w-8 text-brand-burgundy mx-auto mb-2 group-hover:scale-110 transition-transform" />
               <p className="text-sm font-medium text-gray-900">Nuevo cliente</p>
             </button>
             <button 
               onClick={() => navigate('/reports')}
-              className="p-4 border-2 border-dashed border-gray-300 rounded-xl hover:border-primary-500 hover:bg-primary-50 hover:shadow-sm transition-all duration-200 cursor-pointer group"
+              className="p-4 border-2 border-dashed border-gray-300 rounded-xl hover:border-brand-burgundy hover:bg-brand-cream hover:shadow-sm transition-all duration-200 cursor-pointer group"
             >
-              <FileText className="h-8 w-8 text-primary-600 mx-auto mb-2 group-hover:scale-110 transition-transform" />
+              <FileText className="h-8 w-8 text-brand-burgundy mx-auto mb-2 group-hover:scale-110 transition-transform" />
               <p className="text-sm font-medium text-gray-900">Generar reporte</p>
             </button>
           </div>

@@ -27,7 +27,7 @@ const ConfirmModal = ({
     },
     info: {
       iconBg: 'bg-primary-100',
-      iconColor: 'text-primary-600',
+      iconColor: 'text-brand-burgundy',
       confirmBtn: 'btn-primary'
     }
   };

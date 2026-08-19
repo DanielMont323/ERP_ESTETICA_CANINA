@@ -145,7 +145,7 @@ const ServiceCategories = () => {
             <div className="card-body">
               <div className="flex items-start justify-between mb-4">
                 <div className="flex items-center">
-                  <div className="p-2 rounded-lg bg-primary-100 text-primary-600 mr-3">
+                  <div className="p-2 rounded-lg bg-primary-100 text-brand-burgundy mr-3">
                     <Scissors className="h-5 w-5" />
                   </div>
                   <div>
@@ -158,7 +158,7 @@ const ServiceCategories = () => {
                 <div className="flex items-center space-x-2">
                   <button
                     onClick={() => handleEdit(category)}
-                    className="text-gray-400 hover:text-primary-600 transition-colors"
+                    className="text-gray-400 hover:text-brand-burgundy transition-colors"
                   >
                     <Edit className="h-4 w-4" />
                   </button>
@@ -180,7 +180,7 @@ const ServiceCategories = () => {
                 </span>
                 <button
                   onClick={() => handleToggleActive(category)}
-                  className="text-sm text-primary-600 hover:text-primary-900 transition-colors"
+                  className="text-sm text-brand-burgundy hover:text-primary-900 transition-colors"
                 >
                   {category.isActive ? 'Desactivar' : 'Activar'}
                 </button>

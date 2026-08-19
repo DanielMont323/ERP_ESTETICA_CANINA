@@ -211,7 +211,7 @@ const AccountsPayable = () => {
                     type="checkbox"
                     checked={selectedAccounts.length > 0}
                     onChange={handleSelectAll}
-                    className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
+                    className="h-4 w-4 text-brand-burgundy focus:ring-primary-500 border-gray-300 rounded"
                   />
                 </th>
                 <th>Proveedor</th>
@@ -238,7 +238,7 @@ const AccountsPayable = () => {
                         checked={selectedAccounts.includes(account._id)}
                         onChange={() => handleSelectAccount(account._id)}
                         disabled={account.status !== 'pendiente'}
-                        className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
+                        className="h-4 w-4 text-brand-burgundy focus:ring-primary-500 border-gray-300 rounded"
                       />
                     </td>
                     <td>{account.proveedor?.name}</td>
@@ -291,7 +291,7 @@ const AccountsPayable = () => {
                         className={`text-sm font-medium ${
                           account.status === 'pagado' 
                             ? 'text-gray-400 cursor-not-allowed' 
-                            : 'text-primary-600 hover:text-primary-900'
+                            : 'text-brand-burgundy hover:text-primary-900'
                         }`}
                       >
                         {account.status === 'pagado' ? 'Pagado' : 'Pagar'}
@@ -344,7 +344,7 @@ const AccountsPayable = () => {
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">Saldo Pendiente:</span>
-                    <span className="font-semibold text-primary-600">{formatCurrency(account.saldo)}</span>
+                    <span className="font-semibold text-brand-burgundy">{formatCurrency(account.saldo)}</span>
                   </div>
                   
                   {account.discountDeadline && (
@@ -386,7 +386,7 @@ const AccountsPayable = () => {
                     className={`w-full py-2 px-4 rounded-lg text-sm font-medium ${
                       account.status === 'pagado' 
                         ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
-                        : 'bg-primary-600 text-white hover:bg-primary-700'
+                        : 'bg-brand-burgundy text-white hover:bg-primary-700'
                     }`}
                   >
                     {account.status === 'pagado' ? 'Pagado' : 'Pagar'}
@@ -445,7 +445,7 @@ const AccountsPayable = () => {
                   )}
                   <div className="flex justify-between border-t border-gray-300 pt-2">
                     <span className="font-semibold text-lg">Importe a Pagar:</span>
-                    <span className="font-semibold text-lg text-primary-600">
+                    <span className="font-semibold text-lg text-brand-burgundy">
                       {formatCurrency(selectedAccount.discountInfo?.available && selectedAccount.descuentoDisponible > 0 
                         ? (selectedAccount.montoBase - selectedAccount.descuentoDisponible) 
                         : (selectedAccount.montoBase || selectedAccount.monto))}
@@ -453,7 +453,7 @@ const AccountsPayable = () => {
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">Saldo Pendiente:</span>
-                    <span className="font-semibold text-primary-600">{formatCurrency(selectedAccount.saldo)}</span>
+                    <span className="font-semibold text-brand-burgundy">{formatCurrency(selectedAccount.saldo)}</span>
                   </div>
                 </div>
               </div>
@@ -558,7 +558,7 @@ const AccountsPayable = () => {
                   </div>
                   <div className="flex justify-between border-t border-gray-300 pt-2">
                     <span className="font-semibold">Total a pagar:</span>
-                    <span className="font-semibold text-lg text-primary-600">{formatCurrency(getSelectedAccountsSummary().total)}</span>
+                    <span className="font-semibold text-lg text-brand-burgundy">{formatCurrency(getSelectedAccountsSummary().total)}</span>
                   </div>
                 </div>
               </div>

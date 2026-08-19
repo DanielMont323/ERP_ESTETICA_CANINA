@@ -142,7 +142,7 @@ const Settings = () => {
                         <p className="font-medium text-gray-900">Notificaciones de bajo stock</p>
                         <p className="text-sm text-gray-500">Recibir alertas cuando el stock esté por debajo del mínimo</p>
                       </div>
-                      <input type="checkbox" defaultChecked className="h-4 w-4 text-primary-600" />
+                      <input type="checkbox" defaultChecked className="h-4 w-4 text-brand-burgundy" />
                     </label>
 
                     <label className="flex items-center justify-between">
@@ -150,7 +150,7 @@ const Settings = () => {
                         <p className="font-medium text-gray-900">Recordatorios vencidos</p>
                         <p className="text-sm text-gray-500">Alertas sobre recordatorios que han pasado su fecha</p>
                       </div>
-                      <input type="checkbox" defaultChecked className="h-4 w-4 text-primary-600" />
+                      <input type="checkbox" defaultChecked className="h-4 w-4 text-brand-burgundy" />
                     </label>
 
                     <label className="flex items-center justify-between">
@@ -158,7 +158,7 @@ const Settings = () => {
                         <p className="font-medium text-gray-900">Cuentas por pagar vencidas</p>
                         <p className="text-sm text-gray-500">Notificaciones sobre pagos vencidos</p>
                       </div>
-                      <input type="checkbox" defaultChecked className="h-4 w-4 text-primary-600" />
+                      <input type="checkbox" defaultChecked className="h-4 w-4 text-brand-burgundy" />
                     </label>
 
                     <label className="flex items-center justify-between">
@@ -166,7 +166,7 @@ const Settings = () => {
                         <p className="font-medium text-gray-900">Resumen diario</p>
                         <p className="text-sm text-gray-500">Resumen de ventas y actividades del día</p>
                       </div>
-                      <input type="checkbox" className="h-4 w-4 text-primary-600" />
+                      <input type="checkbox" className="h-4 w-4 text-brand-burgundy" />
                     </label>
                   </div>
                 </div>

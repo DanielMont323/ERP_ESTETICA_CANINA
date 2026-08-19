@@ -21,6 +21,7 @@ import ProductCategories from './pages/ProductCategories';
 import ServiceCategories from './pages/ServiceCategories';
 import VaccinationCards from './pages/VaccinationCards';
 import VaccinesCatalog from './pages/VaccinesCatalog';
+import LowStockOrders from './pages/LowStockOrders';
 
 // Protected Route component
 const ProtectedRoute = ({ children }) => {
@@ -29,7 +30,7 @@ const ProtectedRoute = ({ children }) => {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-burgundy"></div>
       </div>
     );
   }
@@ -48,7 +49,7 @@ const PublicRoute = ({ children }) => {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-burgundy"></div>
       </div>
     );
   }
@@ -97,6 +98,7 @@ function App() {
               <Route path="reminders" element={<Reminders />} />
               <Route path="reports" element={<Reports />} />
               <Route path="settings" element={<Settings />} />
+              <Route path="low-stock-orders" element={<LowStockOrders />} />
             </Route>
             
             {/* Fallback */}

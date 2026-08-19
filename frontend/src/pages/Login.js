@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import toast from 'react-hot-toast';
-import { Eye, EyeOff, Building2 } from 'lucide-react';
+import { Eye, EyeOff } from 'lucide-react';
 
 const Login = () => {
   const [formData, setFormData] = useState({
@@ -50,18 +50,20 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100 py-8 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
+    <div 
+      className="min-h-screen flex items-center justify-center py-8 px-4 sm:px-6 lg:px-8 bg-cover bg-center bg-no-repeat"
+      style={{ backgroundImage: `url('/portada.jpg')` }}
+    >
+      <div className="max-w-md w-full space-y-8 bg-white/95 backdrop-blur-sm rounded-2xl shadow-2xl p-8">
         <div>
           <div className="flex justify-center">
-            <div className="flex items-center space-x-2">
-              <div className="p-3 bg-gradient-to-br from-primary-500 to-primary-600 rounded-xl shadow-lg">
-                <Building2 className="h-8 w-8 text-white" />
-              </div>
-              <h1 className="text-2xl font-bold text-gray-900">ERP System</h1>
-            </div>
+            <img 
+              src="/logo.jpg" 
+              alt="BARBER DOG Logo" 
+              className="h-32 w-auto object-contain"
+            />
           </div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
+          <h2 className="mt-6 text-center text-3xl font-extrabold text-brand-burgundy">
             {isRegister ? 'Crear cuenta' : 'Iniciar sesión'}
           </h2>
           <p className="mt-2 text-center text-sm text-gray-600">

@@ -631,7 +631,7 @@ const Purchases = () => {
                           >
                             <p className="font-medium text-gray-900">{product.name}</p>
                             <p className="text-sm text-gray-500">SKU: {product.sku}</p>
-                            <p className="text-sm font-medium text-primary-600">
+                            <p className="text-sm font-medium text-brand-burgundy">
                               Costo: {formatCurrency(product.cost)}
                             </p>
                           </div>
@@ -792,7 +792,7 @@ const Purchases = () => {
                         id="hasIVA"
                         checked={formData.hasIVA}
                         onChange={(e) => setFormData({...formData, hasIVA: e.target.checked})}
-                        className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
+                        className="h-4 w-4 text-brand-burgundy focus:ring-primary-500 border-gray-300 rounded"
                       />
                       <label htmlFor="hasIVA" className="ml-2 block text-sm font-medium text-gray-900">
                         Aplicar IVA
@@ -828,7 +828,7 @@ const Purchases = () => {
                               </div>
                               <div className="flex justify-between border-t border-gray-200 pt-1">
                                 <span className="font-semibold">Total con IVA:</span>
-                                <span className="font-semibold text-primary-600">
+                                <span className="font-semibold text-brand-burgundy">
                                   {formData.type === 'credito' && calculateEarlyPaymentDiscount() > 0
                                     ? formatCurrency((calculateTotalWithDiscount() * (1 + formData.ivaRate)))
                                     : formatCurrency(calculateBaseTotal() * (1 + formData.ivaRate))

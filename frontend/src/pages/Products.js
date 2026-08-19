@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { productsAPI, productCategoriesAPI } from '../services/api';
+import { productsAPI, productCategoriesAPI, suppliersAPI } from '../services/api';
 import toast from 'react-hot-toast';
 import { SkeletonTable } from '../components/Skeleton';
 import ConfirmModal from '../components/ConfirmModal';
@@ -19,6 +19,7 @@ const Products = () => {
   const userRole = user?.role || 'user';
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
+  const [suppliers, setSuppliers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [showInactive, setShowInactive] = useState(false);
@@ -30,6 +31,7 @@ const Products = () => {
   const [formData, setFormData] = useState({
     name: '',
     category: '',
+    supplier: '',
     cost: '',
     price: '',
     stock: '',
@@ -45,6 +47,10 @@ const Products = () => {
 
   useEffect(() => {
     fetchCategories();
+  }, []);
+
+  useEffect(() => {
+    fetchSuppliers();
   }, []);
 
   useEffect(() => {
@@ -102,6 +108,15 @@ const Products = () => {
     }
   };
 
+  const fetchSuppliers = async () => {
+    try {
+      const response = await suppliersAPI.getAll();
+      setSuppliers(response.data.data);
+    } catch (error) {
+      console.error('Error al cargar proveedores:', error);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     
@@ -143,6 +158,7 @@ const Products = () => {
     setFormData({
       name: product.name,
       category: product.category?._id || product.category,
+      supplier: product.supplier?._id || product.supplier || '',
       cost: product.cost.toString(),
       price: product.price.toString(),
       stock: product.stock.toString(),
@@ -190,6 +206,7 @@ const Products = () => {
     setFormData({
       name: '',
       category: '',
+      supplier: '',
       cost: '',
       price: '',
       stock: '',
@@ -308,6 +325,7 @@ const Products = () => {
               <tr>
                 <th>Producto</th>
                 <th>Categoría</th>
+                <th>Proveedor</th>
                 <th>Stock</th>
                 <th>Costo</th>
                 <th>Precio</th>
@@ -331,6 +349,9 @@ const Products = () => {
                     </td>
                     <td>
                       <span>{product.category?.name || 'Sin categoría'}</span>
+                    </td>
+                    <td>
+                      <span>{product.supplier?.name || 'Sin proveedor'}</span>
                     </td>
                     <td>
                       <div className="text-right">
@@ -384,7 +405,7 @@ const Products = () => {
                           <>
                             <button
                               onClick={() => handleEdit(product)}
-                              className="text-primary-600 hover:text-primary-900"
+                              className="text-brand-burgundy hover:text-primary-900"
                               title="Editar"
                             >
                               <Edit className="h-4 w-4" />
@@ -453,6 +474,22 @@ const Products = () => {
                       {categories.map(cat => (
                         <option key={cat._id} value={cat._id}>
                           {cat.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  
+                  <div>
+                    <label className="form-label">Proveedor</label>
+                    <select
+                      value={formData.supplier}
+                      onChange={(e) => setFormData({...formData, supplier: e.target.value})}
+                      className="form-input"
+                    >
+                      <option value="">Sin proveedor</option>
+                      {suppliers.map(supplier => (
+                        <option key={supplier._id} value={supplier._id}>
+                          {supplier.name}
                         </option>
                       ))}
                     </select>

@@ -169,7 +169,7 @@ const Costs = () => {
                     <div className="flex items-center space-x-2">
                       <button 
                         onClick={() => handleEditCost(cost)}
-                        className="text-primary-600 hover:text-primary-900"
+                        className="text-brand-burgundy hover:text-primary-900"
                       >
                         <Edit className="h-4 w-4" />
                       </button>

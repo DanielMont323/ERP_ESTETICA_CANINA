@@ -281,7 +281,7 @@ const Pets = () => {
                 <div className="flex items-center space-x-2">
                   <button 
                     onClick={() => toggleExpand(pet._id)}
-                    className="text-primary-600 hover:text-primary-900"
+                    className="text-brand-burgundy hover:text-primary-900"
                     title="Ver historial"
                   >
                     {expandedPetId === pet._id ? (
@@ -299,7 +299,7 @@ const Pets = () => {
                   </button>
                   <button 
                     onClick={() => handleEditPet(pet)}
-                    className="text-primary-600 hover:text-primary-900"
+                    className="text-brand-burgundy hover:text-primary-900"
                   >
                     <Edit className="h-4 w-4" />
                   </button>
@@ -336,7 +336,7 @@ const Pets = () => {
                                 Venta #{sale._id.slice(-6)}
                               </p>
                             </div>
-                            <p className="font-medium text-primary-600">
+                            <p className="font-medium text-brand-burgundy">
                               {formatCurrency(sale.total)}
                             </p>
                           </div>

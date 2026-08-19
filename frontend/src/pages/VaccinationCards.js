@@ -178,7 +178,7 @@ const VaccinationCards = () => {
               {/* Pet Info */}
               <div className="flex items-start justify-between mb-4 pb-4 border-b border-gray-200">
                 <div className="flex items-center">
-                  <div className="p-3 rounded-lg bg-primary-100 text-primary-600 mr-3">
+                  <div className="p-3 rounded-lg bg-primary-100 text-brand-burgundy mr-3">
                     <Dog className="h-6 w-6" />
                   </div>
                   <div>
@@ -188,7 +188,7 @@ const VaccinationCards = () => {
                 </div>
                 <button
                   onClick={() => setSelectedCard(card)}
-                  className="text-primary-600 hover:text-primary-900 text-sm font-medium"
+                  className="text-brand-burgundy hover:text-primary-900 text-sm font-medium"
                 >
                   {selectedCard?._id === card._id ? 'Cerrar' : 'Ver detalles'}
                 </button>
@@ -228,7 +228,7 @@ const VaccinationCards = () => {
                                 {vaccine.tipo === 'desparasitante' ? (
                                   <Pill className="h-4 w-4 text-purple-600 mr-2" />
                                 ) : (
-                                  <Syringe className="h-4 w-4 text-primary-600 mr-2" />
+                                  <Syringe className="h-4 w-4 text-brand-burgundy mr-2" />
                                 )}
                                 <p className="font-medium text-gray-900">{vaccine.nombre}</p>
                                 <span className={`ml-2 text-xs px-2 py-1 rounded ${
