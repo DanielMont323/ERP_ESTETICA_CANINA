@@ -29,6 +29,10 @@ const itemVentaSchema = new mongoose.Schema({
   },
   nextDoseDate: {
     type: Date
+  },
+  mascota: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Mascota'
   }
 });
 

@@ -10,6 +10,11 @@ const productoSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.Mixed, // Acepta String o ObjectId para compatibilidad
     trim: true
   },
+  supplier: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Proveedor',
+    required: false
+  },
   cost: {
     type: Number,
     required: [true, 'El costo es obligatorio'],
@@ -89,6 +94,7 @@ productoSchema.pre('save', function(next) {
 // Índices para optimizar consultas
 productoSchema.index({ name: 1 });
 productoSchema.index({ category: 1 });
+productoSchema.index({ supplier: 1 });
 productoSchema.index({ isActive: 1 });
 productoSchema.index({ isDeleted: 1 });
 productoSchema.index({ stock: 1 });

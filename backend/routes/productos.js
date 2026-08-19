@@ -2,6 +2,7 @@ const express = require('express');
 const mongoose = require('mongoose');
 const Producto = require('../models/Producto');
 const CategoriaProducto = require('../models/CategoriaProducto');
+const Proveedor = require('../models/Proveedor');
 const Venta = require('../models/Venta');
 const Compra = require('../models/Compra');
 const Servicio = require('../models/Servicio');
@@ -156,6 +157,8 @@ router.get('/', async (req, res) => {
     }
 
     const productos = await Producto.find(query)
+      .populate('category', 'name')
+      .populate('supplier', 'name')
       .sort({ name: 1 })
       .limit(limit * 1)
       .skip((page - 1) * limit);
@@ -224,14 +227,29 @@ router.get('/', async (req, res) => {
 });
 
 // @route   GET /api/productos/low-stock
-// @desc    Obtener productos con bajo stock
+// @desc    Obtener productos con bajo stock con información de proveedor
 router.get('/low-stock', async (req, res) => {
   try {
-    const productos = await Producto.find({
+    const { supplierId } = req.query;
+    
+    // Construir query base
+    let query = {
       $expr: { $lte: ['$stock', '$minStock'] },
       isDeleted: { $ne: true }
-    })
+    };
+    
+    // Filtrar por proveedor si se especifica
+    if (supplierId && supplierId !== 'all' && supplierId !== 'none') {
+      query.supplier = supplierId;
+    } else if (supplierId === 'none') {
+      // Mostrar solo productos sin proveedor
+      query.supplier = null;
+    }
+    
+    // Obtener productos con bajo stock
+    const productos = await Producto.find(query)
       .populate('category', 'name')
+      .populate('supplier', 'name contact phone email')
       .sort({ stock: 1 });
     
     res.json({
@@ -253,7 +271,8 @@ router.get('/low-stock', async (req, res) => {
 router.get('/:id', async (req, res) => {
   try {
     const producto = await Producto.findById(req.params.id)
-      .populate('category', 'name');
+      .populate('category', 'name')
+      .populate('supplier', 'name');
     
     if (!producto) {
       return res.status(404).json({
@@ -286,7 +305,7 @@ router.get('/:id', async (req, res) => {
 // @desc    Crear nuevo producto
 router.post('/', authenticateToken, requireAdmin, async (req, res) => {
   try {
-    const { category, sku, ...rest } = req.body;
+    const { category, sku, supplier, ...rest } = req.body;
     
     // Validar SKU obligatorio
     if (!sku || sku.trim() === '') {
@@ -317,14 +336,31 @@ router.post('/', authenticateToken, requireAdmin, async (req, res) => {
       }
     }
     
+    // Validar supplier si se proporciona
+    let finalSupplier = supplier;
+    if (supplier && supplier !== '' && mongoose.Types.ObjectId.isValid(supplier)) {
+      const proveedor = await Proveedor.findById(supplier);
+      if (!proveedor) {
+        return res.status(400).json({
+          success: false,
+          message: 'El proveedor no existe'
+        });
+      }
+    } else {
+      // Si supplier es vacío o no es válido, establecer a null
+      finalSupplier = null;
+    }
+    
     const producto = await Producto.create({
       ...rest,
       sku: skuTrimmed,
-      category: finalCategory
+      category: finalCategory,
+      supplier: finalSupplier
     });
     
     // Populate para respuesta
     await producto.populate('category', 'name');
+    await producto.populate('supplier', 'name');
     
     res.status(201).json({
       success: true,
@@ -356,7 +392,7 @@ router.post('/', authenticateToken, requireAdmin, async (req, res) => {
 // @desc    Actualizar producto
 router.put('/:id', authenticateToken, requireAdmin, async (req, res) => {
   try {
-    const { category, ...rest } = req.body;
+    const { category, supplier, ...rest } = req.body;
     
     // Si category es un ObjectId válido, usarlo directamente
     // Si es un string, buscar la categoría por nombre y usar su ObjectId
@@ -368,11 +404,27 @@ router.put('/:id', authenticateToken, requireAdmin, async (req, res) => {
       }
     }
     
+    // Validar supplier si se proporciona
+    let finalSupplier = supplier;
+    if (supplier && supplier !== '' && mongoose.Types.ObjectId.isValid(supplier)) {
+      const proveedor = await Proveedor.findById(supplier);
+      if (!proveedor) {
+        return res.status(400).json({
+          success: false,
+          message: 'El proveedor no existe'
+        });
+      }
+    } else {
+      // Si supplier es vacío o no es válido, establecer a null
+      finalSupplier = null;
+    }
+    
     const producto = await Producto.findByIdAndUpdate(
       req.params.id,
       {
         ...rest,
-        category: finalCategory
+        category: finalCategory,
+        supplier: finalSupplier
       },
       { new: true, runValidators: true }
     );
@@ -386,6 +438,7 @@ router.put('/:id', authenticateToken, requireAdmin, async (req, res) => {
     
     // Populate para respuesta
     await producto.populate('category', 'name');
+    await producto.populate('supplier', 'name');
     
     res.json({
       success: true,
