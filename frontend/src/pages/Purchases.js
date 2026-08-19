@@ -223,6 +223,20 @@ const Purchases = () => {
     });
   };
 
+  const handleItemQuantityChange = (index, newQuantity) => {
+    if (newQuantity <= 0) return;
+    const updatedItems = [...formData.items];
+    updatedItems[index].quantity = parseInt(newQuantity);
+    setFormData({ ...formData, items: updatedItems });
+  };
+
+  const handleItemCostChange = (index, newCost) => {
+    if (newCost < 0) return;
+    const updatedItems = [...formData.items];
+    updatedItems[index].unitCost = parseFloat(newCost);
+    setFormData({ ...formData, items: updatedItems });
+  };
+
   const handleProductChange = async (productId) => {
     const product = products.find(p => p._id === productId);
     setCurrentItem({
@@ -733,8 +747,25 @@ const Purchases = () => {
                           {formData.items.map((item, index) => (
                             <tr key={index}>
                               <td>{products.find(p => p._id === item.product)?.name}</td>
-                              <td>{item.quantity}</td>
-                              <td>{formatCurrency(item.unitCost)}</td>
+                              <td>
+                                <input
+                                  type="number"
+                                  min="1"
+                                  value={item.quantity}
+                                  onChange={(e) => handleItemQuantityChange(index, e.target.value)}
+                                  className="form-input w-20"
+                                />
+                              </td>
+                              <td>
+                                <input
+                                  type="number"
+                                  min="0"
+                                  step="0.01"
+                                  value={item.unitCost}
+                                  onChange={(e) => handleItemCostChange(index, e.target.value)}
+                                  className="form-input w-24"
+                                />
+                              </td>
                               <td>{formatCurrency(item.quantity * item.unitCost)}</td>
                               <td>
                                 <button

@@ -9,10 +9,13 @@ import {
   FileText, 
   Image as ImageIcon,
   ArrowLeft,
-  Box
+  Box,
+  Edit,
+  X
 } from 'lucide-react';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
+import { useEscapeKey } from '../hooks/useEscapeKey';
 
 const LowStockOrders = () => {
   const navigate = useNavigate();
@@ -23,6 +26,12 @@ const LowStockOrders = () => {
   const [quantities, setQuantities] = useState({});
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingProduct, setEditingProduct] = useState(null);
+  const [editFormData, setEditFormData] = useState({
+    minStock: 0,
+    idealStock: 0
+  });
 
   // Obtener lista de proveedores
   useEffect(() => {
@@ -49,10 +58,12 @@ const LowStockOrders = () => {
         
         if (response.data.success) {
           const productsWithQuantities = response.data.data.map(product => {
-            // Calcular cantidad sugerida usando stockIdeal si está disponible, si no usar minStock
-            const suggestedQuantity = product.idealStock 
-              ? (product.idealStock - product.stock > 0 ? product.idealStock - product.stock : 0)
-              : (product.minStock - product.stock > 0 ? product.minStock - product.stock : 0);
+            // Calcular cantidad sugerida con la regla correcta:
+            // SI stockActual <= stockMinimo: cantidadAPedir = stockIdeal - stockActual
+            // SI stockActual > stockMinimo: cantidadAPedir = 0
+            const suggestedQuantity = (product.stock <= product.minStock)
+              ? Math.max(0, (product.idealStock || product.minStock) - product.stock)
+              : 0;
             
             return {
               ...product,
@@ -109,6 +120,86 @@ const LowStockOrders = () => {
       [productId]: Math.max(0, parseInt(value) || 0)
     }));
   };
+
+  // Manejar edición de stock mínimo e ideal
+  const handleEditProduct = (product) => {
+    setEditingProduct(product);
+    setEditFormData({
+      minStock: product.minStock || 0,
+      idealStock: product.idealStock || 0
+    });
+    setShowEditModal(true);
+  };
+
+  // Calcular cantidad sugerida en tiempo real en el modal
+  const calculateSuggestedQuantity = (stock, minStock, idealStock) => {
+    if (stock <= minStock) {
+      return Math.max(0, idealStock - stock);
+    }
+    return 0;
+  };
+
+  // Guardar cambios de stock mínimo e ideal
+  const handleSaveEdit = async () => {
+    // Validaciones
+    if (editFormData.minStock < 0) {
+      toast.error('El stock mínimo no puede ser negativo');
+      return;
+    }
+
+    if (editFormData.idealStock < 0) {
+      toast.error('El stock ideal no puede ser negativo');
+      return;
+    }
+
+    if (editFormData.idealStock < editFormData.minStock) {
+      toast.error('El stock ideal debe ser mayor o igual al stock mínimo');
+      return;
+    }
+
+    try {
+      const response = await axios.put(`/api/productos/${editingProduct._id}`, {
+        minStock: editFormData.minStock,
+        idealStock: editFormData.idealStock
+      });
+
+      if (response.data.success) {
+        toast.success('Stock actualizado correctamente');
+        setShowEditModal(false);
+        setEditingProduct(null);
+        
+        // Recargar productos para actualizar cálculos
+        const params = selectedSupplier !== 'all' ? { supplierId: selectedSupplier } : {};
+        const productsResponse = await axios.get('/api/productos/low-stock', { params });
+        
+        if (productsResponse.data.success) {
+          const productsWithQuantities = productsResponse.data.data.map(product => {
+            const suggestedQuantity = (product.stock <= product.minStock)
+              ? Math.max(0, (product.idealStock || product.minStock) - product.stock)
+              : 0;
+            
+            return {
+              ...product,
+              quantityToOrder: suggestedQuantity
+            };
+          });
+          setProducts(productsWithQuantities);
+          
+          const initialQuantities = {};
+          productsWithQuantities.forEach(product => {
+            initialQuantities[product._id] = product.quantityToOrder;
+          });
+          setQuantities(initialQuantities);
+        }
+      }
+    } catch (error) {
+      console.error('Error updating product:', error);
+      toast.error('Error al actualizar stock');
+    }
+  };
+
+  // Manejo de ESC para cerrar modal de edición
+  useEscapeKey(() => setShowEditModal(false), showEditModal);
 
   // Obtener productos seleccionados
   const getSelectedProductsList = () => {
@@ -455,8 +546,10 @@ const LowStockOrders = () => {
                     <th>Proveedor</th>
                     <th>Stock actual</th>
                     <th>Stock mínimo</th>
+                    <th>Stock ideal</th>
                     <th>Unidad</th>
                     <th>Cantidad a pedir</th>
+                    <th></th>
                   </tr>
                 </thead>
                 <tbody>
@@ -483,6 +576,7 @@ const LowStockOrders = () => {
                       </td>
                       <td className="text-brand-burgundy font-semibold">{product.stock}</td>
                       <td className="text-gray-600">{product.minStock}</td>
+                      <td className="text-gray-600">{product.idealStock || '-'}</td>
                       <td className="text-gray-600">{product.unit}</td>
                       <td>
                         <input
@@ -492,6 +586,16 @@ const LowStockOrders = () => {
                           onChange={(e) => handleQuantityChange(product._id, e.target.value)}
                           className="form-input w-24 text-center"
                         />
+                      </td>
+                      <td>
+                        <button
+                          type="button"
+                          onClick={() => handleEditProduct(product)}
+                          className="text-brand-burgundy hover:text-brand-burgundy/80 transition-colors"
+                          title="Editar stock mínimo e ideal"
+                        >
+                          <Edit className="h-4 w-4" />
+                        </button>
                       </td>
                     </tr>
                   ))}
@@ -521,6 +625,95 @@ const LowStockOrders = () => {
             <ImageIcon className="h-4 w-4" />
             <span>{generating ? 'Generando...' : 'Descargar imagen'}</span>
           </button>
+        </div>
+      )}
+
+      {/* Modal de edición de stock mínimo e ideal */}
+      {showEditModal && editingProduct && (
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          <div className="flex items-center justify-center min-h-screen px-4">
+            <div className="modal-overlay" onClick={() => setShowEditModal(false)} />
+            
+            <div className="relative modal-content max-w-md w-full sm:max-w-md p-6 animate-slide-up">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-900">
+                  Editar Stock - {editingProduct.name}
+                </h3>
+                <button
+                  onClick={() => setShowEditModal(false)}
+                  className="text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                <div className="bg-gray-50 rounded-lg p-3 mb-4">
+                  <p className="text-sm text-gray-600">
+                    <span className="font-medium">Stock actual:</span> {editingProduct.stock}
+                  </p>
+                  <p className="text-sm text-gray-600">
+                    <span className="font-medium">SKU:</span> {editingProduct.sku}
+                  </p>
+                </div>
+
+                <div>
+                  <label className="form-label">Stock mínimo</label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={editFormData.minStock}
+                    onChange={(e) => setEditFormData({...editFormData, minStock: parseInt(e.target.value) || 0})}
+                    className="form-input"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Nivel en el que el producto se considera en bajo stock
+                  </p>
+                </div>
+
+                <div>
+                  <label className="form-label">Stock ideal</label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={editFormData.idealStock}
+                    onChange={(e) => setEditFormData({...editFormData, idealStock: parseInt(e.target.value) || 0})}
+                    className="form-input"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Cantidad que queremos tener disponible después del pedido
+                  </p>
+                </div>
+
+                <div className="bg-brand-cream border border-brand-burgundy rounded-lg p-3">
+                  <p className="text-sm font-medium text-brand-burgundy">
+                    Cantidad sugerida: {calculateSuggestedQuantity(editingProduct.stock, editFormData.minStock, editFormData.idealStock)}
+                  </p>
+                  <p className="text-xs text-gray-600 mt-1">
+                    {editingProduct.stock <= editFormData.minStock
+                      ? 'Producto en bajo stock - se sugiere pedido'
+                      : 'Producto NO está en bajo stock - no se sugiere pedido'
+                    }
+                  </p>
+                </div>
+
+                <div className="flex gap-3 pt-4">
+                  <button
+                    onClick={() => setShowEditModal(false)}
+                    className="btn btn-secondary btn-md flex-1"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    onClick={handleSaveEdit}
+                    className="btn btn-primary btn-md flex-1"
+                  >
+                    Guardar
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>
