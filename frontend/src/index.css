@@ -21,11 +21,11 @@
   }
   
   .btn-primary {
-    @apply btn bg-primary-600 text-white hover:bg-primary-700 hover:shadow-md active:scale-95;
+    @apply btn bg-brand-burgundy text-brand-cream hover:bg-opacity-90 hover:shadow-md active:scale-95;
   }
   
   .btn-secondary {
-    @apply btn bg-white text-gray-700 border-gray-300 hover:bg-gray-50 hover:border-gray-400 hover:shadow-sm active:scale-95;
+    @apply btn bg-brand-cream text-brand-burgundy border-brand-burgundy hover:bg-white hover:border-brand-burgundy hover:shadow-sm active:scale-95;
   }
   
   .btn-success {
@@ -73,7 +73,7 @@
   }
   
   .form-input {
-    @apply w-full px-4 py-2.5 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-200;
+    @apply w-full px-4 py-2.5 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-brand-burgundy focus:border-brand-burgundy transition-all duration-200;
   }
   
   .form-input:focus {
@@ -137,11 +137,11 @@
   }
   
   .sidebar-item {
-    @apply flex items-center px-3 py-2.5 text-sm font-medium text-gray-700 rounded-lg hover:bg-gray-100 hover:text-gray-900 transition-all duration-200;
+    @apply flex items-center px-3 py-2.5 text-sm font-medium text-brand-cream rounded-lg hover:bg-brand-gold hover:text-brand-burgundy transition-all duration-200;
   }
   
   .sidebar-item.active {
-    @apply bg-primary-50 text-primary-700;
+    @apply bg-brand-gold text-brand-burgundy;
   }
   
   .skeleton {
