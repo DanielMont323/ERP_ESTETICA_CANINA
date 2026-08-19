@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { petsAPI, customersAPI, salesAPI, vaccinationCardAPI } from '../services/api';
 import toast from 'react-hot-toast';
 import { Skeleton, SkeletonCard } from '../components/Skeleton';
@@ -35,10 +35,35 @@ const Pets = () => {
     gender: '',
     ownerId: ''
   });
+  const nameInputRef = useRef(null);
 
   useEffect(() => {
     fetchData();
     fetchCustomers();
+  }, []);
+
+  // Listener para evento personalizado de F7 contextual (nueva mascota)
+  useEffect(() => {
+    const handleOpenNewPet = () => {
+      setEditingPet(null);
+      setFormData({
+        name: '',
+        type: '',
+        breed: '',
+        birthDate: '',
+        weight: '',
+        gender: '',
+        ownerId: ''
+      });
+      setShowModal(true);
+      // Colocar foco en el campo nombre después de que el modal se abra
+      setTimeout(() => {
+        nameInputRef.current?.focus();
+      }, 100);
+    };
+
+    window.addEventListener('openNewPet', handleOpenNewPet);
+    return () => window.removeEventListener('openNewPet', handleOpenNewPet);
   }, []);
 
   const fetchData = async () => {
@@ -402,6 +427,7 @@ const Pets = () => {
                 <div>
                   <label className="form-label">Nombre</label>
                   <input
+                    ref={nameInputRef}
                     type="text"
                     required
                     value={formData.name}

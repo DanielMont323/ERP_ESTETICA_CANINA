@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { customersAPI, salesAPI } from '../services/api';
 import toast from 'react-hot-toast';
 import { Skeleton, SkeletonCard } from '../components/Skeleton';
@@ -35,9 +35,32 @@ const Customers = () => {
     address: '',
     notes: ''
   });
+  const nameInputRef = useRef(null);
 
   useEffect(() => {
     fetchCustomers();
+  }, []);
+
+  // Listener para evento personalizado de F6 contextual (nuevo cliente)
+  useEffect(() => {
+    const handleOpenNewCustomer = () => {
+      setEditingCustomer(null);
+      setFormData({
+        name: '',
+        phone: '',
+        email: '',
+        address: '',
+        notes: ''
+      });
+      setShowModal(true);
+      // Colocar foco en el campo nombre después de que el modal se abra
+      setTimeout(() => {
+        nameInputRef.current?.focus();
+      }, 100);
+    };
+
+    window.addEventListener('openNewCustomer', handleOpenNewCustomer);
+    return () => window.removeEventListener('openNewCustomer', handleOpenNewCustomer);
   }, []);
 
   const fetchCustomers = async () => {
@@ -318,6 +341,7 @@ const Customers = () => {
                   <div>
                     <label className="form-label">Nombre completo *</label>
                     <input
+                      ref={nameInputRef}
                       type="text"
                       required
                       value={formData.name}

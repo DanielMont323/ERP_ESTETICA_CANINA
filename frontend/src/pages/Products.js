@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { productsAPI, productCategoriesAPI, suppliersAPI } from '../services/api';
 import toast from 'react-hot-toast';
 import { SkeletonTable } from '../components/Skeleton';
@@ -36,10 +36,12 @@ const Products = () => {
     price: '',
     stock: '',
     minStock: '5',
+    idealStock: '',
     sku: '',
     discountPercentage: '0'
   });
   const [filter, setFilter] = useState('all');
+  const nameInputRef = useRef(null);
 
   useEffect(() => {
     fetchProducts();
@@ -65,6 +67,21 @@ const Products = () => {
     }, 300);
     return () => clearTimeout(debounceTimer);
   }, [searchTerm, filter]);
+
+  // Listener para evento personalizado de F2 contextual (nuevo producto)
+  useEffect(() => {
+    const handleOpenNewProduct = () => {
+      resetForm();
+      setShowModal(true);
+      // Colocar foco en el campo nombre después de que el modal se abra
+      setTimeout(() => {
+        nameInputRef.current?.focus();
+      }, 100);
+    };
+
+    window.addEventListener('openNewProduct', handleOpenNewProduct);
+    return () => window.removeEventListener('openNewProduct', handleOpenNewProduct);
+  }, []);
 
   const fetchProducts = async () => {
     try {
@@ -133,6 +150,7 @@ const Products = () => {
         price: parseFloat(formData.price),
         stock: parseInt(formData.stock),
         minStock: parseInt(formData.minStock),
+        idealStock: formData.idealStock ? parseInt(formData.idealStock) : null,
         discountPercentage: parseFloat(formData.discountPercentage) || 0
       };
 
@@ -163,6 +181,7 @@ const Products = () => {
       price: product.price.toString(),
       stock: product.stock.toString(),
       minStock: product.minStock.toString(),
+      idealStock: product.idealStock ? product.idealStock.toString() : '',
       sku: product.sku || '',
       discountPercentage: (product.discountPercentage || 0).toString()
     });
@@ -454,6 +473,7 @@ const Products = () => {
                   <div>
                     <label className="form-label">Nombre del producto</label>
                     <input
+                      ref={nameInputRef}
                       type="text"
                       required
                       value={formData.name}
@@ -552,6 +572,7 @@ const Products = () => {
                       <input
                         type="number"
                         required
+                        min="0"
                         value={formData.stock}
                         onChange={(e) => setFormData({...formData, stock: e.target.value})}
                         className="form-input"
@@ -563,9 +584,22 @@ const Products = () => {
                       <input
                         type="number"
                         required
+                        min="0"
                         value={formData.minStock}
                         onChange={(e) => setFormData({...formData, minStock: e.target.value})}
                         className="form-input"
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="form-label">Stock ideal</label>
+                      <input
+                        type="number"
+                        min="0"
+                        value={formData.idealStock}
+                        onChange={(e) => setFormData({...formData, idealStock: e.target.value})}
+                        className="form-input"
+                        placeholder="Opcional"
                       />
                     </div>
                   </div>

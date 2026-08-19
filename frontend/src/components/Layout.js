@@ -31,7 +31,7 @@ const Layout = () => {
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  // Atajos de teclado globales
+  // Atajos de teclado globales F1-F12 con comportamiento contextual
   useEffect(() => {
     const handleKeyDown = (e) => {
       // No disparar atajos si el usuario está escribiendo en un input, textarea o select
@@ -43,24 +43,58 @@ const Layout = () => {
       
       if (isInput) return;
 
-      // F1: Nueva Venta
-      if (e.key === 'F1') {
+      // Mapa de atajos F1-F12
+      const shortcuts = {
+        'F1': '/dashboard',
+        'F2': '/products',
+        'F3': '/suppliers',
+        'F4': '/purchases',
+        'F5': '/sales',
+        'F6': '/customers',
+        'F7': '/pets',
+        'F8': '/vaccines-catalog',
+        'F9': '/services',
+        'F10': '/accounts-payable',
+        'F11': '/reports',
+        'F12': '/settings'
+      };
+
+      if (shortcuts[e.key]) {
         e.preventDefault();
-        if (location.pathname !== '/sales') {
-          navigate('/sales');
+        const targetRoute = shortcuts[e.key];
+        
+        // F12 puede no ser interceptable por el navegador (DevTools)
+        if (e.key === 'F12') {
+          // Intentar navegar, pero el navegador puede abrir DevTools de todos modos
+          navigate(targetRoute);
+          return;
         }
-        // Disparar evento personalizado para abrir modal
-        window.dispatchEvent(new CustomEvent('openSaleModal'));
-      }
-      
-      // F2: Nueva Compra
-      if (e.key === 'F2') {
-        e.preventDefault();
-        if (location.pathname !== '/purchases') {
-          navigate('/purchases');
+        
+        // Comportamiento contextual
+        if (location.pathname === targetRoute) {
+          // Ya estamos en el módulo: ejecutar acción principal
+          const actionEvents = {
+            'F2': 'openNewProduct',
+            'F3': 'openNewSupplier',
+            'F4': 'openNewPurchase',
+            'F5': 'openNewSale',
+            'F6': 'openNewCustomer',
+            'F7': 'openNewPet',
+            'F8': 'openNewVaccine',
+            'F9': 'openNewService',
+            'F10': 'openNewPayment',
+            'F11': 'openReportAction',
+            'F12': 'openSettingsAction'
+          };
+          
+          const actionEvent = actionEvents[e.key];
+          if (actionEvent) {
+            window.dispatchEvent(new CustomEvent(actionEvent));
+          }
+        } else {
+          // No estamos en el módulo: navegar
+          navigate(targetRoute);
         }
-        // Disparar evento personalizado para abrir modal
-        window.dispatchEvent(new CustomEvent('openPurchaseModal'));
       }
     };
 
@@ -69,24 +103,24 @@ const Layout = () => {
   }, [location.pathname, navigate]);
 
   const navigation = [
-    { name: 'Dashboard', href: '/dashboard', icon: Home },
-    { name: 'Productos', href: '/products', icon: Package },
+    { name: 'Dashboard', href: '/dashboard', icon: Home, shortcut: 'F1' },
+    { name: 'Productos', href: '/products', icon: Package, shortcut: 'F2' },
     { name: 'Categorías Productos', href: '/product-categories', icon: Tag },
     { name: 'Pedidos Proveedores', href: '/low-stock-orders', icon: Box },
-    { name: 'Ventas', href: '/sales', icon: ShoppingCart },
-    { name: 'Compras', href: '/purchases', icon: PurchasesIcon },
-    { name: 'Clientes', href: '/customers', icon: Users },
-    { name: 'Mascotas', href: '/pets', icon: Heart },
+    { name: 'Ventas', href: '/sales', icon: ShoppingCart, shortcut: 'F5' },
+    { name: 'Compras', href: '/purchases', icon: PurchasesIcon, shortcut: 'F4' },
+    { name: 'Clientes', href: '/customers', icon: Users, shortcut: 'F6' },
+    { name: 'Mascotas', href: '/pets', icon: Heart, shortcut: 'F7' },
     { name: 'Carnet Vacunación', href: '/vaccination-cards', icon: Syringe },
-    ...(user?.role === 'admin' ? [{ name: 'Catálogo Vacunas', href: '/vaccines-catalog', icon: Syringe }] : []),
-    { name: 'Servicios', href: '/services', icon: Scissors },
+    ...(user?.role === 'admin' ? [{ name: 'Catálogo Vacunas', href: '/vaccines-catalog', icon: Syringe, shortcut: 'F8' }] : []),
+    { name: 'Servicios', href: '/services', icon: Scissors, shortcut: 'F9' },
     { name: 'Categorías Servicios', href: '/service-categories', icon: Tag },
-    { name: 'Proveedores', href: '/suppliers', icon: Truck },
-    { name: 'Cuentas por Pagar', href: '/accounts-payable', icon: FileText },
+    { name: 'Proveedores', href: '/suppliers', icon: Truck, shortcut: 'F3' },
+    { name: 'Cuentas por Pagar', href: '/accounts-payable', icon: FileText, shortcut: 'F10' },
     { name: 'Costos', href: '/costs', icon: DollarSign },
     { name: 'Recordatorios', href: '/reminders', icon: Calendar },
-    { name: 'Reportes', href: '/reports', icon: BarChart3 },
-    { name: 'Configuración', href: '/settings', icon: Settings },
+    { name: 'Reportes', href: '/reports', icon: BarChart3, shortcut: 'F11' },
+    { name: 'Configuración', href: '/settings', icon: Settings, shortcut: 'F12' },
   ];
 
   const isActive = (href) => {
@@ -224,7 +258,12 @@ const Sidebar = ({ navigation, isActive, onMobileClose }) => {
               }`}
             >
               <Icon className="mr-3 h-5 w-5 flex-shrink-0" />
-              {item.name}
+              <span className="flex-1">{item.name}</span>
+              {item.shortcut && (
+                <span className="hidden lg:inline-block ml-2 text-xs text-brand-cream opacity-70">
+                  {item.shortcut}
+                </span>
+              )}
             </Link>
           );
         })}

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { servicesAPI, serviceCategoriesAPI, productsAPI } from '../services/api';
 import toast from 'react-hot-toast';
 import { Skeleton, SkeletonCard } from '../components/Skeleton';
@@ -32,11 +32,36 @@ const Services = () => {
     discountPercentage: '0',
     insumos: []
   });
+  const nameInputRef = useRef(null);
 
   useEffect(() => {
     fetchServices();
     fetchCategories();
     fetchProducts();
+  }, []);
+
+  // Listener para evento personalizado de F9 contextual (nuevo servicio)
+  useEffect(() => {
+    const handleOpenNewService = () => {
+      setEditingService(null);
+      setFormData({
+        name: '',
+        description: '',
+        price: '',
+        duration: '',
+        category: '',
+        discountPercentage: '0',
+        insumos: []
+      });
+      setShowModal(true);
+      // Colocar foco en el campo nombre después de que el modal se abra
+      setTimeout(() => {
+        nameInputRef.current?.focus();
+      }, 100);
+    };
+
+    window.addEventListener('openNewService', handleOpenNewService);
+    return () => window.removeEventListener('openNewService', handleOpenNewService);
   }, []);
 
   const fetchServices = async () => {
@@ -265,6 +290,7 @@ const Services = () => {
                 <div>
                   <label className="form-label">Nombre</label>
                   <input
+                    ref={nameInputRef}
                     type="text"
                     required
                     value={formData.name}

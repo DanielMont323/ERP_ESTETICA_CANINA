@@ -45,6 +45,22 @@ const Purchases = () => {
   const [searchResults, setSearchResults] = useState([]);
   const productSearchInputRef = useRef(null);
 
+  // Listener para evento personalizado de F4 contextual (nueva compra)
+  useEffect(() => {
+    const handleOpenNewPurchase = () => {
+      setShowModal(true);
+      setIsEditMode(false);
+      setSelectedPurchase(null);
+      // Colocar foco en el campo de búsqueda de producto después de que el modal se abra
+      setTimeout(() => {
+        productSearchInputRef.current?.focus();
+      }, 100);
+    };
+
+    window.addEventListener('openNewPurchase', handleOpenNewPurchase);
+    return () => window.removeEventListener('openNewPurchase', handleOpenNewPurchase);
+  }, []);
+
   const fetchData = useCallback(async () => {
     try {
       const params = {};
@@ -83,16 +99,6 @@ const Purchases = () => {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [showModal]);
-
-  // Listener para evento personalizado de F2
-  useEffect(() => {
-    const handleOpenPurchaseModal = () => {
-      setShowModal(true);
-    };
-
-    window.addEventListener('openPurchaseModal', handleOpenPurchaseModal);
-    return () => window.removeEventListener('openPurchaseModal', handleOpenPurchaseModal);
-  }, []);
 
   const fetchSuppliers = async () => {
     try {

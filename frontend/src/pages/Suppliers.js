@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { suppliersAPI } from '../services/api';
 import toast from 'react-hot-toast';
 import { Skeleton, SkeletonCard } from '../components/Skeleton';
@@ -28,9 +28,35 @@ const Suppliers = () => {
     earlyPaymentDiscount: 0,
     currentDebt: 0
   });
+  const nameInputRef = useRef(null);
 
   useEffect(() => {
     fetchSuppliers();
+  }, []);
+
+  // Listener para evento personalizado de F3 contextual (nuevo proveedor)
+  useEffect(() => {
+    const handleOpenNewSupplier = () => {
+      setEditingSupplier(null);
+      setFormData({
+        name: '',
+        contact: '',
+        phone: '',
+        email: '',
+        address: '',
+        creditDays: 0,
+        earlyPaymentDiscount: 0,
+        currentDebt: 0
+      });
+      setShowModal(true);
+      // Colocar foco en el campo nombre después de que el modal se abra
+      setTimeout(() => {
+        nameInputRef.current?.focus();
+      }, 100);
+    };
+
+    window.addEventListener('openNewSupplier', handleOpenNewSupplier);
+    return () => window.removeEventListener('openNewSupplier', handleOpenNewSupplier);
   }, []);
 
   const fetchSuppliers = async () => {
@@ -222,6 +248,7 @@ const Suppliers = () => {
                 <div>
                   <label className="form-label">Nombre</label>
                   <input
+                    ref={nameInputRef}
                     type="text"
                     required
                     value={formData.name}

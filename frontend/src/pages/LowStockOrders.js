@@ -48,10 +48,17 @@ const LowStockOrders = () => {
         const response = await axios.get('/api/productos/low-stock', { params });
         
         if (response.data.success) {
-          const productsWithQuantities = response.data.data.map(product => ({
-            ...product,
-            quantityToOrder: product.minStock - product.stock > 0 ? product.minStock - product.stock : 0
-          }));
+          const productsWithQuantities = response.data.data.map(product => {
+            // Calcular cantidad sugerida usando stockIdeal si está disponible, si no usar minStock
+            const suggestedQuantity = product.idealStock 
+              ? (product.idealStock - product.stock > 0 ? product.idealStock - product.stock : 0)
+              : (product.minStock - product.stock > 0 ? product.minStock - product.stock : 0);
+            
+            return {
+              ...product,
+              quantityToOrder: suggestedQuantity
+            };
+          });
           setProducts(productsWithQuantities);
           
           // Inicializar cantidades

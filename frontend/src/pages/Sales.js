@@ -58,8 +58,23 @@ const Sales = () => {
   const [editAmountReceived, setEditAmountReceived] = useState('');
   const [productSearchQuery, setProductSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
+  const [selectedSearchIndex, setSelectedSearchIndex] = useState(-1);
   const searchInputRef = useRef(null);
   const userRole = user?.role || 'user';
+
+  // Listener para evento personalizado de F5 contextual (nueva venta)
+  useEffect(() => {
+    const handleOpenNewSale = () => {
+      setShowModal(true);
+      // Colocar foco en el campo de búsqueda de producto después de que el modal se abra
+      setTimeout(() => {
+        searchInputRef.current?.focus();
+      }, 100);
+    };
+
+    window.addEventListener('openNewSale', handleOpenNewSale);
+    return () => window.removeEventListener('openNewSale', handleOpenNewSale);
+  }, []);
   
   // Campos manuales para Mercado Libre (solo ADMIN)
   const [manualSubtotal, setManualSubtotal] = useState('');
@@ -116,16 +131,6 @@ const Sales = () => {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [showModal, showEditModal]);
-
-  // Listener para evento personalizado de F1
-  useEffect(() => {
-    const handleOpenSaleModal = () => {
-      setShowModal(true);
-    };
-
-    window.addEventListener('openSaleModal', handleOpenSaleModal);
-    return () => window.removeEventListener('openSaleModal', handleOpenSaleModal);
-  }, []);
 
   const fetchProducts = async () => {
     try {
@@ -190,47 +195,85 @@ const Sales = () => {
         try {
           const response = await productsAPI.search(productSearchQuery);
           setSearchResults(response.data.data);
+          setSelectedSearchIndex(-1); // Resetear selección cuando cambian los resultados
         } catch (error) {
           console.error('Error searching products:', error);
           setSearchResults([]);
+          setSelectedSearchIndex(-1);
         }
       } else {
         setSearchResults([]);
+        setSelectedSearchIndex(-1);
       }
     }, 300);
 
     return () => clearTimeout(timer);
   }, [productSearchQuery]);
 
-  // Manejo de ENTER para escaneo de SKU
+  // Manejo de teclas para navegación por teclado en buscador
   const handleSearchKeyDown = async (e) => {
-    if (e.key === 'Enter') {
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      if (searchResults.length > 0) {
+        setSelectedSearchIndex(prev => 
+          prev < searchResults.length - 1 ? prev + 1 : prev
+        );
+      }
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      if (searchResults.length > 0) {
+        setSelectedSearchIndex(prev => prev > 0 ? prev - 1 : -1);
+      }
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      setSearchResults([]);
+      setSelectedSearchIndex(-1);
+      setProductSearchQuery('');
+      searchInputRef.current?.focus();
+    } else if (e.key === 'Enter') {
       e.preventDefault();
       
-      if (!productSearchQuery.trim()) return;
+      if (selectedSearchIndex >= 0 && searchResults[selectedSearchIndex]) {
+        // Hay un resultado seleccionado - agregarlo al carrito
+        const product = searchResults[selectedSearchIndex];
+        addToCart(product, 'producto');
+        setProductSearchQuery('');
+        setSearchResults([]);
+        setSelectedSearchIndex(-1);
+        toast.success(`${product.name} agregado al carrito`);
+        
+        // Mantener foco en el campo para escaneo continuo
+        setTimeout(() => {
+          searchInputRef.current?.focus();
+        }, 100);
+      } else if (productSearchQuery.trim()) {
+        // No hay selección - comportamiento original de lector de código de barras
+        try {
+          const response = await productsAPI.search(productSearchQuery);
+          const results = response.data.data;
 
-      try {
-        const response = await productsAPI.search(productSearchQuery);
-        const results = response.data.data;
-
-        if (results.length === 1) {
-          // Producto único encontrado - agregar automáticamente
-          const product = results[0];
-          addToCart(product, 'producto');
-          setProductSearchQuery('');
-          setSearchResults([]);
-          toast.success(`${product.name} agregado al carrito`);
-          
-          // Mantener foco en el campo para escaneo continuo
-          setTimeout(() => {
-            searchInputRef.current?.focus();
-          }, 100);
-        } else if (results.length === 0) {
-          toast.error('Producto no encontrado');
+          if (results.length === 1) {
+            // Producto único encontrado - agregar automáticamente
+            const product = results[0];
+            addToCart(product, 'producto');
+            setProductSearchQuery('');
+            setSearchResults([]);
+            setSelectedSearchIndex(-1);
+            toast.success(`${product.name} agregado al carrito`);
+            
+            // Mantener foco en el campo para escaneo continuo
+            setTimeout(() => {
+              searchInputRef.current?.focus();
+            }, 100);
+          } else if (results.length === 0) {
+            toast.error('Producto no encontrado');
+          } else if (results.length > 1) {
+            // Múltiples resultados - seleccionar el primero automáticamente
+            setSelectedSearchIndex(0);
+          }
+        } catch (error) {
+          toast.error('Error al buscar producto');
         }
-        // Si hay múltiples resultados, mostrarlos en la lista
-      } catch (error) {
-        toast.error('Error al buscar producto');
       }
     }
   };
@@ -255,7 +298,9 @@ const Sales = () => {
         name: item.name,
         category: item.category,
         nextDoseDate: '',
-        mascota: ''
+        diasProximaDosis: '',
+        mascota: '',
+        aplicaciones: []
       }]);
     }
   };
@@ -465,7 +510,9 @@ const Sales = () => {
           quantity: item.quantity,
           unitPrice: item.unitPrice,
           nextDoseDate: item.nextDoseDate || null,
-          mascota: item.mascota || null
+          diasProximaDosis: item.diasProximaDosis ? parseInt(item.diasProximaDosis) : null,
+          mascota: item.mascota || null,
+          aplicaciones: item.aplicaciones && item.aplicaciones.length > 0 ? item.aplicaciones : null
         })),
         paymentMethod,
         saleChannel,
@@ -810,15 +857,20 @@ const Sales = () => {
                       />
                       {searchResults.length > 0 && (
                         <div className="mt-2 border border-gray-200 rounded-xl max-h-48 overflow-y-auto bg-white">
-                          {searchResults.map(product => (
+                          {searchResults.map((product, index) => (
                             <div
                               key={product._id}
                               onClick={() => {
                                 addToCart(product, 'producto');
                                 setProductSearchQuery('');
                                 setSearchResults([]);
+                                setSelectedSearchIndex(-1);
                               }}
-                              className="p-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-0"
+                              className={`p-3 cursor-pointer border-b border-gray-100 last:border-0 transition-colors ${
+                                index === selectedSearchIndex 
+                                  ? 'bg-brand-burgundy bg-opacity-10 border-l-4 border-l-brand-burgundy' 
+                                  : 'hover:bg-gray-50'
+                              }`}
                             >
                               <p className="font-medium text-gray-900">{product.name}</p>
                               <p className="text-sm text-gray-500">SKU: {product.sku}</p>
@@ -941,41 +993,58 @@ const Sales = () => {
                                 {showMascotaSelector && (
                                   <div className="pl-2 bg-yellow-50 border border-yellow-200 rounded-lg p-2">
                                     <label className="text-xs font-semibold text-yellow-800">⚠️ Mascota a la que se aplicará (OBLIGATORIO):</label>
-                                    <select
-                                      value={item.mascota || ''}
-                                      onChange={(e) => {
-                                        const newCart = [...cart];
-                                        newCart[index].mascota = e.target.value;
-                                        setCart(newCart);
-                                      }}
-                                      className="form-input text-sm py-1 border-yellow-300 focus:border-yellow-500 focus:ring-yellow-500"
-                                      required
-                                    >
-                                      <option value="">Seleccionar mascota...</option>
-                                      {pets.map(pet => (
-                                        <option key={pet._id} value={pet._id}>
-                                          {pet.name} - {pet.breed}
-                                        </option>
+                                    <div className="space-y-2 mt-2">
+                                      {[...Array(item.quantity)].map((_, unitIndex) => (
+                                        <div key={unitIndex} className="flex items-center space-x-2">
+                                          <span className="text-xs text-gray-600 w-16">Unidad {unitIndex + 1}:</span>
+                                          <select
+                                            value={item.aplicaciones[unitIndex]?.mascota || ''}
+                                            onChange={(e) => {
+                                              const newCart = [...cart];
+                                              if (!newCart[index].aplicaciones) {
+                                                newCart[index].aplicaciones = [];
+                                              }
+                                              newCart[index].aplicaciones[unitIndex] = {
+                                                ...newCart[index].aplicaciones[unitIndex],
+                                                mascota: e.target.value,
+                                                fechaAplicacion: new Date().toISOString()
+                                              };
+                                              setCart(newCart);
+                                            }}
+                                            className="form-input text-sm py-1 border-yellow-300 focus:border-yellow-500 focus:ring-yellow-500 flex-1"
+                                            required
+                                          >
+                                            <option value="">Seleccionar mascota...</option>
+                                            {pets.map(pet => (
+                                              <option key={pet._id} value={pet._id}>
+                                                {pet.name} - {pet.breed}
+                                              </option>
+                                            ))}
+                                          </select>
+                                        </div>
                                       ))}
-                                    </select>
-                                    {!item.mascota && (
-                                      <p className="text-xs text-red-600 mt-1">⚠️ Debes seleccionar una mascota para este producto</p>
+                                    </div>
+                                    {(!item.aplicaciones || item.aplicaciones.length === 0 || item.aplicaciones.some(a => !a.mascota)) && (
+                                      <p className="text-xs text-red-600 mt-1">⚠️ Debes seleccionar una mascota para cada unidad</p>
                                     )}
                                   </div>
                                 )}
                                 {showNextDose && (
                                   <div className="pl-2">
-                                    <label className="text-xs text-gray-600">Próxima dosis:</label>
+                                    <label className="text-xs text-gray-600">Días para próxima dosis:</label>
                                     <input
-                                      type="date"
-                                      value={item.nextDoseDate || ''}
+                                      type="number"
+                                      min="0"
+                                      value={item.diasProximaDosis || ''}
                                       onChange={(e) => {
                                         const newCart = [...cart];
-                                        newCart[index].nextDoseDate = e.target.value;
+                                        newCart[index].diasProximaDosis = e.target.value;
                                         setCart(newCart);
                                       }}
                                       className="form-input text-sm py-1"
+                                      placeholder="Ej: 30"
                                     />
+                                    <p className="text-xs text-gray-500 mt-1">El sistema calculará la fecha automáticamente</p>
                                   </div>
                                 )}
                               </div>
