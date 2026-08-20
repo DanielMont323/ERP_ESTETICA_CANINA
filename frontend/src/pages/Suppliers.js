@@ -70,7 +70,7 @@ const Suppliers = () => {
 
   const fetchSuppliers = async () => {
     try {
-      const response = await suppliersAPI.getAll();
+      const response = await suppliersAPI.getAll({ limit: 100 });
       setSuppliers(response.data.data);
     } catch (error) {
       toast.error('Error al cargar proveedores');

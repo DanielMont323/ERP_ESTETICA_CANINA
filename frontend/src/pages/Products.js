@@ -112,7 +112,7 @@ const Products = () => {
       } else {
         const params = {
           page: 1,
-          limit: 50
+          limit: 100
         };
         if (showInactive && userRole === 'admin') {
           params.active = 'false';
