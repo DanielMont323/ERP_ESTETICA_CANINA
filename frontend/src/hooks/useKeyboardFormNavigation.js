@@ -2,8 +2,8 @@ import { useEffect } from 'react';
 
 /**
  * Hook reutilizable para navegación entre campos de formulario usando teclas físicas
- * ShiftLeft → siguiente campo
- * ControlLeft → campo anterior
+ * TAB → campo anterior
+ * Shift → siguiente campo
  */
 export const useKeyboardFormNavigation = (formRef, enabled = true) => {
   useEffect(() => {
@@ -14,18 +14,18 @@ export const useKeyboardFormNavigation = (formRef, enabled = true) => {
       const formElement = formRef.current;
       if (!formElement || !formElement.contains(e.target)) return;
 
-      // Detectar teclas físicas específicas (izquierda)
-      const isShiftLeft = e.code === 'ShiftLeft';
-      const isControlLeft = e.code === 'ControlLeft';
+      // Detectar teclas físicas específicas
+      const isShift = e.key === 'Shift';
+      const isTab = e.key === 'Tab';
 
-      // Si no es ShiftLeft ni ControlLeft, no hacer nada
-      if (!isShiftLeft && !isControlLeft) return;
+      // Si no es Shift ni Tab, no hacer nada
+      if (!isShift && !isTab) return;
 
       // Verificar que no se esté usando como modificador con otra tecla
-      // Si se presiona ShiftLeft + otra tecla, no navegar
-      if (isShiftLeft && e.key !== 'Shift') return;
-      // Si se presiona ControlLeft + otra tecla, no navegar
-      if (isControlLeft && e.key !== 'Control') return;
+      // Si se presiona Shift + otra tecla, no navegar
+      if (isShift && e.key !== 'Shift') return;
+      // Si se presiona Tab + otra tecla, no navegar
+      if (isTab && e.key !== 'Tab') return;
 
       // Encontrar todos los campos editables en el formulario
       const editableFields = formElement.querySelectorAll(
@@ -48,13 +48,13 @@ export const useKeyboardFormNavigation = (formRef, enabled = true) => {
 
       let nextIndex;
 
-      if (isShiftLeft) {
+      if (isShift) {
         // Navegar al siguiente campo
         nextIndex = currentIndex + 1;
         if (nextIndex >= visibleFields.length) {
           nextIndex = 0; // Ciclar al inicio
         }
-      } else if (isControlLeft) {
+      } else if (isTab) {
         // Navegar al campo anterior
         nextIndex = currentIndex - 1;
         if (nextIndex < 0) {
