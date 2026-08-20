@@ -746,7 +746,7 @@ const Purchases = () => {
                         <tbody>
                           {formData.items.map((item, index) => (
                             <tr key={index}>
-                              <td>{products.find(p => p._id === item.product)?.name}</td>
+                              <td>{item.product?.name || 'Producto no disponible'}</td>
                               <td>
                                 <input
                                   type="number"
