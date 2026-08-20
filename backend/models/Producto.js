@@ -41,6 +41,10 @@ const productoSchema = new mongoose.Schema({
     default: 5,
     min: 0
   },
+  idealStock: {
+    type: Number,
+    min: 0
+  },
   sku: {
     type: String,
     unique: true,

@@ -247,6 +247,15 @@ router.post('/', authenticateToken, async (req, res) => {
              categoryLower.includes('desparasitante');
     };
     
+    // Función para calcular próxima dosis a partir de días
+    const calculateNextDoseDate = (dias, fechaBase = null) => {
+      if (!dias || dias <= 0) return null;
+      const baseDate = fechaBase || getCurrentDateGMT7();
+      const nextDate = new Date(baseDate);
+      nextDate.setDate(nextDate.getDate() + parseInt(dias));
+      return nextDate;
+    };
+    
     for (const item of items) {
       if (item.type === 'producto') {
         const producto = await Producto.findById(item.item);
@@ -255,44 +264,110 @@ router.post('/', authenticateToken, async (req, res) => {
           const isVaccineDewormer = isVaccineOrDewormer(categoryName);
           
           if (isVaccineDewormer) {
-            // Validar que el item tenga mascota si es vacuna/desparasitante
-            if (!item.mascota) {
-              return res.status(400).json({
-                success: false,
-                message: `El producto "${producto.name}" es una vacuna/desparasitante y debe tener una mascota asociada`
-              });
+            // Calcular nextDoseDate a partir de diasProximaDosis si se proporciona
+            let calculatedNextDoseDate = item.nextDoseDate;
+            if (item.diasProximaDosis && !item.nextDoseDate) {
+              calculatedNextDoseDate = calculateNextDoseDate(item.diasProximaDosis);
             }
             
-            // Validar que la mascota pertenezca al cliente
-            if (!customer) {
-              return res.status(400).json({
-                success: false,
-                message: 'Para vender vacunas o desparasitantes debe seleccionar un cliente'
-              });
-            }
-            
-            const mascotaDoc = await Mascota.findById(item.mascota);
-            if (!mascotaDoc) {
-              return res.status(404).json({
-                success: false,
-                message: 'Mascota no encontrada'
-              });
-            }
-            
-            if (!mascotaDoc.owner || mascotaDoc.owner.toString() !== customer) {
-              return res.status(403).json({
-                success: false,
-                message: `La mascota "${mascotaDoc.name}" no pertenece al cliente seleccionado`
-              });
-            }
-            
-            const categoryLower = categoryName.toString().toLowerCase();
-            if (categoryLower === 'vacunas' || categoryLower === 'vacuna') {
-              hasVaccines = true;
-              vaccineProducts.push({ producto, quantity: item.quantity, nextDoseDate: item.nextDoseDate, mascota: item.mascota });
+            // Validar aplicaciones array para múltiples mascotas
+            if (item.aplicaciones && item.aplicaciones.length > 0) {
+              // Validar que cada aplicación tenga mascota
+              for (const aplicacion of item.aplicaciones) {
+                if (!aplicacion.mascota) {
+                  return res.status(400).json({
+                    success: false,
+                    message: `El producto "${producto.name}" es una vacuna/desparasitante y cada aplicación debe tener una mascota asociada`
+                  });
+                }
+                
+                // Validar que la mascota pertenezca al cliente
+                if (!customer) {
+                  return res.status(400).json({
+                    success: false,
+                    message: 'Para vender vacunas o desparasitantes debe seleccionar un cliente'
+                  });
+                }
+                
+                const mascotaDoc = await Mascota.findById(aplicacion.mascota);
+                if (!mascotaDoc) {
+                  return res.status(404).json({
+                    success: false,
+                    message: 'Mascota no encontrada'
+                  });
+                }
+                
+                if (!mascotaDoc.owner || mascotaDoc.owner.toString() !== customer) {
+                  return res.status(403).json({
+                    success: false,
+                    message: `La mascota "${mascotaDoc.name}" no pertenece al cliente seleccionado`
+                  });
+                }
+                
+                // Calcular próxima dosis para cada aplicación si no está definida
+                if (!aplicacion.proximaDosis && item.diasProximaDosis) {
+                  aplicacion.proximaDosis = calculateNextDoseDate(item.diasProximaDosis, aplicacion.fechaAplicacion);
+                }
+              }
+              
+              const categoryLower = categoryName.toString().toLowerCase();
+              if (categoryLower === 'vacunas' || categoryLower === 'vacuna') {
+                hasVaccines = true;
+                vaccineProducts.push({ 
+                  producto, 
+                  quantity: item.quantity, 
+                  nextDoseDate: calculatedNextDoseDate, 
+                  aplicaciones: item.aplicaciones 
+                });
+              } else {
+                hasDewormers = true;
+                dewormerProducts.push({ 
+                  producto, 
+                  quantity: item.quantity, 
+                  nextDoseDate: calculatedNextDoseDate, 
+                  aplicaciones: item.aplicaciones 
+                });
+              }
             } else {
-              hasDewormers = true;
-              dewormerProducts.push({ producto, quantity: item.quantity, nextDoseDate: item.nextDoseDate, mascota: item.mascota });
+              // Compatibilidad con código existente: usar mascota a nivel de item
+              if (!item.mascota) {
+                return res.status(400).json({
+                  success: false,
+                  message: `El producto "${producto.name}" es una vacuna/desparasitante y debe tener una mascota asociada`
+                });
+              }
+              
+              // Validar que la mascota pertenezca al cliente
+              if (!customer) {
+                return res.status(400).json({
+                  success: false,
+                  message: 'Para vender vacunas o desparasitantes debe seleccionar un cliente'
+                });
+              }
+              
+              const mascotaDoc = await Mascota.findById(item.mascota);
+              if (!mascotaDoc) {
+                return res.status(404).json({
+                  success: false,
+                  message: 'Mascota no encontrada'
+                });
+              }
+              
+              if (!mascotaDoc.owner || mascotaDoc.owner.toString() !== customer) {
+                return res.status(403).json({
+                  success: false,
+                  message: `La mascota "${mascotaDoc.name}" no pertenece al cliente seleccionado`
+                });
+              }
+              
+              const categoryLower = categoryName.toString().toLowerCase();
+              if (categoryLower === 'vacunas' || categoryLower === 'vacuna') {
+                hasVaccines = true;
+                vaccineProducts.push({ producto, quantity: item.quantity, nextDoseDate: calculatedNextDoseDate, mascota: item.mascota });
+              } else {
+                hasDewormers = true;
+                dewormerProducts.push({ producto, quantity: item.quantity, nextDoseDate: calculatedNextDoseDate, mascota: item.mascota });
+              }
             }
           }
         }
@@ -444,76 +519,150 @@ router.post('/', authenticateToken, async (req, res) => {
     // 8. Registrar vacunas y desparasitantes en el carnet si aplica
     if (hasVaccines || hasDewormers) {
       try {
-        // Procesar cada producto con su mascota específica
-        for (const { producto, quantity, nextDoseDate, mascota } of vaccineProducts) {
-          const mascotaDoc = await Mascota.findById(mascota);
+        // Procesar cada producto con sus aplicaciones
+        for (const { producto, quantity, nextDoseDate, aplicaciones, mascota } of vaccineProducts) {
           const clienteDoc = await Cliente.findById(customer);
           
-          // Buscar o crear carnet de vacunación para esta mascota específica
-          let carnet = await CarnetVacunacion.findOne({ mascota });
-          
-          if (!carnet) {
-            carnet = new CarnetVacunacion({
-              mascota,
-              nombreMascota: mascotaDoc.name,
-              especie: mascotaDoc.type,
-              raza: mascotaDoc.breed,
-              propietario: customer,
-              nombrePropietario: clienteDoc.name,
-              vacunas: []
-            });
+          // Si hay aplicaciones array, procesar cada aplicación individualmente
+          if (aplicaciones && aplicaciones.length > 0) {
+            for (const aplicacion of aplicaciones) {
+              const mascotaDoc = await Mascota.findById(aplicacion.mascota);
+              
+              // Buscar o crear carnet de vacunación para esta mascota específica
+              let carnet = await CarnetVacunacion.findOne({ mascota: aplicacion.mascota });
+              
+              if (!carnet) {
+                carnet = new CarnetVacunacion({
+                  mascota: aplicacion.mascota,
+                  nombreMascota: mascotaDoc.name,
+                  especie: mascotaDoc.type,
+                  raza: mascotaDoc.breed,
+                  propietario: customer,
+                  nombrePropietario: clienteDoc.name,
+                  vacunas: []
+                });
+              }
+              
+              // Agregar vacuna al carnet
+              const vacunaEntry = {
+                vacuna: producto._id,
+                nombre: producto.name,
+                tipo: 'vacuna',
+                fecha: aplicacion.fechaAplicacion || getCurrentDateGMT7(),
+                proximaDosis: aplicacion.proximaDosis || nextDoseDate || null,
+                diasProximaDosis: aplicacion.diasProximaDosis || null,
+                venta: venta._id
+              };
+              carnet.vacunas.push(vacunaEntry);
+              await carnet.save();
+            }
+          } else {
+            // Compatibilidad con código existente: usar mascota a nivel de item
+            const mascotaDoc = await Mascota.findById(mascota);
+            
+            // Buscar o crear carnet de vacunación para esta mascota específica
+            let carnet = await CarnetVacunacion.findOne({ mascota });
+            
+            if (!carnet) {
+              carnet = new CarnetVacunacion({
+                mascota,
+                nombreMascota: mascotaDoc.name,
+                especie: mascotaDoc.type,
+                raza: mascotaDoc.breed,
+                propietario: customer,
+                nombrePropietario: clienteDoc.name,
+                vacunas: []
+              });
+            }
+            
+            // Agregar vacunas al carnet
+            for (let i = 0; i < quantity; i++) {
+              const vacunaEntry = {
+                vacuna: producto._id,
+                nombre: producto.name,
+                tipo: 'vacuna',
+                fecha: getCurrentDateGMT7(),
+                proximaDosis: nextDoseDate || null,
+                venta: venta._id
+              };
+              carnet.vacunas.push(vacunaEntry);
+            }
+            
+            await carnet.save();
           }
-          
-          // Agregar vacunas al carnet
-          for (let i = 0; i < quantity; i++) {
-            const vacunaEntry = {
-              vacuna: producto._id,
-              nombre: producto.name,
-              tipo: 'vacuna',
-              fecha: getCurrentDateGMT7(),
-              proximaDosis: nextDoseDate || null,
-              venta: venta._id
-            };
-            carnet.vacunas.push(vacunaEntry);
-          }
-          
-          await carnet.save();
         }
         
         // Procesar desparasitantes
-        for (const { producto, quantity, nextDoseDate, mascota } of dewormerProducts) {
-          const mascotaDoc = await Mascota.findById(mascota);
+        for (const { producto, quantity, nextDoseDate, aplicaciones, mascota } of dewormerProducts) {
           const clienteDoc = await Cliente.findById(customer);
           
-          // Buscar o crear carnet de vacunación para esta mascota específica
-          let carnet = await CarnetVacunacion.findOne({ mascota });
-          
-          if (!carnet) {
-            carnet = new CarnetVacunacion({
-              mascota,
-              nombreMascota: mascotaDoc.name,
-              especie: mascotaDoc.type,
-              raza: mascotaDoc.breed,
-              propietario: customer,
-              nombrePropietario: clienteDoc.name,
-              vacunas: []
-            });
+          // Si hay aplicaciones array, procesar cada aplicación individualmente
+          if (aplicaciones && aplicaciones.length > 0) {
+            for (const aplicacion of aplicaciones) {
+              const mascotaDoc = await Mascota.findById(aplicacion.mascota);
+              
+              // Buscar o crear carnet de vacunación para esta mascota específica
+              let carnet = await CarnetVacunacion.findOne({ mascota: aplicacion.mascota });
+              
+              if (!carnet) {
+                carnet = new CarnetVacunacion({
+                  mascota: aplicacion.mascota,
+                  nombreMascota: mascotaDoc.name,
+                  especie: mascotaDoc.type,
+                  raza: mascotaDoc.breed,
+                  propietario: customer,
+                  nombrePropietario: clienteDoc.name,
+                  vacunas: []
+                });
+              }
+              
+              // Agregar desparasitante al carnet
+              const desparasitanteEntry = {
+                vacuna: producto._id,
+                nombre: producto.name,
+                tipo: 'desparasitante',
+                fecha: aplicacion.fechaAplicacion || getCurrentDateGMT7(),
+                proximaDosis: aplicacion.proximaDosis || nextDoseDate || null,
+                diasProximaDosis: aplicacion.diasProximaDosis || null,
+                venta: venta._id
+              };
+              carnet.vacunas.push(desparasitanteEntry);
+              await carnet.save();
+            }
+          } else {
+            // Compatibilidad con código existente: usar mascota a nivel de item
+            const mascotaDoc = await Mascota.findById(mascota);
+            
+            // Buscar o crear carnet de vacunación para esta mascota específica
+            let carnet = await CarnetVacunacion.findOne({ mascota });
+            
+            if (!carnet) {
+              carnet = new CarnetVacunacion({
+                mascota,
+                nombreMascota: mascotaDoc.name,
+                especie: mascotaDoc.type,
+                raza: mascotaDoc.breed,
+                propietario: customer,
+                nombrePropietario: clienteDoc.name,
+                vacunas: []
+              });
+            }
+            
+            // Agregar desparasitantes al carnet
+            for (let i = 0; i < quantity; i++) {
+              const desparasitanteEntry = {
+                vacuna: producto._id,
+                nombre: producto.name,
+                tipo: 'desparasitante',
+                fecha: getCurrentDateGMT7(),
+                proximaDosis: nextDoseDate || null,
+                venta: venta._id
+              };
+              carnet.vacunas.push(desparasitanteEntry);
+            }
+            
+            await carnet.save();
           }
-          
-          // Agregar desparasitantes al carnet
-          for (let i = 0; i < quantity; i++) {
-            const desparasitanteEntry = {
-              vacuna: producto._id,
-              nombre: producto.name,
-              tipo: 'desparasitante',
-              fecha: getCurrentDateGMT7(),
-              proximaDosis: nextDoseDate || null,
-              venta: venta._id
-            };
-            carnet.vacunas.push(desparasitanteEntry);
-          }
-          
-          await carnet.save();
         }
       } catch (error) {
         console.error('Error al registrar vacunas/desparasitantes en carnet:', error);

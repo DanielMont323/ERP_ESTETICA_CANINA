@@ -67,7 +67,6 @@ router.get('/search', authenticateToken, async (req, res) => {
     const skuQuery = { sku: q, isDeleted: { $ne: true } };
     if (!shouldIncludeInactive) {
       skuQuery.isActive = true;
-      skuQuery.stock = { $gt: 0 };
     }
 
     const productoPorSku = await Producto.findOne(skuQuery);
@@ -79,7 +78,6 @@ router.get('/search', authenticateToken, async (req, res) => {
       const nameQuery = { name: { $regex: q, $options: 'i' }, isDeleted: { $ne: true } };
       if (!shouldIncludeInactive) {
         nameQuery.isActive = true;
-        nameQuery.stock = { $gt: 0 };
       }
 
       productos = await Producto.find(nameQuery).limit(10);
@@ -153,7 +151,11 @@ router.get('/', async (req, res) => {
       query.$expr = { $lte: ['$stock', '$minStock'] };
     }
     if (search) {
-      query.name = { $regex: search, $options: 'i' };
+      // Buscar por SKU exacto o por nombre (regex)
+      query.$or = [
+        { sku: search },
+        { name: { $regex: search, $options: 'i' } }
+      ];
     }
 
     const productos = await Producto.find(query)
@@ -351,6 +353,24 @@ router.post('/', authenticateToken, requireAdmin, async (req, res) => {
       finalSupplier = null;
     }
     
+    // Validar stockIdeal si se proporciona
+    if (rest.idealStock !== undefined && rest.idealStock !== null) {
+      if (rest.idealStock < 0) {
+        return res.status(400).json({
+          success: false,
+          message: 'El stock ideal no puede ser negativo'
+        });
+      }
+      
+      // Validar que stockIdeal >= minStock
+      if (rest.minStock !== undefined && rest.idealStock < rest.minStock) {
+        return res.status(400).json({
+          success: false,
+          message: 'El stock ideal debe ser mayor o igual al stock mínimo'
+        });
+      }
+    }
+    
     const producto = await Producto.create({
       ...rest,
       sku: skuTrimmed,
@@ -417,6 +437,24 @@ router.put('/:id', authenticateToken, requireAdmin, async (req, res) => {
     } else {
       // Si supplier es vacío o no es válido, establecer a null
       finalSupplier = null;
+    }
+    
+    // Validar stockIdeal si se proporciona
+    if (rest.idealStock !== undefined && rest.idealStock !== null) {
+      if (rest.idealStock < 0) {
+        return res.status(400).json({
+          success: false,
+          message: 'El stock ideal no puede ser negativo'
+        });
+      }
+      
+      // Validar que stockIdeal >= minStock
+      if (rest.minStock !== undefined && rest.idealStock < rest.minStock) {
+        return res.status(400).json({
+          success: false,
+          message: 'El stock ideal debe ser mayor o igual al stock mínimo'
+        });
+      }
     }
     
     const producto = await Producto.findByIdAndUpdate(

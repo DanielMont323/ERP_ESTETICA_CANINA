@@ -1,6 +1,19 @@
 const mongoose = require('mongoose');
 const { getCurrentDateGMT7 } = require('../helpers/timezone');
 
+const aplicacionSchema = new mongoose.Schema({
+  mascota: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Mascota'
+  },
+  fechaAplicacion: {
+    type: Date
+  },
+  proximaDosis: {
+    type: Date
+  }
+});
+
 const itemVentaSchema = new mongoose.Schema({
   type: {
     type: String,
@@ -30,10 +43,15 @@ const itemVentaSchema = new mongoose.Schema({
   nextDoseDate: {
     type: Date
   },
+  diasProximaDosis: {
+    type: Number,
+    min: 0
+  },
   mascota: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Mascota'
-  }
+  },
+  aplicaciones: [aplicacionSchema]
 });
 
 const ventaSchema = new mongoose.Schema({
