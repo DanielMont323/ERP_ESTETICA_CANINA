@@ -376,13 +376,19 @@ const Purchases = () => {
     setSelectedPurchase(purchase);
     setIsEditMode(true);
     
+    // Procesar items para asegurar que tengan productName
+    const processedItems = (purchase.items || []).map(item => ({
+      ...item,
+      productName: item.productName || item.product?.name || 'Producto no disponible'
+    }));
+    
     // Cargar datos de la compra en el formulario
     setFormData({
       proveedor: purchase.proveedor?._id || '',
       type: purchase.type || 'contado',
       paymentMethod: purchase.paymentMethod || 'efectivo',
       user: purchase.user || 'default_user',
-      items: purchase.items || [],
+      items: processedItems,
       notes: purchase.notes || '',
       invoice: purchase.invoice || '',
       receiptNumber: purchase.receiptNumber || '',
