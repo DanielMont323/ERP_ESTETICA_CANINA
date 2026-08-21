@@ -171,7 +171,7 @@ const Products = () => {
   // Fetch suppliers for autocomplete
   const fetchSuppliersForAutocomplete = async (searchQuery) => {
     try {
-      const response = await suppliersAPI.getAll({ search: searchQuery });
+      const response = await suppliersAPI.getAll({ search: searchQuery, limit: 1000 });
       return response.data.data;
     } catch (error) {
       console.error('Error al buscar proveedores:', error);
