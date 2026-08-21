@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useKeyboardFormNavigation } from '../hooks/useKeyboardFormNavigation';
-import { salesAPI, productsAPI, servicesAPI, customersAPI, petsAPI } from '../services/api';
+import { salesAPI, productsAPI, servicesAPI, customersAPI, petsAPI, authAPI } from '../services/api';
 import toast from 'react-hot-toast';
 import { SkeletonTable } from '../components/Skeleton';
+import Autocomplete from '../components/Autocomplete';
 import {
   Plus,
   Search,
@@ -29,6 +30,8 @@ const Sales = () => {
   const [services, setServices] = useState([]);
   const [customers, setCustomers] = useState([]);
   const [pets, setPets] = useState([]);
+  const [users, setUsers] = useState([]);
+  const [selectedSeller, setSelectedSeller] = useState('');
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -99,6 +102,7 @@ const Sales = () => {
       } else {
         params.date = selectedDate;
       }
+      if (selectedSeller) params.userId = selectedSeller;
       const response = await salesAPI.getAll(params);
       setSales(response.data.data);
       setPagination(response.data.pagination || pagination);
@@ -107,7 +111,7 @@ const Sales = () => {
     } finally {
       setLoading(false);
     }
-  }, [selectedDate, dateRange, pagination.page, pagination.limit]);
+  }, [selectedDate, dateRange, pagination.page, pagination.limit, selectedSeller]);
 
   useEffect(() => {
     fetchSales();
@@ -117,7 +121,17 @@ const Sales = () => {
     fetchProducts();
     fetchServices();
     fetchCustomers();
+    fetchUsers();
   }, []);
+
+  const fetchUsers = async () => {
+    try {
+      const response = await authAPI.getUsers();
+      setUsers(response.data.data);
+    } catch (error) {
+      console.error('Error al cargar usuarios:', error);
+    }
+  };
 
   // Atajo ESC para cerrar modales
   useEffect(() => {
@@ -162,6 +176,52 @@ const Sales = () => {
     } catch (error) {
       console.error('Error fetching customers:', error);
     }
+  };
+
+  // Fetch functions for autocomplete
+  const fetchCustomersForAutocomplete = async (searchQuery) => {
+    try {
+      const response = await customersAPI.getAll({ search: searchQuery, active: true });
+      return response.data.data;
+    } catch (error) {
+      console.error('Error al buscar clientes:', error);
+      return [];
+    }
+  };
+
+  const fetchProductsForAutocomplete = async (searchQuery) => {
+    try {
+      const response = await productsAPI.search(searchQuery);
+      return response.data.data;
+    } catch (error) {
+      console.error('Error al buscar productos:', error);
+      return [];
+    }
+  };
+
+  const fetchServicesForAutocomplete = async (searchQuery) => {
+    try {
+      const response = await servicesAPI.getAll({ search: searchQuery, active: true });
+      return response.data.data;
+    } catch (error) {
+      console.error('Error al buscar servicios:', error);
+      return [];
+    }
+  };
+
+  const fetchPetsForAutocomplete = async (searchQuery) => {
+    try {
+      const response = await petsAPI.getAll({ search: searchQuery, owner: selectedCustomer, active: true });
+      return response.data.data;
+    } catch (error) {
+      console.error('Error al buscar mascotas:', error);
+      return [];
+    }
+  };
+
+  const handleSellerChange = (sellerId) => {
+    setSelectedSeller(sellerId);
+    setPagination({ ...pagination, page: 1 }); // Reset a página 1 al cambiar vendedor
   };
 
   const fetchPetsByCustomer = useCallback(async (customerId) => {
@@ -657,6 +717,18 @@ const Sales = () => {
                 </>
               )}
               <div className="flex-1">
+                <label className="form-label">Vendedor</label>
+                <Autocomplete
+                  placeholder="Todos los vendedores"
+                  localOptions={users}
+                  displayValue={(item) => item.name}
+                  getOptionValue={(item) => item._id}
+                  value={users.find(u => u._id === selectedSeller) || null}
+                  onChange={(value) => handleSellerChange(value)}
+                  minLength={0}
+                />
+              </div>
+              <div className="flex-1">
                 <label className="form-label">Buscar</label>
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
@@ -682,6 +754,7 @@ const Sales = () => {
               <tr>
                 <th>Fecha</th>
                 <th>Cliente</th>
+                <th>Vendedor</th>
                 <th>Items</th>
                 <th>Subtotal</th>
                 <th>Comisión Tarjeta</th>
@@ -700,6 +773,9 @@ const Sales = () => {
                   </td>
                   <td>
                     {sale.customer ? sale.customer.name : 'Cliente general'}
+                  </td>
+                  <td>
+                    {sale.user ? sale.user.name : 'Sin vendedor registrado'}
                   </td>
                   <td>
                     <div className="space-y-1">
@@ -833,18 +909,15 @@ const Sales = () => {
                     {/* Customer Selection */}
                     <div>
                       <label className="form-label">Cliente (opcional)</label>
-                      <select
-                        value={selectedCustomer}
-                        onChange={(e) => setSelectedCustomer(e.target.value)}
-                        className="form-input"
-                      >
-                        <option value="">Cliente general</option>
-                        {customers.map(customer => (
-                          <option key={customer._id} value={customer._id}>
-                            {customer.name} - {customer.phone}
-                          </option>
-                        ))}
-                      </select>
+                      <Autocomplete
+                        placeholder="Cliente general"
+                        fetchOptions={fetchCustomersForAutocomplete}
+                        displayValue={(item) => `${item.name} - ${item.phone}`}
+                        getOptionValue={(item) => item._id}
+                        value={customers.find(c => c._id === selectedCustomer) || null}
+                        onChange={(value) => setSelectedCustomer(value)}
+                        minLength={1}
+                      />
                     </div>
 
                     {/* Product Search */}
@@ -962,7 +1035,8 @@ const Sales = () => {
                             const isVaccine = categoryLower === 'vacunas' || categoryLower === 'vacuna';
                             const isDewormer = categoryLower === 'desparasitantes' || categoryLower === 'desparasitante' || categoryLower.includes('desparasitante');
                             const showNextDose = (isVaccine || isDewormer) && item.type === 'producto';
-                            const showMascotaSelector = (isVaccine || isDewormer) && item.type === 'producto';
+                            const showMascotaSelector = selectedCustomer && !isVaccine && !isDewormer;
+                            const showAplicacionesSelector = (isVaccine || isDewormer) && item.type === 'producto';
 
                             return (
                               <div key={index} className="space-y-2">
@@ -995,7 +1069,7 @@ const Sales = () => {
                                     </button>
                                   </div>
                                 </div>
-                                {showMascotaSelector && (
+                                {showAplicacionesSelector && (
                                   <div className="pl-2 bg-yellow-50 border border-yellow-200 rounded-lg p-2">
                                     <label className="text-xs font-semibold text-yellow-800">⚠️ Mascota a la que se aplicará (OBLIGATORIO):</label>
                                     <div className="space-y-2 mt-2">
@@ -1032,6 +1106,25 @@ const Sales = () => {
                                     {(!item.aplicaciones || item.aplicaciones.length === 0 || item.aplicaciones.some(a => !a.mascota)) && (
                                       <p className="text-xs text-red-600 mt-1">⚠️ Debes seleccionar una mascota para cada unidad</p>
                                     )}
+                                  </div>
+                                )}
+                                {showMascotaSelector && (
+                                  <div className="pl-2 bg-blue-50 border border-blue-200 rounded-lg p-2">
+                                    <label className="text-xs font-semibold text-blue-800">Mascota asociada (opcional):</label>
+                                    <Autocomplete
+                                      placeholder="Sin mascota"
+                                      localOptions={pets}
+                                      displayValue={(item) => `${item.name} - ${item.breed}`}
+                              getOptionValue={(item) => item._id}
+                              value={pets.find(p => p._id === item.mascota) || null}
+                              onChange={(value) => {
+                                const newCart = [...cart];
+                                newCart[index].mascota = value;
+                                setCart(newCart);
+                              }}
+                              minLength={0}
+                              className="text-sm py-1 border-blue-300 focus:border-blue-500 focus:ring-blue-500 mt-2"
+                            />
                                   </div>
                                 )}
                                 {showNextDose && (
@@ -1392,37 +1485,119 @@ const Sales = () => {
                         {editCart.length === 0 ? (
                           <p className="text-gray-500 text-center py-4">Carrito vacío</p>
                         ) : (
-                          editCart.map((item, index) => (
-                            <div key={index} className="flex items-center justify-between">
-                              <div className="flex-1">
-                                <p className="font-medium text-gray-900">{item.name}</p>
-                                <p className="text-sm text-gray-500">
-                                  {formatCurrency(item.unitPrice)} c/u
-                                </p>
+                          editCart.map((item, index) => {
+                            let categoryLower = '';
+                            if (item.category) {
+                              if (typeof item.category === 'object' && item.category.name) {
+                                categoryLower = item.category.name.toString().toLowerCase();
+                              } else {
+                                categoryLower = item.category.toString().toLowerCase();
+                              }
+                            }
+                            
+                            const isVaccine = categoryLower === 'vacunas' || categoryLower === 'vacuna';
+                            const isDewormer = categoryLower === 'desparasitantes' || categoryLower === 'desparasitante' || categoryLower.includes('desparasitante');
+                            const showMascotaSelector = editCustomer && !isVaccine && !isDewormer;
+                            const showAplicacionesSelector = (isVaccine || isDewormer) && item.type === 'producto';
+
+                            return (
+                              <div key={index} className="space-y-2">
+                                <div className="flex items-center justify-between">
+                                  <div className="flex-1">
+                                    <p className="font-medium text-gray-900">{item.name}</p>
+                                    <p className="text-sm text-gray-500">
+                                      {formatCurrency(item.unitPrice)} c/u
+                                    </p>
+                                  </div>
+                                  <div className="flex items-center space-x-2">
+                                    <button
+                                      onClick={() => updateEditQuantity(index, item.quantity - 1)}
+                                      className="text-gray-400 hover:text-gray-600"
+                                    >
+                                      <MinusCircle className="h-4 w-4" />
+                                    </button>
+                                    <span className="w-8 text-center">{item.quantity}</span>
+                                    <button
+                                      onClick={() => updateEditQuantity(index, item.quantity + 1)}
+                                      className="text-gray-400 hover:text-gray-600"
+                                    >
+                                      <PlusCircle className="h-4 w-4" />
+                                    </button>
+                                    <button
+                                      onClick={() => removeFromEditCart(index)}
+                                      className="text-danger-600 hover:text-danger-900"
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </button>
+                                  </div>
+                                </div>
+                                {showAplicacionesSelector && (
+                                  <div className="pl-2 bg-yellow-50 border border-yellow-200 rounded-lg p-2">
+                                    <label className="text-xs font-semibold text-yellow-800">⚠️ Mascota a la que se aplicará (OBLIGATORIO):</label>
+                                    <div className="space-y-2 mt-2">
+                                      {[...Array(item.quantity)].map((_, unitIndex) => (
+                                        <div key={unitIndex} className="flex items-center space-x-2">
+                                          <span className="text-xs text-gray-600 w-16">Unidad {unitIndex + 1}:</span>
+                                          <select
+                                            value={item.aplicaciones[unitIndex]?.mascota || ''}
+                                            onChange={(e) => {
+                                              const newCart = [...editCart];
+                                              if (!newCart[index].aplicaciones) {
+                                                newCart[index].aplicaciones = [];
+                                              }
+                                              newCart[index].aplicaciones[unitIndex] = {
+                                                ...newCart[index].aplicaciones[unitIndex],
+                                                mascota: e.target.value,
+                                                fechaAplicacion: new Date().toISOString()
+                                              };
+                                              setEditCart(newCart);
+                                            }}
+                                            className="form-input text-sm py-1 border-yellow-300 focus:border-yellow-500 focus:ring-yellow-500 flex-1"
+                                            required
+                                          >
+                                            <option value="">Seleccionar mascota...</option>
+                                            {pets.map(pet => (
+                                              <option key={pet._id} value={pet._id}>
+                                                {pet.name} - {pet.breed}
+                                              </option>
+                                            ))}
+                                          </select>
+                                        </div>
+                                      ))}
+                                    </div>
+                                    {(!item.aplicaciones || item.aplicaciones.length === 0 || item.aplicaciones.some(a => !a.mascota)) && (
+                                      <p className="text-xs text-red-600 mt-1">⚠️ Debes seleccionar una mascota para cada unidad</p>
+                                    )}
+                                  </div>
+                                )}
+                                {showMascotaSelector && (
+                                  <div className="pl-2 bg-blue-50 border border-blue-200 rounded-lg p-2">
+                                    <label className="text-xs font-semibold text-blue-800">Mascota asociada (opcional):</label>
+                                    <select
+                                      value={item.mascota || ''}
+                                      onChange={(e) => {
+                                        const newCart = [...editCart];
+                                        newCart[index].mascota = e.target.value;
+                                        setEditCart(newCart);
+                                      }}
+                                      className="form-input text-sm py-1 border-blue-300 focus:border-blue-500 focus:ring-blue-500 mt-2"
+                                    >
+                                      <option value="">Sin mascota</option>
+                                      {pets.length === 0 ? (
+                                        <option value="" disabled>Este cliente no tiene mascotas</option>
+                                      ) : (
+                                        pets.map(pet => (
+                                          <option key={pet._id} value={pet._id}>
+                                            {pet.name} - {pet.breed}
+                                          </option>
+                                        ))
+                                      )}
+                                    </select>
+                                  </div>
+                                )}
                               </div>
-                              <div className="flex items-center space-x-2">
-                                <button
-                                  onClick={() => updateEditQuantity(index, item.quantity - 1)}
-                                  className="text-gray-400 hover:text-gray-600"
-                                >
-                                  <MinusCircle className="h-4 w-4" />
-                                </button>
-                                <span className="w-8 text-center">{item.quantity}</span>
-                                <button
-                                  onClick={() => updateEditQuantity(index, item.quantity + 1)}
-                                  className="text-gray-400 hover:text-gray-600"
-                                >
-                                  <PlusCircle className="h-4 w-4" />
-                                </button>
-                                <button
-                                  onClick={() => removeFromEditCart(index)}
-                                  className="text-danger-600 hover:text-danger-900"
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </button>
-                              </div>
-                            </div>
-                          ))
+                            );
+                          })
                         )}
                       </div>
                     </div>

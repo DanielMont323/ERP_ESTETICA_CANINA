@@ -46,6 +46,7 @@ export const authAPI = {
   login: (credentials) => api.post('/auth/login', credentials),
   register: (userData) => api.post('/auth/register', userData),
   getMe: () => api.get('/auth/me'),
+  getUsers: () => api.get('/auth/users'),
 };
 
 // Products services
@@ -60,6 +61,7 @@ export const productsAPI = {
   search: (query, includeInactive) => api.get('/productos/search', { params: { q: query, includeInactive } }),
   restore: (id) => api.patch(`/productos/${id}/restore`),
   getArchived: () => api.get('/productos/archived'),
+  getExpiring: (days) => api.get('/productos/expiring', { params: { days } }),
 };
 
 // Product Categories services
@@ -169,6 +171,7 @@ export const accountsPayableAPI = {
   getAll: (params) => api.get('/cuentas-por-pagar', { params }),
   getById: (id) => api.get(`/cuentas-por-pagar/${id}`),
   pay: (id, data) => api.patch(`/cuentas-por-pagar/${id}/pagar`, data),
+  delete: (id) => api.delete(`/cuentas-por-pagar/${id}`),
   payMassive: (data) => api.post('/cuentas-por-pagar/pagar-masivo', data),
   updateStatus: (id, data) => api.patch(`/cuentas-por-pagar/${id}/status`, data),
   getOverdue: () => api.get('/cuentas-por-pagar/overdue'),

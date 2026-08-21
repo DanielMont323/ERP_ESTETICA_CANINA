@@ -680,4 +680,36 @@ router.patch('/:id/stock', async (req, res) => {
   }
 });
 
+// @route   GET /api/productos/expiring
+// @desc    Obtener productos próximos a caducar
+router.get('/expiring', authenticateToken, async (req, res) => {
+  try {
+    const { days = 30 } = req.query;
+    const today = new Date();
+    const alertDate = new Date();
+    alertDate.setDate(today.getDate() + parseInt(days));
+
+    const productos = await Producto.find({
+      expirationDate: { $ne: null },
+      expirationDate: { $lte: alertDate },
+      isActive: true,
+      isDeleted: false,
+      stock: { $gt: 0 }
+    })
+      .sort({ expirationDate: 1 });
+
+    res.json({
+      success: true,
+      data: productos,
+      count: productos.length
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      success: false,
+      message: 'Error al obtener productos próximos a caducar'
+    });
+  }
+});
+
 module.exports = router;

@@ -5,6 +5,7 @@ import { customersAPI, salesAPI } from '../services/api';
 import toast from 'react-hot-toast';
 import { Skeleton, SkeletonCard } from '../components/Skeleton';
 import ConfirmModal from '../components/ConfirmModal';
+import Pagination from '../components/Pagination';
 import {
   Plus,
   Search,
@@ -23,6 +24,12 @@ const Customers = () => {
   const [customers, setCustomers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 10,
+    total: 0,
+    pages: 0
+  });
   const [showModal, setShowModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteCustomerId, setDeleteCustomerId] = useState(null);
@@ -42,7 +49,7 @@ const Customers = () => {
 
   useEffect(() => {
     fetchCustomers();
-  }, []);
+  }, [pagination.page, pagination.limit]);
 
   // Listener para evento personalizado de F6 contextual (nuevo cliente)
   useEffect(() => {
@@ -74,9 +81,17 @@ const Customers = () => {
 
   const fetchCustomers = async () => {
     try {
-      const response = await customersAPI.getAll();
+      const params = {
+        page: pagination.page,
+        limit: pagination.limit
+      };
+      if (searchTerm) {
+        params.search = searchTerm;
+      }
+      const response = await customersAPI.getAll(params);
       console.log('Clientes cargados:', response.data.data);
       setCustomers(response.data.data);
+      setPagination(response.data.pagination || pagination);
     } catch (error) {
       console.error('Error al cargar clientes:', error);
       toast.error('Error al cargar clientes');
@@ -257,6 +272,22 @@ const Customers = () => {
                   {customer.notes && (
                     <p className="mt-2 text-sm text-gray-500">{customer.notes}</p>
                   )}
+                  {customer.mascotas && customer.mascotas.length > 0 && (
+                    <div className="mt-3 pt-3 border-t border-gray-200">
+                      <div className="flex items-center text-sm font-medium text-gray-700 mb-2">
+                        <Users className="h-4 w-4 mr-2" />
+                        Mascotas ({customer.mascotas.length})
+                      </div>
+                      <div className="space-y-1">
+                        {customer.mascotas.map((mascota) => (
+                          <div key={mascota._id} className="text-xs text-gray-600 flex items-center">
+                            <span className="mr-2">•</span>
+                            {mascota.name} ({mascota.type} - {mascota.breed})
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
                 <div className="flex items-center space-x-2">
                   <button
@@ -333,6 +364,12 @@ const Customers = () => {
           <p className="text-gray-500">No se encontraron clientes</p>
         </div>
       )}
+
+      <Pagination
+        pagination={pagination}
+        onPageChange={(page) => setPagination({ ...pagination, page })}
+        onLimitChange={(limit) => setPagination({ ...pagination, limit, page: 1 })}
+      />
 
       {/* Modal */}
       {showModal && (

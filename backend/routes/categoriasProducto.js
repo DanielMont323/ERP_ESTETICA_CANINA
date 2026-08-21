@@ -6,11 +6,15 @@ const router = express.Router();
 // @desc    Obtener todas las categorías de productos
 router.get('/', async (req, res) => {
   try {
-    const { active } = req.query;
+    const { active, search } = req.query;
     let query = {};
     
     if (active !== undefined) {
       query.isActive = active === 'true';
+    }
+
+    if (search) {
+      query.name = { $regex: search, $options: 'i' };
     }
 
     const categorias = await CategoriaProducto.find(query).sort({ name: 1 });

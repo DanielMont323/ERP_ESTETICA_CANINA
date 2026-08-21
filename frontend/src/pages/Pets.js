@@ -5,6 +5,8 @@ import { petsAPI, customersAPI, salesAPI, vaccinationCardAPI } from '../services
 import toast from 'react-hot-toast';
 import { Skeleton, SkeletonCard } from '../components/Skeleton';
 import ConfirmModal from '../components/ConfirmModal';
+import Pagination from '../components/Pagination';
+import Autocomplete from '../components/Autocomplete';
 import {
   Plus,
   Calendar,
@@ -14,13 +16,21 @@ import {
   ChevronDown,
   ChevronUp,
   ShoppingCart,
-  FileText
+  FileText,
+  Search
 } from 'lucide-react';
 
 const Pets = () => {
   const [pets, setPets] = useState([]);
   const [customers, setCustomers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 10,
+    total: 0,
+    pages: 0
+  });
   const [showModal, setShowModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deletePetId, setDeletePetId] = useState(null);
@@ -43,7 +53,7 @@ const Pets = () => {
   useEffect(() => {
     fetchData();
     fetchCustomers();
-  }, []);
+  }, [pagination.page, pagination.limit]);
 
   // Listener para evento personalizado de F7 contextual (nueva mascota)
   useEffect(() => {
@@ -77,9 +87,14 @@ const Pets = () => {
 
   const fetchData = async () => {
     try {
-      const petsRes = await petsAPI.getAll();
+      const params = {
+        page: pagination.page,
+        limit: pagination.limit
+      };
+      const petsRes = await petsAPI.getAll(params);
       console.log('Mascotas cargadas:', petsRes.data.data);
       setPets(petsRes.data.data);
+      setPagination(petsRes.data.pagination || pagination);
     } catch (error) {
       console.error('Error al cargar mascotas:', error);
       toast.error('Error al cargar datos');
@@ -94,6 +109,17 @@ const Pets = () => {
       setCustomers(customersRes.data.data);
     } catch (error) {
       console.error('Error al cargar clientes:', error);
+    }
+  };
+
+  // Fetch customers for autocomplete
+  const fetchCustomersForAutocomplete = async (searchQuery) => {
+    try {
+      const response = await customersAPI.getAll({ search: searchQuery });
+      return response.data.data;
+    } catch (error) {
+      console.error('Error al buscar clientes:', error);
+      return [];
     }
   };
 
@@ -274,22 +300,40 @@ const Pets = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold text-gray-900">Mascotas</h1>
           <p className="mt-1 text-sm text-gray-600">
             Gestiona la información de las mascotas
           </p>
         </div>
-        <button onClick={handleCreatePet} className="btn btn-primary btn-md">
-          <Plus className="h-4 w-4 mr-2" />
-          Nueva Mascota
-        </button>
+        <div className="flex items-center gap-3">
+          <div className="w-full sm:w-64">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Buscar mascotas..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="form-input pl-10"
+              />
+            </div>
+          </div>
+          <button onClick={handleCreatePet} className="btn btn-primary btn-md">
+            <Plus className="h-4 w-4 mr-2" />
+            Nueva Mascota
+          </button>
+        </div>
       </div>
 
       {/* Pets Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {pets.map((pet) => (
+        {pets.filter(pet =>
+          pet.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          pet.breed?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          pet.customer?.name?.toLowerCase().includes(searchTerm.toLowerCase())
+        ).map((pet) => (
           <div key={pet._id} className="card">
             <div className="card-body">
               <div className="flex items-start justify-between">
@@ -415,12 +459,48 @@ const Pets = () => {
                       <p className="text-sm">No hay historial de compras</p>
                     </div>
                   )}
+
+                  {/* Medical History */}
+                  {pet.medicalHistory && pet.medicalHistory.length > 0 && (
+                    <div className="mt-4 pt-4 border-t border-gray-200">
+                      <h4 className="font-medium text-gray-900 mb-3 flex items-center">
+                        <FileText className="h-4 w-4 mr-2" />
+                        Historial médico
+                      </h4>
+                      <div className="space-y-2 max-h-64 overflow-y-auto">
+                        {pet.medicalHistory.map((entry, idx) => (
+                          <div key={idx} className="bg-blue-50 rounded-lg p-3">
+                            <div className="flex justify-between items-start mb-1">
+                              <p className="text-sm font-medium text-gray-900">
+                                {entry.description}
+                              </p>
+                              {entry.cost && (
+                                <p className="font-medium text-brand-burgundy text-sm">
+                                  {formatCurrency(entry.cost)}
+                                </p>
+                              )}
+                            </div>
+                            <p className="text-xs text-gray-500">
+                              {new Date(entry.date).toLocaleDateString('es-MX')}
+                              {entry.veterinarian && ` • ${entry.veterinarian}`}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
           </div>
         ))}
       </div>
+      
+      <Pagination
+        pagination={pagination}
+        onPageChange={(page) => setPagination({ ...pagination, page })}
+        onLimitChange={(limit) => setPagination({ ...pagination, limit, page: 1 })}
+      />
 
       {/* Modal */}
       {showModal && (
@@ -505,18 +585,15 @@ const Pets = () => {
                 </div>
                 <div>
                   <label className="form-label">Dueño (opcional)</label>
-                  <select
-                    value={formData.ownerId}
-                    onChange={(e) => setFormData({...formData, ownerId: e.target.value})}
-                    className="form-input"
-                  >
-                    <option value="">Sin dueño asignado</option>
-                    {customers.map(customer => (
-                      <option key={customer._id} value={customer._id}>
-                        {customer.name} - {customer.phone}
-                      </option>
-                    ))}
-                  </select>
+                  <Autocomplete
+                    placeholder="Sin dueño asignado"
+                    fetchOptions={fetchCustomersForAutocomplete}
+                    displayValue={(item) => `${item.name} - ${item.phone}`}
+                    getOptionValue={(item) => item._id}
+                    value={customers.find(c => c._id === formData.ownerId) || null}
+                    onChange={(value) => setFormData({...formData, ownerId: value})}
+                    minLength={1}
+                  />
                 </div>
                 <div className="flex justify-end space-x-2">
                   <button

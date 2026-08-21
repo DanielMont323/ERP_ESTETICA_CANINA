@@ -14,7 +14,7 @@ const router = express.Router();
 // @desc    Obtener todas las ventas
 router.get('/', async (req, res) => {
   try {
-    const { date, startDate, endDate, customer, status, page = 1, limit = 50 } = req.query;
+    const { date, startDate, endDate, customer, status, userId, page = 1, limit = 50 } = req.query;
     let query = {};
 
     // Filtro por fecha única (compatibilidad con existente)
@@ -57,6 +57,7 @@ router.get('/', async (req, res) => {
 
     if (customer) query.customer = customer;
     if (status) query.status = status;
+    if (userId) query.user = userId;
 
     const ventas = await Venta.find(query)
       .populate('customer', 'name phone')
@@ -187,7 +188,10 @@ router.get('/:id', async (req, res) => {
 // @desc    Crear nueva venta
 router.post('/', authenticateToken, async (req, res) => {
   try {
-    const { items, paymentMethod, customer, mascota, user, notes, amountReceived, saleChannel, commission, subtotal, total, netIncome } = req.body;
+    const { items, paymentMethod, customer, mascota, notes, amountReceived, saleChannel, commission, subtotal, total, netIncome } = req.body;
+
+    // Usar req.user._id para el usuario autenticado (ignorar user del body por seguridad)
+    const user = req.user._id;
 
     // Validar rol ADMIN para edición financiera manual en Mercado Libre
     if (saleChannel === 'mercado_libre' && (subtotal !== undefined || total !== undefined || netIncome !== undefined)) {
@@ -667,6 +671,30 @@ router.post('/', authenticateToken, async (req, res) => {
       } catch (error) {
         console.error('Error al registrar vacunas/desparasitantes en carnet:', error);
         // No fallar la venta si falla el registro del carnet, solo loggear el error
+      }
+    }
+
+    // 9. Registrar servicios asociados a mascotas en medicalHistory
+    for (const item of items) {
+      if (item.type === 'servicio' && item.mascota) {
+        try {
+          const servicio = await Servicio.findById(item.item);
+          if (servicio) {
+            const mascota = await Mascota.findById(item.mascota);
+            if (mascota) {
+              mascota.medicalHistory.push({
+                description: `Servicio: ${servicio.name}`,
+                cost: item.subtotal || (item.quantity * item.unitPrice),
+                date: getCurrentDateGMT7(),
+                veterinarian: user ? await (await require('../models/Usuario').findById(user)).name : 'Sistema'
+              });
+              await mascota.save();
+            }
+          }
+        } catch (error) {
+          console.error('Error al registrar servicio en historial médico:', error);
+          // No fallar la venta si falla el registro del historial
+        }
       }
     }
 

@@ -149,4 +149,22 @@ router.get('/me', async (req, res) => {
   }
 });
 
+// @route   GET /api/auth/users
+// @desc    Obtener todos los usuarios (para filtros)
+router.get('/users', async (req, res) => {
+  try {
+    const users = await Usuario.find({}).select('name email role');
+    res.json({
+      success: true,
+      data: users
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      success: false,
+      message: 'Error al obtener usuarios'
+    });
+  }
+});
+
 module.exports = router;

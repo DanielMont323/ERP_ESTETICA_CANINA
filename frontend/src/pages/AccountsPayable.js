@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { accountsPayableAPI } from '../services/api';
 import toast from 'react-hot-toast';
 import { SkeletonTable } from '../components/Skeleton';
-import { AlertTriangle, X } from 'lucide-react';
+import Pagination from '../components/Pagination';
+import { AlertTriangle, X, Search } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useEscapeKey } from '../hooks/useEscapeKey';
 
@@ -10,6 +11,13 @@ const AccountsPayable = () => {
   const { user } = useAuth();
   const [accounts, setAccounts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 10,
+    total: 0,
+    pages: 0
+  });
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [showMassivePaymentModal, setShowMassivePaymentModal] = useState(false);
   const [selectedAccount, setSelectedAccount] = useState(null);
@@ -27,7 +35,7 @@ const AccountsPayable = () => {
 
   useEffect(() => {
     fetchAccounts();
-  }, []);
+  }, [pagination.page, pagination.limit]);
 
   // Manejo de ESC para cerrar modal de pago individual
   useEscapeKey(() => setShowPaymentModal(false), showPaymentModal);
@@ -37,8 +45,13 @@ const AccountsPayable = () => {
 
   const fetchAccounts = async () => {
     try {
-      const response = await accountsPayableAPI.getAll();
+      const params = {
+        page: pagination.page,
+        limit: pagination.limit
+      };
+      const response = await accountsPayableAPI.getAll(params);
       setAccounts(response.data.data);
+      setPagination(response.data.pagination || pagination);
     } catch (error) {
       toast.error('Error al cargar cuentas por pagar');
     } finally {
@@ -99,15 +112,27 @@ const AccountsPayable = () => {
         notes: paymentData.notes
       });
 
-      if (response.data.success) {
-        toast.success(response.data.message);
-        setShowPaymentModal(false);
-        fetchAccounts();
-      }
+      toast.success('Pago registrado correctamente');
+      setShowPaymentModal(false);
+      fetchAccounts();
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Error al procesar el pago');
+      toast.error(error.response?.data?.message || 'Error al registrar pago');
     } finally {
       setProcessingPayment(false);
+    }
+  };
+
+  const handleCancelAccount = async (accountId) => {
+    if (!window.confirm('¿Estás seguro de cancelar esta cuenta por pagar?')) {
+      return;
+    }
+
+    try {
+      await accountsPayableAPI.delete(accountId);
+      toast.success('Cuenta cancelada correctamente');
+      fetchAccounts();
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Error al cancelar cuenta');
     }
   };
 
@@ -177,6 +202,18 @@ const AccountsPayable = () => {
             Gestiona los pagos a tus proveedores con descuentos por pronto pago
           </p>
         </div>
+        <div className="w-full sm:w-64">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Buscar cuentas..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="form-input pl-10"
+            />
+          </div>
+        </div>
       </div>
 
       {/* Selected Accounts Summary */}
@@ -235,7 +272,11 @@ const AccountsPayable = () => {
               </tr>
             </thead>
             <tbody>
-              {accounts.map((account) => {
+              {accounts.filter(account => 
+                account.proveedor?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                account.compra?.invoice?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                account.receiptNumber?.toLowerCase().includes(searchTerm.toLowerCase())
+              ).map((account) => {
                 const discountStatus = getDiscountStatus(account.discountInfo);
                 return (
                   <tr key={account._id}>
@@ -292,117 +333,144 @@ const AccountsPayable = () => {
                       </span>
                     </td>
                     <td>
-                      <button 
-                        onClick={() => handlePaymentClick(account)}
-                        disabled={account.status === 'pagado'}
-                        className={`text-sm font-medium ${
-                          account.status === 'pagado' 
-                            ? 'text-gray-400 cursor-not-allowed' 
-                            : 'text-brand-burgundy hover:text-primary-900'
-                        }`}
-                      >
-                        {account.status === 'pagado' ? 'Pagado' : 'Pagar'}
-                      </button>
+                      <div className="flex space-x-2">
+                        <button 
+                          onClick={() => handlePaymentClick(account)}
+                          disabled={account.status === 'pagado' || account.status === 'cancelada'}
+                          className={`text-sm font-medium ${
+                            account.status === 'pagado' || account.status === 'cancelada'
+                              ? 'text-gray-400 cursor-not-allowed' 
+                              : 'text-brand-burgundy hover:text-primary-900'
+                          }`}
+                        >
+                          {account.status === 'pagado' ? 'Pagado' : account.status === 'cancelada' ? 'Cancelada' : 'Pagar'}
+                        </button>
+                        {account.status === 'pendiente' && (
+                          <button 
+                            onClick={() => handleCancelAccount(account._id)}
+                            className="text-sm font-medium text-red-600 hover:text-red-900"
+                          >
+                            Cancelar
+                          </button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 );
               })}
             </tbody>
           </table>
+          <Pagination
+            pagination={pagination}
+            onPageChange={(page) => setPagination({ ...pagination, page })}
+            onLimitChange={(limit) => setPagination({ ...pagination, limit, page: 1 })}
+          />
         </div>
+      </div>
 
-        {/* Mobile Card View */}
-        <div className="md:hidden space-y-4">
-          {accounts.map((account) => {
-            const discountStatus = getDiscountStatus(account.discountInfo);
-            return (
-              <div key={account._id} className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
-                <div className="flex justify-between items-start mb-3">
-                  <div>
-                    <h3 className="font-semibold text-gray-900">{account.proveedor?.name}</h3>
-                    <p className="text-sm text-gray-600">Factura: {account.compra?.invoice || 'N/A'}</p>
-                    {account.receiptNumber && (
-                      <p className="text-sm text-gray-600">Recibo: {account.receiptNumber}</p>
-                    )}
-                  </div>
-                  <span className={`px-2 py-1 rounded text-xs ${
-                    account.status === 'pagado' ? 'bg-green-100 text-green-800' :
-                    account.status === 'pendiente' ? 'bg-yellow-100 text-yellow-800' :
-                    'bg-red-100 text-red-800'
-                  }`}>
-                    {account.status}
+      {/* Mobile Card View */}
+      <div className="md:hidden space-y-4">
+        {accounts.filter(account => 
+          account.proveedor?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          account.compra?.invoice?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          account.receiptNumber?.toLowerCase().includes(searchTerm.toLowerCase())
+        ).map((account) => {
+          const discountStatus = getDiscountStatus(account.discountInfo);
+          return (
+            <div key={account._id} className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+              <div className="flex justify-between items-start mb-3">
+                <div>
+                  <h3 className="font-semibold text-gray-900">{account.proveedor?.name}</h3>
+                  <p className="text-sm text-gray-600">Factura: {account.compra?.invoice || 'N/A'}</p>
+                  {account.receiptNumber && (
+                    <p className="text-sm text-gray-600">Recibo: {account.receiptNumber}</p>
+                  )}
+                </div>
+                <span className={`px-2 py-1 rounded text-xs ${
+                  account.status === 'pagado' ? 'bg-green-100 text-green-800' :
+                  account.status === 'pendiente' ? 'bg-yellow-100 text-yellow-800' :
+                  'bg-red-100 text-red-800'
+                }`}>
+                  {account.status}
+                </span>
+              </div>
+
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Subtotal:</span>
+                  <span className="font-medium">{formatCurrency(account.subtotal || account.montoBase || account.monto)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">IVA:</span>
+                  <span className={account.hasIVA ? 'text-blue-600 font-medium' : 'text-gray-400'}>
+                    {account.hasIVA ? formatCurrency(account.ivaAmount) : '$0.00'}
                   </span>
                 </div>
-
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Subtotal:</span>
-                    <span className="font-medium">{formatCurrency(account.subtotal || account.montoBase || account.monto)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">IVA:</span>
-                    <span className={account.hasIVA ? 'text-blue-600 font-medium' : 'text-gray-400'}>
-                      {account.hasIVA ? formatCurrency(account.ivaAmount) : '$0.00'}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Total:</span>
-                    <span className="font-semibold">{formatCurrency(account.monto)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Saldo Pendiente:</span>
-                    <span className="font-semibold text-brand-burgundy">{formatCurrency(account.saldo)}</span>
-                  </div>
-                  
-                  {account.discountDeadline && (
-                    <div className="pt-2 border-t border-gray-200">
-                      <div className="flex justify-between items-center">
-                        <span className="text-gray-600">Límite Descuento:</span>
-                        <div className="text-right">
-                          <div className="text-sm">{new Date(account.discountDeadline).toLocaleDateString()}</div>
-                          <span className={`text-xs px-2 py-1 rounded ${
-                            discountStatus.color === 'green' ? 'bg-green-100 text-green-800' :
-                            discountStatus.color === 'red' ? 'bg-red-100 text-red-800' :
-                            'bg-gray-100 text-gray-800'
-                          }`}>
-                            {discountStatus.text}
-                          </span>
-                        </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Total:</span>
+                  <span className="font-semibold">{formatCurrency(account.monto)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Saldo Pendiente:</span>
+                  <span className="font-semibold text-brand-burgundy">{formatCurrency(account.saldo)}</span>
+                </div>
+                
+                {account.discountDeadline && (
+                  <div className="pt-2 border-t border-gray-200">
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-600">Límite Descuento:</span>
+                      <div className="text-right">
+                        <div className="text-sm">{new Date(account.discountDeadline).toLocaleDateString()}</div>
+                        <span className={`text-xs px-2 py-1 rounded ${
+                          discountStatus.color === 'green' ? 'bg-green-100 text-green-800' :
+                          discountStatus.color === 'red' ? 'bg-red-100 text-red-800' :
+                          'bg-gray-100 text-gray-800'
+                        }`}>
+                          {discountStatus.text}
+                        </span>
                       </div>
                     </div>
-                  )}
+                  </div>
+                )}
 
-                  <div className="flex justify-between items-center pt-2 border-t border-gray-200">
-                    <span className="text-gray-600">Vencimiento:</span>
-                    <div className="text-right">
-                      <div className="text-sm">{new Date(account.dueDate).toLocaleDateString()}</div>
-                      {isOverdue(account.dueDate) && account.status === 'pendiente' && (
-                        <span className="text-xs text-red-600 flex items-center justify-end">
-                          <AlertTriangle className="h-3 w-3 mr-1" />
-                          Vencido
-                        </span>
-                      )}
-                    </div>
+                <div className="flex justify-between items-center pt-2 border-t border-gray-200">
+                  <span className="text-gray-600">Vencimiento:</span>
+                  <div className="text-right">
+                    <div className="text-sm">{new Date(account.dueDate).toLocaleDateString()}</div>
+                    {isOverdue(account.dueDate) && account.status === 'pendiente' && (
+                      <span className="text-xs text-red-600 flex items-center justify-end">
+                        <AlertTriangle className="h-3 w-3 mr-1" />
+                        Vencido
+                      </span>
+                    )}
                   </div>
                 </div>
-
-                <div className="mt-4 pt-3 border-t border-gray-200">
-                  <button 
-                    onClick={() => handlePaymentClick(account)}
-                    disabled={account.status === 'pagado'}
-                    className={`w-full py-2 px-4 rounded-lg text-sm font-medium ${
-                      account.status === 'pagado' 
-                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
-                        : 'bg-brand-burgundy text-white hover:bg-primary-700'
-                    }`}
-                  >
-                    {account.status === 'pagado' ? 'Pagado' : 'Pagar'}
-                  </button>
-                </div>
               </div>
-            );
-          })}
-        </div>
+
+              <div className="mt-4 pt-3 border-t border-gray-200 flex space-x-2">
+                <button 
+                  onClick={() => handlePaymentClick(account)}
+                  disabled={account.status === 'pagado' || account.status === 'cancelada'}
+                  className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium ${
+                    account.status === 'pagado' || account.status === 'cancelada'
+                      ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
+                      : 'bg-brand-burgundy text-white hover:bg-primary-900'
+                  }`}
+                >
+                  {account.status === 'pagado' ? 'Pagado' : account.status === 'cancelada' ? 'Cancelada' : 'Pagar'}
+                </button>
+                {account.status === 'pendiente' && (
+                  <button 
+                    onClick={() => handleCancelAccount(account._id)}
+                    className="flex-1 py-2 px-4 rounded-lg text-sm font-medium bg-red-600 text-white hover:bg-red-900"
+                  >
+                    Cancelar
+                  </button>
+                )}
+              </div>
+            </div>
+          );
+        })}
       </div>
 
       {/* Payment Modal */}

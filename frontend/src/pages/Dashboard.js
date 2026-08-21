@@ -29,18 +29,22 @@ const Dashboard = () => {
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
-        const [reportsRes, remindersRes] = await Promise.all([
+        const [reportsRes, remindersRes, expiringRes] = await Promise.all([
           reportsAPI.getDashboard(),
-          remindersAPI.getDashboard()
+          remindersAPI.getDashboard(),
+          productsAPI.getExpiring(30)
         ]);
         setDashboardData(reportsRes.data.data);
-        setRemindersData(remindersRes.data.data);
+        setRemindersData({
+          ...remindersRes.data.data,
+          expiringProducts: expiringRes.data.data
+        });
         
         // Mostrar alerta si hay cuentas vencidas o que vencen mañana
         const urgentAccounts = remindersRes.data.data.accounts.filter(
           acc => acc.urgency === 'vencida' || acc.urgency === 'hoy' || acc.urgency === 'manana'
         );
-        if (urgentAccounts.length > 0) {
+        if (urgentAccounts.length > 0 || expiringRes.data.data.length > 0) {
           setShowAlert(true);
         }
       } catch (error) {
@@ -55,6 +59,7 @@ const Dashboard = () => {
           accounts: [],
           vaccines: [],
           lowStockProducts: [],
+          expiringProducts: [],
           counts: { accounts: 0, vaccines: 0, lowStockProducts: 0 }
         });
       } finally {
@@ -347,33 +352,75 @@ const Dashboard = () => {
             </div>
           </div>
           {expandedSection === 'products' && (
-            <div className="card-body border-t border-gray-200">
+            <div className="card-body border-t border-gray-200 space-y-4">
               {remindersData?.lowStockProducts?.length > 0 ? (
-                <div className="space-y-3">
-                  {remindersData.lowStockProducts.map((product) => (
-                    <div 
-                      key={product.id} 
-                      className="p-3 bg-warning-50 rounded-lg cursor-pointer hover:bg-warning-100 transition-colors"
-                      onClick={() => navigate('/products')}
-                    >
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="font-medium text-gray-900">{product.title}</p>
-                          <p className="text-sm text-gray-600">SKU: {product.sku}</p>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-sm font-medium text-warning-600">
-                            Stock: {product.stock}
-                          </p>
-                          <p className="text-xs text-gray-600">Mínimo: {product.minStock}</p>
+                <div>
+                  <h4 className="text-sm font-semibold text-gray-700 mb-2">Stock bajo</h4>
+                  <div className="space-y-2">
+                    {remindersData.lowStockProducts.map((product) => (
+                      <div 
+                        key={product.id} 
+                        className="p-3 bg-warning-50 rounded-lg cursor-pointer hover:bg-warning-100 transition-colors"
+                        onClick={() => navigate('/products')}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="font-medium text-gray-900">{product.title}</p>
+                            <p className="text-sm text-gray-600">SKU: {product.sku}</p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-sm font-medium text-warning-600">
+                              Stock: {product.stock}
+                            </p>
+                            <p className="text-xs text-gray-600">Mínimo: {product.minStock}</p>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
               ) : (
-                <p className="text-gray-500 text-center py-4">
+                <p className="text-gray-500 text-center py-2">
                   ✓ No hay productos con stock bajo
+                </p>
+              )}
+              {remindersData?.expiringProducts?.length > 0 ? (
+                <div>
+                  <h4 className="text-sm font-semibold text-gray-700 mb-2">Próximos a caducar</h4>
+                  <div className="space-y-2">
+                    {remindersData.expiringProducts.map((product) => {
+                      const daysUntilExpiration = Math.ceil((new Date(product.expirationDate) - new Date()) / (1000 * 60 * 60 * 24));
+                      return (
+                        <div 
+                          key={product._id} 
+                          className="p-3 bg-red-50 rounded-lg cursor-pointer hover:bg-red-100 transition-colors"
+                          onClick={() => navigate('/products')}
+                        >
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="font-medium text-gray-900">{product.name}</p>
+                              <p className="text-sm text-gray-600">SKU: {product.sku}</p>
+                              {product.lotNumber && (
+                                <p className="text-xs text-gray-500">Lote: {product.lotNumber}</p>
+                              )}
+                            </div>
+                            <div className="text-right">
+                              <p className="text-sm font-medium text-red-600">
+                                {daysUntilExpiration <= 0 ? 'Caducado' : `${daysUntilExpiration} días`}
+                              </p>
+                              <p className="text-xs text-gray-600">
+                                {new Date(product.expirationDate).toLocaleDateString()}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              ) : (
+                <p className="text-gray-500 text-center py-2">
+                  ✓ No hay productos próximos a caducar
                 </p>
               )}
             </div>

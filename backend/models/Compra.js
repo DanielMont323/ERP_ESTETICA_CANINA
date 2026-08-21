@@ -93,7 +93,7 @@ const compraSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['pendiente', 'pagada', 'vencida'],
+    enum: ['pendiente', 'pagada', 'vencida', 'cancelada'],
     default: function() {
       return this.type === 'contado' ? 'pagada' : 'pendiente';
     }

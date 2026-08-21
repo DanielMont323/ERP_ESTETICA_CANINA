@@ -71,6 +71,21 @@ const productoSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Usuario'
   },
+  expirationDate: {
+    type: Date,
+    required: false
+  },
+  lotNumber: {
+    type: String,
+    trim: true,
+    required: false
+  },
+  alertDays: {
+    type: Number,
+    default: 30,
+    min: 0,
+    description: 'Días antes de la caducidad para mostrar alerta'
+  },
   createdAt: {
     type: Date,
     default: Date.now

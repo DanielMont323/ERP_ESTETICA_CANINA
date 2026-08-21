@@ -3,15 +3,24 @@ import { costsAPI } from '../services/api';
 import toast from 'react-hot-toast';
 import { SkeletonTable } from '../components/Skeleton';
 import ConfirmModal from '../components/ConfirmModal';
+import Pagination from '../components/Pagination';
 import {
   Plus,
   Edit,
-  Trash2
+  Trash2,
+  Search
 } from 'lucide-react';
 
 const Costs = () => {
   const [costs, setCosts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 10,
+    total: 0,
+    pages: 0
+  });
   const [showModal, setShowModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteCostId, setDeleteCostId] = useState(null);
@@ -27,12 +36,17 @@ const Costs = () => {
 
   useEffect(() => {
     fetchCosts();
-  }, []);
+  }, [pagination.page, pagination.limit]);
 
   const fetchCosts = async () => {
     try {
-      const response = await costsAPI.getAll();
+      const params = {
+        page: pagination.page,
+        limit: pagination.limit
+      };
+      const response = await costsAPI.getAll(params);
       setCosts(response.data.data);
+      setPagination(response.data.pagination || pagination);
     } catch (error) {
       toast.error('Error al cargar costos');
     } finally {
@@ -112,17 +126,31 @@ const Costs = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold text-gray-900">Costos</h1>
           <p className="mt-1 text-sm text-gray-600">
             Gestiona los costos fijos y variables del negocio
           </p>
         </div>
-        <button onClick={handleCreateCost} className="btn btn-primary btn-md">
-          <Plus className="h-4 w-4 mr-2" />
-          Nuevo Costo
-        </button>
+        <div className="flex items-center gap-3">
+          <div className="w-full sm:w-64">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Buscar costos..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="form-input pl-10"
+              />
+            </div>
+          </div>
+          <button onClick={handleCreateCost} className="btn btn-primary btn-md">
+            <Plus className="h-4 w-4 mr-2" />
+            Nuevo Costo
+          </button>
+        </div>
       </div>
 
       {/* Costs Table */}
@@ -141,7 +169,10 @@ const Costs = () => {
               </tr>
             </thead>
             <tbody>
-              {costs.map((cost) => (
+              {costs.filter(cost =>
+                cost.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                cost.category?.toLowerCase().includes(searchTerm.toLowerCase())
+              ).map((cost) => (
                 <tr key={cost._id}>
                   <td className="font-medium">{cost.description}</td>
                   <td>
@@ -185,6 +216,12 @@ const Costs = () => {
               ))}
             </tbody>
           </table>
+          
+          <Pagination
+            pagination={pagination}
+            onPageChange={(page) => setPagination({ ...pagination, page })}
+            onLimitChange={(limit) => setPagination({ ...pagination, limit, page: 1 })}
+          />
         </div>
       </div>
 

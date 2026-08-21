@@ -5,13 +5,15 @@ import { servicesAPI, serviceCategoriesAPI, productsAPI } from '../services/api'
 import toast from 'react-hot-toast';
 import { Skeleton, SkeletonCard } from '../components/Skeleton';
 import ConfirmModal from '../components/ConfirmModal';
+import Pagination from '../components/Pagination';
 import { useAuth } from '../contexts/AuthContext';
 import {
   Plus,
   Clock,
   DollarSign,
   Edit,
-  Trash2
+  Trash2,
+  Search
 } from 'lucide-react';
 
 const Services = () => {
@@ -21,6 +23,13 @@ const Services = () => {
   const [categories, setCategories] = useState([]);
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 10,
+    total: 0,
+    pages: 0
+  });
   const [showModal, setShowModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteServiceId, setDeleteServiceId] = useState(null);
@@ -41,7 +50,7 @@ const Services = () => {
     fetchServices();
     fetchCategories();
     fetchProducts();
-  }, []);
+  }, [pagination.page, pagination.limit]);
 
   // Listener para evento personalizado de F9 contextual (nuevo servicio)
   useEffect(() => {
@@ -75,8 +84,14 @@ const Services = () => {
 
   const fetchServices = async () => {
     try {
-      const response = await servicesAPI.getAll();
+      const params = {
+        page: pagination.page,
+        limit: pagination.limit,
+        active: true
+      };
+      const response = await servicesAPI.getAll(params);
       setServices(response.data.data);
+      setPagination(response.data.pagination || pagination);
     } catch (error) {
       toast.error('Error al cargar servicios');
     } finally {
@@ -211,22 +226,39 @@ const Services = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold text-gray-900">Servicios</h1>
           <p className="mt-1 text-sm text-gray-600">
             Gestiona los servicios que ofreces
           </p>
         </div>
-        <button onClick={handleCreateService} className="btn btn-primary btn-md">
-          <Plus className="h-4 w-4 mr-2" />
-          Nuevo Servicio
-        </button>
+        <div className="flex items-center gap-3">
+          <div className="w-full sm:w-64">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Buscar servicios..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="form-input pl-10"
+              />
+            </div>
+          </div>
+          <button onClick={handleCreateService} className="btn btn-primary btn-md">
+            <Plus className="h-4 w-4 mr-2" />
+            Nuevo Servicio
+          </button>
+        </div>
       </div>
 
       {/* Services Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {services.map((service) => (
+        {services.filter(service =>
+          service.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          service.description?.toLowerCase().includes(searchTerm.toLowerCase())
+        ).map((service) => (
           <div key={service._id} className="card">
             <div className="card-body">
               <div className="flex items-start justify-between">
@@ -284,6 +316,12 @@ const Services = () => {
           </div>
         ))}
       </div>
+      
+      <Pagination
+        pagination={pagination}
+        onPageChange={(page) => setPagination({ ...pagination, page })}
+        onLimitChange={(limit) => setPagination({ ...pagination, limit, page: 1 })}
+      />
 
       {/* Modal */}
       {showModal && (

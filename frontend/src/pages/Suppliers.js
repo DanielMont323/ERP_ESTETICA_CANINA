@@ -5,17 +5,26 @@ import { suppliersAPI } from '../services/api';
 import toast from 'react-hot-toast';
 import { Skeleton, SkeletonCard } from '../components/Skeleton';
 import ConfirmModal from '../components/ConfirmModal';
+import Pagination from '../components/Pagination';
 import {
   Plus,
   Phone,
   Edit,
   Trash2,
-  DollarSign
+  DollarSign,
+  Search
 } from 'lucide-react';
 
 const Suppliers = () => {
   const [suppliers, setSuppliers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 10,
+    total: 0,
+    pages: 0
+  });
   const [showModal, setShowModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteSupplierId, setDeleteSupplierId] = useState(null);
@@ -35,7 +44,7 @@ const Suppliers = () => {
 
   useEffect(() => {
     fetchSuppliers();
-  }, []);
+  }, [pagination.page, pagination.limit]);
 
   // Listener para evento personalizado de F3 contextual (nuevo proveedor)
   useEffect(() => {
@@ -70,8 +79,13 @@ const Suppliers = () => {
 
   const fetchSuppliers = async () => {
     try {
-      const response = await suppliersAPI.getAll({ limit: 100 });
+      const params = {
+        page: pagination.page,
+        limit: pagination.limit
+      };
+      const response = await suppliersAPI.getAll(params);
       setSuppliers(response.data.data);
+      setPagination(response.data.pagination || pagination);
     } catch (error) {
       toast.error('Error al cargar proveedores');
     } finally {
@@ -180,22 +194,40 @@ const Suppliers = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold text-gray-900">Proveedores</h1>
           <p className="mt-1 text-sm text-gray-600">
             Gestiona la información de tus proveedores
           </p>
         </div>
-        <button onClick={handleCreateSupplier} className="btn btn-primary btn-md">
-          <Plus className="h-4 w-4 mr-2" />
-          Nuevo Proveedor
-        </button>
+        <div className="flex items-center gap-3">
+          <div className="w-full sm:w-64">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Buscar proveedores..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="form-input pl-10"
+              />
+            </div>
+          </div>
+          <button onClick={handleCreateSupplier} className="btn btn-primary btn-md">
+            <Plus className="h-4 w-4 mr-2" />
+            Nuevo Proveedor
+          </button>
+        </div>
       </div>
 
       {/* Suppliers Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {suppliers.map((supplier) => (
+        {suppliers.filter(supplier =>
+          supplier.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          supplier.contact?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          supplier.phone?.includes(searchTerm)
+        ).map((supplier) => (
           <div key={supplier._id} className="card">
             <div className="card-body">
               <div className="flex items-start justify-between">
@@ -242,6 +274,12 @@ const Suppliers = () => {
           </div>
         ))}
       </div>
+      
+      <Pagination
+        pagination={pagination}
+        onPageChange={(page) => setPagination({ ...pagination, page })}
+        onLimitChange={(limit) => setPagination({ ...pagination, limit, page: 1 })}
+      />
 
       {/* Modal */}
       {showModal && (

@@ -2,8 +2,8 @@ import { useEffect } from 'react';
 
 /**
  * Hook reutilizable para navegación entre campos de formulario usando teclas físicas
- * TAB → campo anterior
- * Shift → siguiente campo
+ * Numpad + → siguiente campo
+ * Numpad - → campo anterior
  */
 export const useKeyboardFormNavigation = (formRef, enabled = true) => {
   useEffect(() => {
@@ -14,18 +14,13 @@ export const useKeyboardFormNavigation = (formRef, enabled = true) => {
       const formElement = formRef.current;
       if (!formElement || !formElement.contains(e.target)) return;
 
-      // Detectar teclas físicas específicas
-      const isShift = e.key === 'Shift';
-      const isTab = e.key === 'Tab';
+      // Detectar específicamente Numpad + y Numpad - usando e.code
+      // e.code distingue entre teclas físicas del teclado numérico vs fila superior
+      const isNumpadAdd = e.code === 'NumpadAdd';      // + del teclado numérico
+      const isNumpadSubtract = e.code === 'NumpadSubtract'; // - del teclado numérico
 
-      // Si no es Shift ni Tab, no hacer nada
-      if (!isShift && !isTab) return;
-
-      // Verificar que no se esté usando como modificador con otra tecla
-      // Si se presiona Shift + otra tecla, no navegar
-      if (isShift && e.key !== 'Shift') return;
-      // Si se presiona Tab + otra tecla, no navegar
-      if (isTab && e.key !== 'Tab') return;
+      // Si no es Numpad + ni Numpad -, no hacer nada
+      if (!isNumpadAdd && !isNumpadSubtract) return;
 
       // Encontrar todos los campos editables en el formulario
       const editableFields = formElement.querySelectorAll(
@@ -48,17 +43,17 @@ export const useKeyboardFormNavigation = (formRef, enabled = true) => {
 
       let nextIndex;
 
-      if (isShift) {
+      if (isNumpadAdd) {
         // Navegar al siguiente campo
         nextIndex = currentIndex + 1;
         if (nextIndex >= visibleFields.length) {
-          nextIndex = 0; // Ciclar al inicio
+          nextIndex = visibleFields.length - 1; // Permanecer en el último campo
         }
-      } else if (isTab) {
+      } else if (isNumpadSubtract) {
         // Navegar al campo anterior
         nextIndex = currentIndex - 1;
         if (nextIndex < 0) {
-          nextIndex = visibleFields.length - 1; // Ciclar al final
+          nextIndex = 0; // Permanecer en el primer campo
         }
       }
 

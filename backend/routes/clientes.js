@@ -26,9 +26,20 @@ router.get('/', async (req, res) => {
 
     const total = await Cliente.countDocuments(query);
 
+    // Agregar mascotas a cada cliente
+    const clientesConMascotas = await Promise.all(
+      clientes.map(async (cliente) => {
+        const mascotas = await Mascota.find({ owner: cliente._id, isActive: true });
+        return {
+          ...cliente.toObject(),
+          mascotas
+        };
+      })
+    );
+
     res.json({
       success: true,
-      data: clientes,
+      data: clientesConMascotas,
       pagination: {
         page: parseInt(page),
         limit: parseInt(limit),

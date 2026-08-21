@@ -74,7 +74,7 @@ const cuentaPorPagarSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['pendiente', 'pagado', 'vencido'],
+    enum: ['pendiente', 'pagado', 'vencido', 'cancelada'],
     default: 'pendiente'
   },
   payments: [{

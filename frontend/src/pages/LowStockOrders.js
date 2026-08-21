@@ -16,6 +16,7 @@ import {
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import { useEscapeKey } from '../hooks/useEscapeKey';
+import Autocomplete from '../components/Autocomplete';
 
 const LowStockOrders = () => {
   const navigate = useNavigate();
@@ -47,6 +48,20 @@ const LowStockOrders = () => {
     };
     fetchSuppliers();
   }, []);
+
+  // Fetch suppliers for autocomplete
+  const fetchSuppliersForAutocomplete = async (searchQuery) => {
+    try {
+      const response = await axios.get('/api/proveedores', { params: { search: searchQuery } });
+      if (response.data.success) {
+        return response.data.data;
+      }
+      return [];
+    } catch (error) {
+      console.error('Error al buscar proveedores:', error);
+      return [];
+    }
+  };
 
   // Obtener productos con bajo stock
   useEffect(() => {
@@ -461,19 +476,31 @@ const LowStockOrders = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="form-label">Filtrar por proveedor</label>
-              <select
-                value={selectedSupplier}
-                onChange={handleSupplierChange}
-                className="form-input"
-              >
-                <option value="all">Todos los proveedores</option>
-                <option value="none">Sin proveedor</option>
-                {suppliers.map(supplier => (
-                  <option key={supplier._id} value={supplier._id}>
-                    {supplier.name}
-                  </option>
-                ))}
-              </select>
+              <Autocomplete
+                placeholder="Todos los proveedores"
+                fetchOptions={fetchSuppliersForAutocomplete}
+                displayValue={(item) => item.name}
+                getOptionValue={(item) => item._id}
+                value={selectedSupplier === 'all' || selectedSupplier === 'none' ? null : suppliers.find(s => s._id === selectedSupplier) || null}
+                onChange={(value) => handleSupplierChange(value || 'all')}
+                minLength={1}
+              />
+              <div className="mt-2 flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => handleSupplierChange('all')}
+                  className={`text-xs px-2 py-1 rounded ${selectedSupplier === 'all' ? 'bg-brand-burgundy text-white' : 'bg-gray-200 text-gray-700'}`}
+                >
+                  Todos
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleSupplierChange('none')}
+                  className={`text-xs px-2 py-1 rounded ${selectedSupplier === 'none' ? 'bg-brand-burgundy text-white' : 'bg-gray-200 text-gray-700'}`}
+                >
+                  Sin proveedor
+                </button>
+              </div>
             </div>
           </div>
         </div>

@@ -3,6 +3,8 @@ import { useKeyboardFormNavigation } from '../hooks/useKeyboardFormNavigation';
 import { purchasesAPI, suppliersAPI, productsAPI, supplierProductsAPI } from '../services/api';
 import toast from 'react-hot-toast';
 import { SkeletonTable } from '../components/Skeleton';
+import Pagination from '../components/Pagination';
+import Autocomplete from '../components/Autocomplete';
 import { useAuth } from '../contexts/AuthContext';
 import {
   Search,
@@ -23,6 +25,13 @@ const Purchases = () => {
   const [selectedPurchase, setSelectedPurchase] = useState(null);
   const [selectedSupplier, setSelectedSupplier] = useState('');
   const [skuSearch, setSkuSearch] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 10,
+    total: 0,
+    pages: 0
+  });
   const [formData, setFormData] = useState({
     proveedor: '',
     type: 'contado',
@@ -37,6 +46,7 @@ const Purchases = () => {
   });
   const [currentItem, setCurrentItem] = useState({
     product: '',
+    productName: '',
     quantity: 1,
     unitCost: 0
   });
@@ -68,17 +78,21 @@ const Purchases = () => {
 
   const fetchData = useCallback(async () => {
     try {
-      const params = {};
+      const params = {
+        page: pagination.page,
+        limit: pagination.limit
+      };
       if (selectedSupplier) params.proveedor = selectedSupplier;
       if (skuSearch) params.sku = skuSearch;
       const purchasesRes = await purchasesAPI.getAll(params);
       setPurchases(purchasesRes.data.data);
+      setPagination(purchasesRes.data.pagination || pagination);
     } catch (error) {
       toast.error('Error al cargar datos');
     } finally {
       setLoading(false);
     }
-  }, [selectedSupplier, skuSearch]);
+  }, [selectedSupplier, skuSearch, pagination.page, pagination.limit]);
 
   useEffect(() => {
     fetchData();
@@ -111,6 +125,28 @@ const Purchases = () => {
       setSuppliers(suppliersRes.data.data);
     } catch (error) {
       console.error('Error al cargar proveedores:', error);
+    }
+  };
+
+  // Fetch suppliers for autocomplete
+  const fetchSuppliersForAutocomplete = async (searchQuery) => {
+    try {
+      const response = await suppliersAPI.getAll({ search: searchQuery });
+      return response.data.data;
+    } catch (error) {
+      console.error('Error al buscar proveedores:', error);
+      return [];
+    }
+  };
+
+  // Fetch products for autocomplete
+  const fetchProductsForAutocomplete = async (searchQuery) => {
+    try {
+      const response = await productsAPI.search(searchQuery);
+      return response.data.data;
+    } catch (error) {
+      console.error('Error al buscar productos:', error);
+      return [];
     }
   };
 
@@ -173,6 +209,7 @@ const Purchases = () => {
             // Agregar nuevo item
             const newItem = {
               product: product._id,
+              productName: product.name,
               quantity: 1,
               unitCost: product.cost || 0
             };
@@ -212,7 +249,7 @@ const Purchases = () => {
       ...formData,
       items: [...formData.items, newItem]
     });
-    setCurrentItem({ product: '', quantity: 1, unitCost: 0 });
+    setCurrentItem({ product: '', productName: '', quantity: 1, unitCost: 0 });
     setDiscountInfo(null);
   };
 
@@ -242,6 +279,7 @@ const Purchases = () => {
     setCurrentItem({
       ...currentItem,
       product: productId,
+      productName: product?.name || '',
       unitCost: product?.cost || 0
     });
 
@@ -398,9 +436,14 @@ const Purchases = () => {
     return baseTotal - discount;
   };
 
-  const filteredPurchases = selectedSupplier 
-    ? purchases.filter(p => p.proveedor?._id === selectedSupplier)
-    : purchases;
+  const filteredPurchases = purchases.filter(purchase => {
+    const matchesSupplier = selectedSupplier ? purchase.proveedor?._id === selectedSupplier : true;
+    const matchesSearch = searchTerm === '' || 
+      purchase.proveedor?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      purchase.invoice?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      purchase.notes?.toLowerCase().includes(searchTerm.toLowerCase());
+    return matchesSupplier && matchesSearch;
+  });
 
   if (loading) {
     return <SkeletonTable rows={5} columns={8} />;
@@ -428,18 +471,28 @@ const Purchases = () => {
           <div className="flex flex-col sm:flex-row items-center gap-4">
             <div className="flex-1">
               <label className="form-label">Filtrar por proveedor</label>
-              <select
-                value={selectedSupplier}
-                onChange={(e) => setSelectedSupplier(e.target.value)}
-                className="form-input"
-              >
-                <option value="">Todos los proveedores</option>
-                {suppliers.map(supplier => (
-                  <option key={supplier._id} value={supplier._id}>
-                    {supplier.name}
-                  </option>
-                ))}
-              </select>
+              <Autocomplete
+                placeholder="Todos los proveedores"
+                fetchOptions={fetchSuppliersForAutocomplete}
+                displayValue={(item) => item.name}
+                getOptionValue={(item) => item._id}
+                value={suppliers.find(s => s._id === selectedSupplier) || null}
+                onChange={(value) => setSelectedSupplier(value)}
+                minLength={1}
+              />
+            </div>
+            <div className="flex-1">
+              <label className="form-label">Buscar compras</label>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="Proveedor, factura, notas..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="form-input pl-10"
+                />
+              </div>
             </div>
             <div className="flex-1">
               <label className="form-label">Buscar por SKU</label>
@@ -483,7 +536,7 @@ const Purchases = () => {
                   <td>
                     {purchase.items?.map((item, idx) => (
                       <div key={idx} className="text-sm">
-                        {item.product?.name} x {item.quantity}
+                        {item.productName || item.product?.name || 'Producto no disponible'} x {item.quantity}
                       </div>
                     ))}
                   </td>
@@ -525,6 +578,12 @@ const Purchases = () => {
               ))}
             </tbody>
           </table>
+          
+          <Pagination
+            pagination={pagination}
+            onPageChange={(page) => setPagination({ ...pagination, page })}
+            onLimitChange={(limit) => setPagination({ ...pagination, limit, page: 1 })}
+          />
         </div>
       </div>
 
@@ -555,19 +614,16 @@ const Purchases = () => {
                 <div className="grid grid-cols-2 gap-4 mb-4">
                   <div>
                     <label className="form-label">Proveedor</label>
-                    <select
-                      required
-                      value={formData.proveedor}
-                      onChange={(e) => handleSupplierChange(e.target.value)}
-                      className="form-input"
-                    >
-                      <option value="">Seleccionar proveedor</option>
-                      {suppliers.map(supplier => (
-                        <option key={supplier._id} value={supplier._id}>
-                          {supplier.name}
-                        </option>
-                      ))}
-                    </select>
+                    <Autocomplete
+                      placeholder="Buscar proveedor..."
+                      fetchOptions={fetchSuppliersForAutocomplete}
+                      displayValue={(item) => item.name}
+                      getOptionValue={(item) => item._id}
+                      value={suppliers.find(s => s._id === formData.proveedor) || null}
+                      onChange={(value) => handleSupplierChange(value)}
+                      required={true}
+                      minLength={1}
+                    />
                     {selectedSupplierInfo && (
                       <div className="mt-2 text-sm space-y-1">
                         <div className="text-gray-600">
@@ -644,6 +700,7 @@ const Purchases = () => {
                               await handleProductChange(product._id);
                               const newItem = {
                                 product: product._id,
+                                productName: product.name,
                                 quantity: 1,
                                 unitCost: product.cost || 0
                               };
@@ -668,18 +725,15 @@ const Purchases = () => {
                   <div className="grid grid-cols-4 gap-4 mb-4">
                     <div>
                       <label className="form-label">Producto</label>
-                      <select
-                        value={currentItem.product}
-                        onChange={(e) => handleProductChange(e.target.value)}
-                        className="form-input"
-                      >
-                        <option value="">Seleccionar producto</option>
-                        {products.map(product => (
-                          <option key={product._id} value={product._id}>
-                            {product.name}
-                          </option>
-                        ))}
-                      </select>
+                      <Autocomplete
+                        placeholder="Buscar producto..."
+                        fetchOptions={fetchProductsForAutocomplete}
+                        displayValue={(item) => `${item.name} (${item.sku || 'Sin SKU'})`}
+                        getOptionValue={(item) => item._id}
+                        value={products.find(p => p._id === currentItem.product) || null}
+                        onChange={(value) => handleProductChange(value)}
+                        minLength={1}
+                      />
                     </div>
                     <div>
                       <label className="form-label">Cantidad</label>
@@ -746,7 +800,7 @@ const Purchases = () => {
                         <tbody>
                           {formData.items.map((item, index) => (
                             <tr key={index}>
-                              <td>{item.product?.name || 'Producto no disponible'}</td>
+                              <td>{item.productName || 'Producto no disponible'}</td>
                               <td>
                                 <input
                                   type="number"

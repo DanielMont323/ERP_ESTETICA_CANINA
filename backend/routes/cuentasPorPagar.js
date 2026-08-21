@@ -535,4 +535,63 @@ router.get('/summary', async (req, res) => {
   }
 });
 
+// @route   DELETE /api/cuentas-por-pagar/:id
+// @desc    Cancelar cuenta por pagar
+router.delete('/:id', authenticateToken, async (req, res) => {
+  try {
+    const cuenta = await CuentaPorPagar.findById(req.params.id)
+      .populate('proveedor');
+    
+    if (!cuenta) {
+      return res.status(404).json({
+        success: false,
+        message: 'Cuenta no encontrada'
+      });
+    }
+
+    if (cuenta.status === 'cancelada') {
+      return res.status(400).json({
+        success: false,
+        message: 'La cuenta ya está cancelada'
+      });
+    }
+
+    if (cuenta.status === 'pagado') {
+      return res.status(400).json({
+        success: false,
+        message: 'No se puede cancelar una cuenta pagada'
+      });
+    }
+
+    // Actualizar deuda del proveedor
+    if (cuenta.proveedor) {
+      cuenta.proveedor.currentDebt -= cuenta.saldo;
+      if (cuenta.proveedor.currentDebt < 0) {
+        cuenta.proveedor.currentDebt = 0;
+      }
+      await cuenta.proveedor.save();
+    }
+
+    // Actualizar status
+    cuenta.status = 'cancelada';
+    cuenta.saldo = 0;
+    await cuenta.save();
+
+    await cuenta.populate('proveedor', 'name contact phone');
+    await cuenta.populate('compra', 'invoice date total');
+
+    res.json({
+      success: true,
+      data: cuenta,
+      message: 'Cuenta cancelada correctamente'
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      success: false,
+      message: 'Error al cancelar cuenta'
+    });
+  }
+});
+
 module.exports = router;

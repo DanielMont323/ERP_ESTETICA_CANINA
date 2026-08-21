@@ -48,4 +48,11 @@ const clienteSchema = new mongoose.Schema({
   }
 });
 
+// Virtual para contar mascotas activas
+clienteSchema.virtual('petCount').get(async function() {
+  const Mascota = require('./Mascota');
+  const count = await Mascota.countDocuments({ owner: this._id, isActive: true });
+  return count;
+});
+
 module.exports = mongoose.model('Cliente', clienteSchema);

@@ -3,24 +3,33 @@ import { remindersAPI } from '../services/api';
 import toast from 'react-hot-toast';
 import { Skeleton, SkeletonCard } from '../components/Skeleton';
 import ConfirmModal from '../components/ConfirmModal';
+import Pagination from '../components/Pagination';
 import {
   Plus,
   Calendar,
   CheckCircle,
   AlertTriangle,
   Edit,
-  Trash2
+  Trash2,
+  Search
 } from 'lucide-react';
 
 const Reminders = () => {
   const [reminders, setReminders] = useState([]);
   const [automaticReminders, setAutomaticReminders] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [showAutomatic, setShowAutomatic] = useState(false);
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 10,
+    total: 0,
+    pages: 0
+  });
   const [showModal, setShowModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteReminderId, setDeleteReminderId] = useState(null);
   const [editingReminder, setEditingReminder] = useState(null);
-  const [showAutomatic, setShowAutomatic] = useState(false);
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -33,12 +42,17 @@ const Reminders = () => {
   useEffect(() => {
     fetchReminders();
     fetchAutomaticReminders();
-  }, []);
+  }, [pagination.page, pagination.limit]);
 
   const fetchReminders = async () => {
     try {
-      const response = await remindersAPI.getAll();
+      const params = {
+        page: pagination.page,
+        limit: pagination.limit
+      };
+      const response = await remindersAPI.getAll(params);
       setReminders(response.data.data);
+      setPagination(response.data.pagination || pagination);
     } catch (error) {
       toast.error('Error al cargar recordatorios');
     } finally {
@@ -168,14 +182,26 @@ const Reminders = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold text-gray-900">Recordatorios</h1>
           <p className="mt-1 text-sm text-gray-600">
             Gestiona tus recordatorios y tareas pendientes
           </p>
         </div>
-        <div className="flex items-center space-x-3">
+        <div className="flex items-center gap-3">
+          <div className="w-full sm:w-64">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Buscar recordatorios..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="form-input pl-10"
+              />
+            </div>
+          </div>
           <button 
             onClick={() => setShowAutomatic(!showAutomatic)}
             className={`btn btn-md ${showAutomatic ? 'btn-primary' : 'btn-secondary'}`}
@@ -204,7 +230,10 @@ const Reminders = () => {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {automaticReminders.map((reminder) => (
+              {automaticReminders.filter(reminder =>
+                reminder.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                reminder.description?.toLowerCase().includes(searchTerm.toLowerCase())
+              ).map((reminder) => (
                 <div key={reminder.id} className="card">
                   <div className="card-body">
                     <div className="flex items-start justify-between">
@@ -239,18 +268,22 @@ const Reminders = () => {
 
       {/* Manual Reminders */}
       {!showAutomatic && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {reminders.map((reminder) => (
-            <div key={reminder._id} className="card">
-              <div className="card-body">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <h3 className="text-lg font-medium text-gray-900">{reminder.title}</h3>
-                    {reminder.description && (
-                      <p className="mt-1 text-sm text-gray-600">{reminder.description}</p>
-                    )}
-                    <div className="mt-3 space-y-2">
-                      <div className="flex items-center text-sm text-gray-600">
+        <>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {reminders.filter(reminder =>
+              reminder.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+              reminder.description?.toLowerCase().includes(searchTerm.toLowerCase())
+            ).map((reminder) => (
+              <div key={reminder._id} className="card">
+                <div className="card-body">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <h3 className="text-lg font-medium text-gray-900">{reminder.title}</h3>
+                      {reminder.description && (
+                        <p className="mt-1 text-sm text-gray-600">{reminder.description}</p>
+                      )}
+                      <div className="mt-3 space-y-2">
+                        <div className="flex items-center text-sm text-gray-600">
                         <Calendar className="h-4 w-4 mr-2" />
                         {new Date(reminder.date).toLocaleDateString('es-MX')}
                         {isOverdue(reminder.date) && (
@@ -295,6 +328,13 @@ const Reminders = () => {
             </div>
           ))}
         </div>
+        
+        <Pagination
+          pagination={pagination}
+          onPageChange={(page) => setPagination({ ...pagination, page })}
+          onLimitChange={(limit) => setPagination({ ...pagination, limit, page: 1 })}
+        />
+        </>
       )}
 
       {/* Modal */}
