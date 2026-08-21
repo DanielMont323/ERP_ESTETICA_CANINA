@@ -268,6 +268,74 @@ router.get('/low-stock', async (req, res) => {
   }
 });
 
+// @route   GET /api/productos/archived
+// @desc    Obtener productos archivados
+router.get('/archived', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const productos = await Producto.find({ isDeleted: true })
+      .sort({ deletedAt: -1 });
+    
+    // Populate manual de category
+    for (const producto of productos) {
+      if (producto.category && typeof producto.category === 'string') {
+        if (mongoose.Types.ObjectId.isValid(producto.category)) {
+          const categoria = await CategoriaProducto.findById(producto.category);
+          producto.category = categoria || producto.category;
+        } else {
+          const categoria = await CategoriaProducto.findOne({ name: producto.category, isActive: true });
+          producto.category = categoria || producto.category;
+        }
+      } else if (producto.category && mongoose.Types.ObjectId.isValid(producto.category)) {
+        const categoria = await CategoriaProducto.findById(producto.category);
+        producto.category = categoria || producto.category;
+      }
+    }
+    
+    res.json({
+      success: true,
+      data: productos
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      success: false,
+      message: 'Error al obtener productos archivados'
+    });
+  }
+});
+
+// @route   GET /api/productos/expiring
+// @desc    Obtener productos próximos a caducar
+router.get('/expiring', authenticateToken, async (req, res) => {
+  try {
+    const { days = 30 } = req.query;
+    const today = new Date();
+    const alertDate = new Date();
+    alertDate.setDate(today.getDate() + parseInt(days));
+
+    const productos = await Producto.find({
+      expirationDate: { $ne: null },
+      expirationDate: { $lte: alertDate },
+      isActive: true,
+      isDeleted: false,
+      stock: { $gt: 0 }
+    })
+      .sort({ expirationDate: 1 });
+
+    res.json({
+      success: true,
+      data: productos,
+      count: productos.length
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      success: false,
+      message: 'Error al obtener productos próximos a caducar'
+    });
+  }
+});
+
 // @route   GET /api/productos/:id
 // @desc    Obtener producto por ID
 router.get('/:id', async (req, res) => {
@@ -590,42 +658,6 @@ router.patch('/:id/restore', authenticateToken, requireAdmin, async (req, res) =
   }
 });
 
-// @route   GET /api/productos/archived
-// @desc    Obtener productos archivados
-router.get('/archived', authenticateToken, requireAdmin, async (req, res) => {
-  try {
-    const productos = await Producto.find({ isDeleted: true })
-      .sort({ deletedAt: -1 });
-    
-    // Populate manual de category
-    for (const producto of productos) {
-      if (producto.category && typeof producto.category === 'string') {
-        if (mongoose.Types.ObjectId.isValid(producto.category)) {
-          const categoria = await CategoriaProducto.findById(producto.category);
-          producto.category = categoria || producto.category;
-        } else {
-          const categoria = await CategoriaProducto.findOne({ name: producto.category, isActive: true });
-          producto.category = categoria || producto.category;
-        }
-      } else if (producto.category && mongoose.Types.ObjectId.isValid(producto.category)) {
-        const categoria = await CategoriaProducto.findById(producto.category);
-        producto.category = categoria || producto.category;
-      }
-    }
-    
-    res.json({
-      success: true,
-      data: productos
-    });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({
-      success: false,
-      message: 'Error al obtener productos archivados'
-    });
-  }
-});
-
 // @route   PATCH /api/productos/:id/stock
 // @desc    Actualizar stock de producto
 router.patch('/:id/stock', async (req, res) => {
@@ -676,38 +708,6 @@ router.patch('/:id/stock', async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Error al actualizar stock'
-    });
-  }
-});
-
-// @route   GET /api/productos/expiring
-// @desc    Obtener productos próximos a caducar
-router.get('/expiring', authenticateToken, async (req, res) => {
-  try {
-    const { days = 30 } = req.query;
-    const today = new Date();
-    const alertDate = new Date();
-    alertDate.setDate(today.getDate() + parseInt(days));
-
-    const productos = await Producto.find({
-      expirationDate: { $ne: null },
-      expirationDate: { $lte: alertDate },
-      isActive: true,
-      isDeleted: false,
-      stock: { $gt: 0 }
-    })
-      .sort({ expirationDate: 1 });
-
-    res.json({
-      success: true,
-      data: productos,
-      count: productos.length
-    });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({
-      success: false,
-      message: 'Error al obtener productos próximos a caducar'
     });
   }
 });
