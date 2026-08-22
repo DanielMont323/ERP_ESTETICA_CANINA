@@ -583,7 +583,7 @@ const Products = () => {
                   <label className="form-label">Proveedor</label>
                   <Autocomplete
                     placeholder="Buscar proveedor..."
-                    localOptions={suppliers}
+                    fetchOptions={fetchSuppliersForAutocomplete}
                     displayValue={(item) => item.name}
                     getOptionValue={(item) => item._id}
                     value={suppliers.find(s => s._id === formData.supplier) || null}
