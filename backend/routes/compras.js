@@ -107,7 +107,7 @@ router.get('/:id', authenticateToken, async (req, res) => {
 // @desc    Crear nueva compra
 router.post('/', authenticateToken, async (req, res) => {
   try {
-    const { proveedor, items, type, paymentMethod, user, notes, invoice, receiptNumber, hasIVA, ivaRate } = req.body;
+    const { proveedor, items, type, paymentMethod, user, notes, invoice, receiptNumber, hasIVA, ivaRate, date } = req.body;
 
     // Validar que haya items
     if (!items || items.length === 0) {
@@ -202,7 +202,9 @@ router.post('/', authenticateToken, async (req, res) => {
       notes,
       invoice,
       earlyPaymentDiscount,
-      discountDeadline
+      discountDeadline,
+      // Usar fecha personalizada si se proporciona, si no usa el default del modelo
+      ...(date && { date: new Date(date) })
     });
 
     // Si es a crédito, crear cuenta por pagar
@@ -316,7 +318,8 @@ router.put('/:id', authenticateToken, requireAdmin, async (req, res) => {
       paymentMethod,
       earlyPaymentDiscount,
       discountDeadline,
-      dueDate
+      dueDate,
+      date
     } = req.body;
     
     const compra = await Compra.findById(req.params.id);
@@ -404,6 +407,7 @@ router.put('/:id', authenticateToken, requireAdmin, async (req, res) => {
     if (earlyPaymentDiscount !== undefined) compra.earlyPaymentDiscount = earlyPaymentDiscount;
     if (discountDeadline !== undefined) compra.discountDeadline = discountDeadline;
     if (dueDate !== undefined) compra.dueDate = dueDate;
+    if (date !== undefined) compra.date = new Date(date);
 
     // Recalcular totales
     compra.baseTotal = Math.round((compra.items.reduce((sum, item) => {

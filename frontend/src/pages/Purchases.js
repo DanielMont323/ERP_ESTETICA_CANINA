@@ -42,7 +42,8 @@ const Purchases = () => {
     invoice: '',
     receiptNumber: '',
     hasIVA: false,
-    ivaRate: 0.16
+    ivaRate: 0.16,
+    date: ''
   });
   const [currentItem, setCurrentItem] = useState({
     product: '',
@@ -338,11 +339,17 @@ const Purchases = () => {
 
       console.log('Enviando datos de compra:', formData);
       
+      // Agregar fecha personalizada si se seleccionó
+      const dataToSend = { ...formData };
+      if (formData.date) {
+        dataToSend.date = formData.date;
+      }
+      
       let response;
       if (isEditMode) {
-        response = await purchasesAPI.update(selectedPurchase._id, formData);
+        response = await purchasesAPI.update(selectedPurchase._id, dataToSend);
       } else {
-        response = await purchasesAPI.create(formData);
+        response = await purchasesAPI.create(dataToSend);
       }
       
       console.log('Respuesta del servidor:', response);
@@ -362,7 +369,8 @@ const Purchases = () => {
         invoice: '',
         receiptNumber: '',
         hasIVA: false,
-        ivaRate: 0.16
+        ivaRate: 0.16,
+        date: ''
       });
       fetchData();
     } catch (error) {
@@ -393,7 +401,8 @@ const Purchases = () => {
       invoice: purchase.invoice || '',
       receiptNumber: purchase.receiptNumber || '',
       hasIVA: purchase.hasIVA || false,
-      ivaRate: purchase.ivaRate || 0.16
+      ivaRate: purchase.ivaRate || 0.16,
+      date: purchase.date ? new Date(purchase.date).toISOString().split('T')[0] : ''
     });
     
     // Cargar información del proveedor para descuento
@@ -678,6 +687,21 @@ const Purchases = () => {
                       placeholder="Opcional"
                     />
                   </div>
+                </div>
+
+                {/* Purchase Date */}
+                <div>
+                  <label className="form-label">Fecha de compra (opcional)</label>
+                  <input
+                    type="date"
+                    value={formData.date}
+                    onChange={(e) => setFormData({...formData, date: e.target.value})}
+                    max={new Date().toISOString().split('T')[0]}
+                    className="form-input"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Si no seleccionas una fecha, se usará la fecha y hora actual
+                  </p>
                 </div>
 
                 {/* Items Section */}
