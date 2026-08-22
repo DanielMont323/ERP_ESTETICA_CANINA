@@ -172,6 +172,7 @@ export const accountsPayableAPI = {
   getById: (id) => api.get(`/cuentas-por-pagar/${id}`),
   pay: (id, data) => api.patch(`/cuentas-por-pagar/${id}/pagar`, data),
   delete: (id) => api.delete(`/cuentas-por-pagar/${id}`),
+  reactivate: (id) => api.patch(`/cuentas-por-pagar/${id}/reactivate`),
   payMassive: (data) => api.post('/cuentas-por-pagar/pagar-masivo', data),
   updateStatus: (id, data) => api.patch(`/cuentas-por-pagar/${id}/status`, data),
   getOverdue: () => api.get('/cuentas-por-pagar/overdue'),

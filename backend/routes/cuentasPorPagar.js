@@ -594,4 +594,57 @@ router.delete('/:id', authenticateToken, async (req, res) => {
   }
 });
 
+// @route   PATCH /api/cuentas-por-pagar/:id/reactivate
+// @desc    Reactivar cuenta por pagar cancelada
+router.patch('/:id/reactivate', authenticateToken, async (req, res) => {
+  try {
+    const cuenta = await CuentaPorPagar.findById(req.params.id)
+      .populate('proveedor');
+    
+    if (!cuenta) {
+      return res.status(404).json({
+        success: false,
+        message: 'Cuenta no encontrada'
+      });
+    }
+
+    if (cuenta.status !== 'cancelada') {
+      return res.status(400).json({
+        success: false,
+        message: 'Solo se pueden reactivar cuentas canceladas'
+      });
+    }
+
+    // Restaurar saldo al monto original
+    const saldoOriginal = cuenta.monto;
+    cuenta.saldo = saldoOriginal;
+    
+    // Restaurar status a pendiente
+    cuenta.status = 'pendiente';
+    
+    // Restaurar deuda del proveedor
+    if (cuenta.proveedor) {
+      cuenta.proveedor.currentDebt += saldoOriginal;
+      await cuenta.proveedor.save();
+    }
+    
+    await cuenta.save();
+
+    await cuenta.populate('proveedor', 'name contact phone');
+    await cuenta.populate('compra', 'invoice date total');
+
+    res.json({
+      success: true,
+      data: cuenta,
+      message: 'Cuenta reactivada correctamente'
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      success: false,
+      message: 'Error al reactivar cuenta'
+    });
+  }
+});
+
 module.exports = router;

@@ -60,6 +60,7 @@ const Sales = () => {
   const [editNotes, setEditNotes] = useState('');
   const [amountReceived, setAmountReceived] = useState('');
   const [editAmountReceived, setEditAmountReceived] = useState('');
+  const [saleDate, setSaleDate] = useState('');
   const [productSearchQuery, setProductSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [selectedSearchIndex, setSelectedSearchIndex] = useState(-1);
@@ -586,6 +587,11 @@ const Sales = () => {
         user: user?._id || null
       };
 
+      // Agregar fecha personalizada si se seleccionó
+      if (saleDate) {
+        saleData.date = saleDate;
+      }
+
       // Agregar amountReceived solo si es efectivo
       if (paymentMethod === 'efectivo' && amountReceived) {
         saleData.amountReceived = parseFloat(amountReceived);
@@ -617,6 +623,7 @@ const Sales = () => {
       setUseCustomCommission(false);
       setNotes('');
       setAmountReceived('');
+      setSaleDate('');
       setProductSearchQuery('');
       setSearchResults([]);
       setManualSubtotal('');
@@ -906,6 +913,21 @@ const Sales = () => {
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                   {/* Products and Services */}
                   <div className="lg:col-span-2 space-y-6">
+                    {/* Sale Date */}
+                    <div>
+                      <label className="form-label">Fecha de venta (opcional)</label>
+                      <input
+                        type="date"
+                        value={saleDate}
+                        onChange={(e) => setSaleDate(e.target.value)}
+                        max={new Date().toISOString().split('T')[0]}
+                        className="form-input"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">
+                        Si no seleccionas una fecha, se usará la fecha y hora actual
+                      </p>
+                    </div>
+
                     {/* Customer Selection */}
                     <div>
                       <label className="form-label">Cliente (opcional)</label>

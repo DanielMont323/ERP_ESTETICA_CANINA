@@ -136,6 +136,20 @@ const AccountsPayable = () => {
     }
   };
 
+  const handleReactivateAccount = async (accountId) => {
+    if (!window.confirm('¿Deseas reactivar esta cuenta por pagar?\n\nLa cuenta volverá a estar activa con su saldo original.')) {
+      return;
+    }
+
+    try {
+      await accountsPayableAPI.reactivate(accountId);
+      toast.success('Cuenta reactivada correctamente');
+      fetchAccounts();
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Error al reactivar cuenta');
+    }
+  };
+
   const handleSelectAccount = (accountId) => {
     setSelectedAccounts(prev => {
       if (prev.includes(accountId)) {
@@ -353,6 +367,14 @@ const AccountsPayable = () => {
                             Cancelar
                           </button>
                         )}
+                        {account.status === 'cancelada' && (
+                          <button 
+                            onClick={() => handleReactivateAccount(account._id)}
+                            className="text-sm font-medium text-green-600 hover:text-green-900"
+                          >
+                            Reactivar
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -465,6 +487,14 @@ const AccountsPayable = () => {
                     className="flex-1 py-2 px-4 rounded-lg text-sm font-medium bg-red-600 text-white hover:bg-red-900"
                   >
                     Cancelar
+                  </button>
+                )}
+                {account.status === 'cancelada' && (
+                  <button 
+                    onClick={() => handleReactivateAccount(account._id)}
+                    className="flex-1 py-2 px-4 rounded-lg text-sm font-medium bg-green-600 text-white hover:bg-green-900"
+                  >
+                    Reactivar
                   </button>
                 )}
               </div>

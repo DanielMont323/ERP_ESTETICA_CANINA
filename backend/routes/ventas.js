@@ -188,7 +188,7 @@ router.get('/:id', async (req, res) => {
 // @desc    Crear nueva venta
 router.post('/', authenticateToken, async (req, res) => {
   try {
-    const { items, paymentMethod, customer, mascota, notes, amountReceived, saleChannel, commission, subtotal, total, netIncome } = req.body;
+    const { items, paymentMethod, customer, mascota, notes, amountReceived, saleChannel, commission, subtotal, total, netIncome, date } = req.body;
 
     // Usar req.user._id para el usuario autenticado (ignorar user del body por seguridad)
     const user = req.user._id;
@@ -436,6 +436,8 @@ router.post('/', authenticateToken, async (req, res) => {
       user,
       notes,
       commission,
+      // Usar fecha personalizada si se proporciona, si no usa el default del modelo
+      ...(date && { date: new Date(date) }),
       // Solo incluir valores financieros manuales si son proporcionados y es Mercado Libre
       ...(saleChannel === 'mercado_libre' && subtotal !== undefined && { subtotal }),
       ...(saleChannel === 'mercado_libre' && total !== undefined && { total }),
