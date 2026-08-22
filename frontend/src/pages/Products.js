@@ -181,7 +181,7 @@ const Products = () => {
 
   const fetchSuppliers = async () => {
     try {
-      const response = await suppliersAPI.getAll();
+      const response = await suppliersAPI.getAll({ limit: 1000 });
       setSuppliers(response.data.data);
     } catch (error) {
       console.error('Error al cargar proveedores:', error);
@@ -226,12 +226,24 @@ const Products = () => {
     }
   };
 
-  const handleEdit = (product) => {
+  const handleEdit = async (product) => {
     setEditingProduct(product);
+    
+    // Si el producto tiene un proveedor que no está en la lista local, cargarlo
+    const supplierId = product.supplier?._id || product.supplier;
+    if (supplierId && !suppliers.find(s => s._id === supplierId)) {
+      try {
+        const response = await suppliersAPI.getById(supplierId);
+        setSuppliers(prev => [...prev, response.data.data]);
+      } catch (error) {
+        console.error('Error al cargar proveedor del producto:', error);
+      }
+    }
+    
     setFormData({
       name: product.name,
       category: product.category?._id || product.category,
-      supplier: product.supplier?._id || product.supplier || '',
+      supplier: supplierId || '',
       cost: product.cost.toString(),
       price: product.price.toString(),
       stock: product.stock.toString(),
