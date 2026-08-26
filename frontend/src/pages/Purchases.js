@@ -122,7 +122,7 @@ const Purchases = () => {
 
   const fetchSuppliers = async () => {
     try {
-      const suppliersRes = await suppliersAPI.getAll();
+      const suppliersRes = await suppliersAPI.getAll({ limit: 1000 });
       setSuppliers(suppliersRes.data.data);
     } catch (error) {
       console.error('Error al cargar proveedores:', error);
@@ -132,7 +132,7 @@ const Purchases = () => {
   // Fetch suppliers for autocomplete
   const fetchSuppliersForAutocomplete = async (searchQuery) => {
     try {
-      const response = await suppliersAPI.getAll({ search: searchQuery });
+      const response = await suppliersAPI.getAll({ search: searchQuery, limit: 1000 });
       return response.data.data;
     } catch (error) {
       console.error('Error al buscar proveedores:', error);
@@ -604,28 +604,31 @@ const Purchases = () => {
 
       {/* Modal for New Purchase */}
       {showModal && (
-        <div className="fixed inset-0 z-50 overflow-y-auto">
-          <div className="flex items-center justify-center min-h-screen px-4">
-            <div className="modal-overlay" onClick={() => setShowModal(false)} />
-            
-            <div ref={formRef} className="relative modal-content max-w-4xl w-full sm:max-w-4xl max-h-[90vh] overflow-y-auto animate-slide-up">
-              <div className="p-6">
-                <div className="flex justify-between items-center mb-4">
-                  <h2 className="text-xl font-semibold text-gray-900">
-                    {isEditMode ? 'Editar Compra' : 'Nueva Compra'}
-                  </h2>
-                  <button onClick={() => {
-                    setShowModal(false);
-                    setIsEditMode(false);
-                    setSelectedPurchase(null);
-                    setProductSearchQuery('');
-                    setSearchResults([]);
-                  }} className="text-gray-400 hover:text-gray-600 transition-colors">
-                    <X className="h-6 w-6" />
-                  </button>
-                </div>
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+          <div className="modal-overlay" onClick={() => setShowModal(false)} />
+          
+          <div className="relative modal-content max-w-4xl w-full max-h-[90vh] flex flex-col animate-slide-up">
+            {/* Header Sticky */}
+            <div className="sticky top-0 bg-white z-10 p-6 border-b border-gray-200 rounded-t-xl">
+              <div className="flex justify-between items-center">
+                <h2 className="text-xl font-semibold text-gray-900">
+                  {isEditMode ? 'Editar Compra' : 'Nueva Compra'}
+                </h2>
+                <button onClick={() => {
+                  setShowModal(false);
+                  setIsEditMode(false);
+                  setSelectedPurchase(null);
+                  setProductSearchQuery('');
+                  setSearchResults([]);
+                }} className="text-gray-400 hover:text-gray-600 transition-colors">
+                  <X className="h-6 w-6" />
+                </button>
+              </div>
+            </div>
 
-              <form onSubmit={handleSubmit}>
+            {/* Contenido Scrolleable */}
+            <div className="flex-1 overflow-y-auto p-6">
+              <form ref={formRef} onSubmit={handleSubmit}>
                 <div className="grid grid-cols-2 gap-4 mb-4">
                   <div>
                     <label className="form-label">Proveedor</label>
@@ -763,6 +766,7 @@ const Purchases = () => {
                         value={products.find(p => p._id === currentItem.product) || null}
                         onChange={(value) => handleProductChange(value)}
                         minLength={1}
+                        allowDeleteClear={true}
                       />
                     </div>
                     <div>
@@ -1003,31 +1007,37 @@ const Purchases = () => {
                     rows="2"
                   />
                 </div>
-
-                <div className="flex justify-end space-x-2">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setShowModal(false);
-                      setProductSearchQuery('');
-                      setSearchResults([]);
-                    }}
-                    className="btn btn-secondary btn-md"
-                  >
-                    Cancelar
-                  </button>
-                  <button
-                    type="submit"
-                    className="btn btn-primary btn-md"
-                  >
-                    Crear Compra
-                  </button>
-                </div>
               </form>
+            </div>
+            
+            {/* Footer Sticky */}
+            <div className="sticky bottom-0 bg-white p-6 border-t border-gray-200 rounded-b-xl">
+              <div className="flex justify-end space-x-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowModal(false);
+                    setProductSearchQuery('');
+                    setSearchResults([]);
+                  }}
+                  className="btn btn-secondary btn-md"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    formRef.current?.requestSubmit();
+                  }}
+                  className="btn btn-primary btn-md"
+                >
+                  Crear Compra
+                </button>
+              </div>
             </div>
           </div>
         </div>
-      </div>
       )}
     </div>
   );

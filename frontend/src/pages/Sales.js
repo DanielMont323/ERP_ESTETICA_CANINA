@@ -13,6 +13,7 @@ import {
   PlusCircle,
   MinusCircle,
   Edit,
+  X,
   XCircle
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
@@ -182,7 +183,7 @@ const Sales = () => {
   // Fetch functions for autocomplete
   const fetchCustomersForAutocomplete = async (searchQuery) => {
     try {
-      const response = await customersAPI.getAll({ search: searchQuery, active: true });
+      const response = await customersAPI.getAll({ search: searchQuery, active: true, limit: 1000 });
       return response.data.data;
     } catch (error) {
       console.error('Error al buscar clientes:', error);
@@ -202,7 +203,7 @@ const Sales = () => {
 
   const fetchServicesForAutocomplete = async (searchQuery) => {
     try {
-      const response = await servicesAPI.getAll({ search: searchQuery, active: true });
+      const response = await servicesAPI.getAll({ search: searchQuery, active: true, limit: 1000 });
       return response.data.data;
     } catch (error) {
       console.error('Error al buscar servicios:', error);
@@ -212,7 +213,7 @@ const Sales = () => {
 
   const fetchPetsForAutocomplete = async (searchQuery) => {
     try {
-      const response = await petsAPI.getAll({ search: searchQuery, owner: selectedCustomer, active: true });
+      const response = await petsAPI.getAll({ search: searchQuery, owner: selectedCustomer, active: true, limit: 1000 });
       return response.data.data;
     } catch (error) {
       console.error('Error al buscar mascotas:', error);
@@ -902,13 +903,22 @@ const Sales = () => {
 
       {/* New Sale Modal */}
       {showModal && (
-        <div className="fixed inset-0 z-50 overflow-y-auto">
-          <div className="flex items-center justify-center min-h-screen px-4">
-            <div className="modal-overlay" onClick={() => setShowModal(false)} />
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+          <div className="modal-overlay" onClick={() => setShowModal(false)} />
+          
+          <div className="relative modal-content max-w-4xl w-full max-h-[90vh] flex flex-col animate-slide-up">
+            {/* Header Sticky */}
+            <div className="sticky top-0 bg-white z-10 p-6 border-b border-gray-200 rounded-t-xl">
+              <div className="flex justify-between items-center">
+                <h3 className="text-lg font-semibold text-gray-900">Nueva Venta</h3>
+                <button onClick={() => setShowModal(false)} className="text-gray-400 hover:text-gray-600 transition-colors">
+                  <X className="h-6 w-6" />
+                </button>
+              </div>
+            </div>
             
-            <div ref={formRef} className="relative modal-content max-w-4xl w-full sm:max-w-4xl max-h-[90vh] overflow-y-auto animate-slide-up">
-              <div className="p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-6">Nueva Venta</h3>
+            {/* Contenido Scrolleable */}
+            <div className="flex-1 overflow-y-auto p-6">
                 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                   {/* Products and Services */}
@@ -1365,26 +1375,27 @@ const Sales = () => {
                         placeholder="Notas adicionales..."
                       />
                     </div>
-
-                    {/* Actions */}
-                    <div className="flex space-x-3">
-                      <button
-                        onClick={() => setShowModal(false)}
-                        className="flex-1 btn btn-secondary btn-md"
-                      >
-                        Cancelar
-                      </button>
-                      <button
-                        onClick={handleSubmitSale}
-                        disabled={cart.length === 0}
-                        className="flex-1 btn btn-primary btn-md"
-                      >
-                        <DollarSign className="h-4 w-4 mr-2" />
-                        Registrar Venta
-                      </button>
-                    </div>
                   </div>
                 </div>
+              </div>
+
+            {/* Footer Sticky */}
+            <div className="sticky bottom-0 bg-white p-6 border-t border-gray-200 rounded-b-xl">
+              <div className="flex space-x-3">
+                <button
+                  onClick={() => setShowModal(false)}
+                  className="flex-1 btn btn-secondary btn-md"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={handleSubmitSale}
+                  disabled={cart.length === 0}
+                  className="flex-1 btn btn-primary btn-md"
+                >
+                  <DollarSign className="h-4 w-4 mr-2" />
+                  Registrar Venta
+                </button>
               </div>
             </div>
           </div>

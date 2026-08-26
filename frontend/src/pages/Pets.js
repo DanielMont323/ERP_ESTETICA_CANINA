@@ -115,7 +115,7 @@ const Pets = () => {
   // Fetch customers for autocomplete
   const fetchCustomersForAutocomplete = async (searchQuery) => {
     try {
-      const response = await customersAPI.getAll({ search: searchQuery });
+      const response = await customersAPI.getAll({ search: searchQuery, limit: 1000 });
       return response.data.data;
     } catch (error) {
       console.error('Error al buscar clientes:', error);
@@ -504,113 +504,128 @@ const Pets = () => {
 
       {/* Modal */}
       {showModal && (
-        <div className="fixed inset-0 z-50 overflow-y-auto">
-          <div className="flex items-center justify-center min-h-screen px-4">
-            <div className="modal-overlay" onClick={() => setShowModal(false)} />
-            
-            <div className="relative modal-content max-w-md w-full sm:max-w-md p-6 animate-slide-up">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+          <div className="modal-overlay" onClick={() => setShowModal(false)} />
+          
+          <div className="relative modal-content max-w-lg w-full max-h-[90vh] flex flex-col animate-slide-up">
+            {/* Header Sticky */}
+            <div className="sticky top-0 bg-white z-10 p-6 border-b border-gray-200 rounded-t-xl">
+              <h3 className="text-lg font-semibold text-gray-900">
                 {editingPet ? 'Editar Mascota' : 'Nueva Mascota'}
               </h3>
-              <form ref={formRef} onSubmit={handleSubmit} className="mt-4 space-y-4">
-                <div>
-                  <label className="form-label">Nombre</label>
-                  <input
-                    ref={nameInputRef}
-                    type="text"
-                    required
-                    value={formData.name}
-                    onChange={(e) => setFormData({...formData, name: e.target.value})}
-                    className="form-input"
-                  />
-                </div>
-                <div>
-                  <label className="form-label">Tipo</label>
-                  <select
-                    required
-                    value={formData.type}
-                    onChange={(e) => setFormData({...formData, type: e.target.value})}
-                    className="form-input"
-                  >
-                    <option value="">Seleccionar tipo</option>
-                    <option value="perro">Perro</option>
-                    <option value="gato">Gato</option>
-                    <option value="ave">Ave</option>
-                    <option value="otro">Otro</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="form-label">Raza</label>
-                  <input
-                    type="text"
-                    required
-                    value={formData.breed}
-                    onChange={(e) => setFormData({...formData, breed: e.target.value})}
-                    className="form-input"
-                  />
-                </div>
-                <div>
-                  <label className="form-label">Fecha de nacimiento</label>
-                  <input
-                    type="date"
-                    required
-                    value={formData.birthDate}
-                    onChange={(e) => setFormData({...formData, birthDate: e.target.value})}
-                    className="form-input"
-                  />
-                </div>
-                <div>
-                  <label className="form-label">Peso (kg)</label>
-                  <input
-                    type="number"
-                    step="0.1"
-                    required
-                    value={formData.weight}
-                    onChange={(e) => setFormData({...formData, weight: e.target.value})}
-                    className="form-input"
-                  />
-                </div>
-                <div>
-                  <label className="form-label">Sexo</label>
-                  <select
-                    required
-                    value={formData.gender}
-                    onChange={(e) => setFormData({...formData, gender: e.target.value})}
-                    className="form-input"
-                  >
-                    <option value="">Seleccionar sexo</option>
-                    <option value="macho">Macho</option>
-                    <option value="hembra">Hembra</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="form-label">Dueño (opcional)</label>
-                  <Autocomplete
-                    placeholder="Sin dueño asignado"
-                    fetchOptions={fetchCustomersForAutocomplete}
-                    displayValue={(item) => `${item.name} - ${item.phone}`}
-                    getOptionValue={(item) => item._id}
-                    value={customers.find(c => c._id === formData.ownerId) || null}
-                    onChange={(value) => setFormData({...formData, ownerId: value})}
-                    minLength={1}
-                  />
-                </div>
-                <div className="flex justify-end space-x-2">
-                  <button
-                    type="button"
-                    onClick={() => setShowModal(false)}
-                    className="btn btn-secondary btn-md"
-                  >
-                    Cancelar
-                  </button>
-                  <button
-                    type="submit"
-                    className="btn btn-primary btn-md"
-                  >
-                    {editingPet ? 'Actualizar' : 'Crear'}
-                  </button>
+            </div>
+            
+            {/* Contenido Scrolleable */}
+            <div className="flex-1 overflow-y-auto p-6">
+              <form ref={formRef} onSubmit={handleSubmit} className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="md:col-span-2">
+                    <label className="form-label">Nombre</label>
+                    <input
+                      ref={nameInputRef}
+                      type="text"
+                      required
+                      value={formData.name}
+                      onChange={(e) => setFormData({...formData, name: e.target.value})}
+                      className="form-input"
+                    />
+                  </div>
+                  <div>
+                    <label className="form-label">Tipo</label>
+                    <select
+                      required
+                      value={formData.type}
+                      onChange={(e) => setFormData({...formData, type: e.target.value})}
+                      className="form-input"
+                    >
+                      <option value="">Seleccionar tipo</option>
+                      <option value="perro">Perro</option>
+                      <option value="gato">Gato</option>
+                      <option value="ave">Ave</option>
+                      <option value="otro">Otro</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="form-label">Raza</label>
+                    <input
+                      type="text"
+                      required
+                      value={formData.breed}
+                      onChange={(e) => setFormData({...formData, breed: e.target.value})}
+                      className="form-input"
+                    />
+                  </div>
+                  <div>
+                    <label className="form-label">Fecha de nacimiento</label>
+                    <input
+                      type="date"
+                      required
+                      value={formData.birthDate}
+                      onChange={(e) => setFormData({...formData, birthDate: e.target.value})}
+                      className="form-input"
+                    />
+                  </div>
+                  <div>
+                    <label className="form-label">Peso (kg)</label>
+                    <input
+                      type="number"
+                      step="0.1"
+                      required
+                      value={formData.weight}
+                      onChange={(e) => setFormData({...formData, weight: e.target.value})}
+                      className="form-input"
+                    />
+                  </div>
+                  <div>
+                    <label className="form-label">Sexo</label>
+                    <select
+                      required
+                      value={formData.gender}
+                      onChange={(e) => setFormData({...formData, gender: e.target.value})}
+                      className="form-input"
+                    >
+                      <option value="">Seleccionar sexo</option>
+                      <option value="macho">Macho</option>
+                      <option value="hembra">Hembra</option>
+                    </select>
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="form-label">Dueño (opcional)</label>
+                    <Autocomplete
+                      placeholder="Sin dueño asignado"
+                      fetchOptions={fetchCustomersForAutocomplete}
+                      displayValue={(item) => `${item.name} - ${item.phone}`}
+                      getOptionValue={(item) => item._id}
+                      value={customers.find(c => c._id === formData.ownerId) || null}
+                      onChange={(value) => setFormData({...formData, ownerId: value})}
+                      minLength={1}
+                    />
+                  </div>
                 </div>
               </form>
+            </div>
+            
+            {/* Footer Sticky */}
+            <div className="sticky bottom-0 bg-white p-6 border-t border-gray-200 rounded-b-xl">
+              <div className="flex justify-end space-x-2">
+                <button
+                  type="button"
+                  onClick={() => setShowModal(false)}
+                  className="btn btn-secondary btn-md"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    formRef.current?.requestSubmit();
+                  }}
+                  className="btn btn-primary btn-md"
+                >
+                  {editingPet ? 'Actualizar' : 'Crear'}
+                </button>
+              </div>
             </div>
           </div>
         </div>

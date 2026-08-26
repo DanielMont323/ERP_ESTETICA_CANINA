@@ -52,7 +52,7 @@ const LowStockOrders = () => {
   // Fetch suppliers for autocomplete
   const fetchSuppliersForAutocomplete = async (searchQuery) => {
     try {
-      const response = await axios.get('/api/proveedores', { params: { search: searchQuery } });
+      const response = await axios.get('/api/proveedores', { params: { search: searchQuery, limit: 1000 } });
       if (response.data.success) {
         return response.data.data;
       }
@@ -105,8 +105,8 @@ const LowStockOrders = () => {
   }, [selectedSupplier]);
 
   // Manejar selección de proveedor
-  const handleSupplierChange = (e) => {
-    setSelectedSupplier(e.target.value);
+  const handleSupplierChange = (value) => {
+    setSelectedSupplier(value);
     setSelectedProducts({});
   };
 
