@@ -8,6 +8,13 @@ const { authenticateToken, requireAdmin } = require('../middleware/auth');
 const { getCurrentDateGMT7 } = require('../helpers/timezone');
 const router = express.Router();
 
+// Helper para parsear fecha YYYY-MM-DD como fecha local (no UTC)
+const parseLocalDate = (dateStr) => {
+  if (!dateStr) return null;
+  const [year, month, day] = dateStr.split('-').map(Number);
+  return new Date(year, month - 1, day);
+};
+
 // @route   GET /api/compras
 // @desc    Obtener todas las compras
 router.get('/', authenticateToken, async (req, res) => {
@@ -157,7 +164,9 @@ router.post('/', authenticateToken, async (req, res) => {
         unitCost: baseUnitCost, // Inicialmente igual al base
         discountPercentage: supplierProduct?.discountPercentage || 0,
         discountDays: supplierProduct?.discountDays || 0,
-        discountApplied: false
+        discountApplied: false,
+        hasTax: item.hasTax !== undefined ? item.hasTax : true,
+        taxRate: item.taxRate !== undefined ? item.taxRate : 0.16
       };
 
       processedItems.push(processedItem);
@@ -204,19 +213,15 @@ router.post('/', authenticateToken, async (req, res) => {
       earlyPaymentDiscount,
       discountDeadline,
       // Usar fecha personalizada si se proporciona, si no usa el default del modelo
-      ...(date && { date: new Date(date) })
+      ...(date && { date: parseLocalDate(date) })
     });
 
     // Si es a crédito, crear cuenta por pagar
     if (type === 'credito') {
       try {
-        // Calcular IVA si aplica
-        const finalIvaRate = hasIVA ? (ivaRate || 0.16) : 0;
-        
-        // Usar el total con descuento si aplica, o baseTotal si no
-        const baseForIVA = compra.totalDiscount > 0 ? compra.total : compra.baseTotal;
-        const ivaAmount = hasIVA ? Math.round((baseForIVA * finalIvaRate) * 100) / 100 : 0;
-        const totalConIVA = Math.round((baseForIVA + ivaAmount) * 100) / 100;
+        // Calcular IVA total desde los items de la compra
+        const totalIVA = compra.totalIVA || 0;
+        const totalConIVA = compra.total || compra.baseTotal;
 
         // Verificar si ya existe una cuenta por pagar para esta compra
         const existingAccount = await CuentaPorPagar.findOne({ compra: compra._id });
@@ -230,10 +235,10 @@ router.post('/', authenticateToken, async (req, res) => {
             proveedor,
             compra: compra._id,
             receiptNumber,
-            hasIVA: hasIVA || false,
-            ivaRate: finalIvaRate,
+            hasIVA: totalIVA > 0,
+            ivaRate: 0.16, // Tasa promedio, el IVA real está en totalIVA
             subtotal: compra.baseTotal,
-            ivaAmount,
+            ivaAmount: totalIVA,
             monto: totalConIVA,
             montoBase: compra.baseTotal,
             descuentoDisponible: compra.totalDiscount,
@@ -359,7 +364,9 @@ router.put('/:id', authenticateToken, requireAdmin, async (req, res) => {
         baseUnitCost: item.baseUnitCost || item.cost || item.unitCost || 0,
         unitCost: item.unitCost || item.cost || item.baseUnitCost || 0,
         quantity: item.quantity || 1,
-        discountPercentage: item.discountPercentage || 0
+        discountPercentage: item.discountPercentage || 0,
+        hasTax: item.hasTax !== undefined ? item.hasTax : true,
+        taxRate: item.taxRate !== undefined ? item.taxRate : 0.16
       }));
 
       // Devolver stock de items originales
@@ -407,7 +414,7 @@ router.put('/:id', authenticateToken, requireAdmin, async (req, res) => {
     if (earlyPaymentDiscount !== undefined) compra.earlyPaymentDiscount = earlyPaymentDiscount;
     if (discountDeadline !== undefined) compra.discountDeadline = discountDeadline;
     if (dueDate !== undefined) compra.dueDate = dueDate;
-    if (date !== undefined) compra.date = new Date(date);
+    if (date !== undefined) compra.date = parseLocalDate(date);
 
     // Recalcular totales
     compra.baseTotal = Math.round((compra.items.reduce((sum, item) => {
@@ -423,7 +430,18 @@ router.put('/:id', authenticateToken, requireAdmin, async (req, res) => {
       return sum + (qty * cost * (discountPct / 100));
     }, 0)) * 100) / 100;
     
-    compra.total = Math.round((compra.baseTotal - compra.totalDiscount) * 100) / 100;
+    // Calcular IVA total por item
+    const totalIVA = Math.round((compra.items.reduce((sum, item) => {
+      const cost = item.baseUnitCost || item.cost || item.unitCost || 0;
+      const qty = item.quantity || 1;
+      const discountPct = item.discountPercentage || 0;
+      const subtotal = (qty * cost) - (qty * cost * (discountPct / 100));
+      const itemTax = (item.hasTax !== false) ? (subtotal * (item.taxRate || 0.16)) : 0;
+      return sum + itemTax;
+    }, 0)) * 100) / 100;
+    
+    compra.totalIVA = totalIVA;
+    compra.total = Math.round((compra.baseTotal - compra.totalDiscount + totalIVA) * 100) / 100;
 
     await compra.save();
 
@@ -438,20 +456,18 @@ router.put('/:id', authenticateToken, requireAdmin, async (req, res) => {
         });
       }
 
-      const finalIvaRate = hasIVA ? (ivaRate || 0.16) : 0;
-      const baseForIVA = compra.totalDiscount > 0 ? compra.total : compra.baseTotal;
-      const ivaAmount = hasIVA ? Math.round((baseForIVA * finalIvaRate) * 100) / 100 : 0;
-      const totalConIVA = Math.round((baseForIVA + ivaAmount) * 100) / 100;
+      const totalIVA = compra.totalIVA || 0;
+      const totalConIVA = compra.total || compra.baseTotal;
       const saldoInicial = compra.totalDiscount > 0 ? compra.total : compra.baseTotal;
 
       await CuentaPorPagar.create({
         proveedor: compra.proveedor,
         compra: compra._id,
         receiptNumber: compra.invoice,
-        hasIVA: hasIVA || false,
-        ivaRate: finalIvaRate,
+        hasIVA: totalIVA > 0,
+        ivaRate: 0.16,
         subtotal: compra.baseTotal,
-        ivaAmount,
+        ivaAmount: totalIVA,
         monto: totalConIVA,
         montoBase: compra.baseTotal,
         descuentoDisponible: compra.totalDiscount,
@@ -481,15 +497,13 @@ router.put('/:id', authenticateToken, requireAdmin, async (req, res) => {
       }
     } else if (type === 'credito' && cuentaPorPagar) {
       // Actualizar CuentaPorPagar existente
-      const finalIvaRate = hasIVA ? (ivaRate || 0.16) : 0;
-      const baseForIVA = compra.totalDiscount > 0 ? compra.total : compra.baseTotal;
-      const ivaAmount = hasIVA ? Math.round((baseForIVA * finalIvaRate) * 100) / 100 : 0;
-      const totalConIVA = Math.round((baseForIVA + ivaAmount) * 100) / 100;
+      const totalIVA = compra.totalIVA || 0;
+      const totalConIVA = compra.total || compra.baseTotal;
       const saldoInicial = compra.totalDiscount > 0 ? compra.total : compra.baseTotal;
 
       cuentaPorPagar.proveedor = compra.proveedor;
       cuentaPorPagar.subtotal = compra.baseTotal;
-      cuentaPorPagar.ivaAmount = ivaAmount;
+      cuentaPorPagar.ivaAmount = totalIVA;
       cuentaPorPagar.monto = totalConIVA;
       cuentaPorPagar.montoBase = compra.baseTotal;
       cuentaPorPagar.descuentoDisponible = compra.totalDiscount;

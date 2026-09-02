@@ -172,31 +172,31 @@ const Costs = () => {
               {costs.filter(cost =>
                 cost.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 cost.category?.toLowerCase().includes(searchTerm.toLowerCase())
-              ).map((cost) => (
-                <tr key={cost._id}>
-                  <td className="font-medium">{cost.description}</td>
-                  <td>
+              ).map((cost, index) => (
+                <tr key={cost._id} className={`table-row-divider ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'} hover:bg-blue-50`}>
+                  <td className="py-4 font-medium">{cost.description}</td>
+                  <td className="py-4">
                     <span className="capitalize badge badge-info">
                       {cost.category}
                     </span>
                   </td>
-                  <td>
+                  <td className="py-4">
                     <span className={`capitalize badge badge-${
                       cost.type === 'fijo' ? 'success' : 'warning'
                     }`}>
                       {cost.type}
                     </span>
                   </td>
-                  <td className="text-right font-medium">
+                  <td className="py-4 text-right font-medium">
                     {formatCurrency(cost.amount)}
                   </td>
-                  <td>
+                  <td className="py-4">
                     {new Date(cost.date).toLocaleDateString('es-MX')}
                   </td>
-                  <td>
+                  <td className="py-4">
                     <span className="capitalize">{cost.frequency}</span>
                   </td>
-                  <td>
+                  <td className="py-4">
                     <div className="flex items-center space-x-2">
                       <button 
                         onClick={() => handleEditCost(cost)}

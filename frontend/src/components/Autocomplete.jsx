@@ -15,7 +15,8 @@ const Autocomplete = ({
   className = '',
   filterParams = {},
   minLength = 2,
-  debounceMs = 300
+  debounceMs = 300,
+  allowDeleteClear = false // Allow Delete key to clear search text when no selection is confirmed
 }) => {
   const [query, setQuery] = useState('');
   const [options, setOptions] = useState([]);
@@ -162,6 +163,12 @@ const Autocomplete = ({
       if (e.key === 'ArrowDown' && query.length >= minLength) {
         e.preventDefault();
         fetchOptionsDebounced(query);
+      }
+      // Delete key to clear search text when dropdown is closed and no selection is confirmed
+      if (allowDeleteClear && e.key === 'Delete' && query.length > 0 && !value) {
+        e.preventDefault();
+        setQuery('');
+        onChange('');
       }
       return;
     }

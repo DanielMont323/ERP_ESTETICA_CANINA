@@ -279,4 +279,31 @@ router.delete('/:id/vacunas/:vacunaId', authenticateToken, async (req, res) => {
   }
 });
 
+// @route   DELETE /api/carnet-vacunacion/:id
+// @desc    Eliminar carnet de vacunación completo
+router.delete('/:id', authenticateToken, async (req, res) => {
+  try {
+    const carnet = await CarnetVacunacion.findById(req.params.id);
+    if (!carnet) {
+      return res.status(404).json({
+        success: false,
+        message: 'Carnet no encontrado'
+      });
+    }
+
+    await CarnetVacunacion.findByIdAndDelete(req.params.id);
+
+    res.json({
+      success: true,
+      message: 'Carnet eliminado correctamente'
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      success: false,
+      message: 'Error al eliminar carnet'
+    });
+  }
+});
+
 module.exports = router;

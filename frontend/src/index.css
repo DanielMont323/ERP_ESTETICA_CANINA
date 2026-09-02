@@ -111,6 +111,20 @@
   .table-responsive {
     @apply min-w-full;
   }
+
+  .table-row-divider {
+    position: relative;
+  }
+
+  .table-row-divider::after {
+    content: '';
+    position: absolute;
+    left: -9999px;
+    right: -9999px;
+    bottom: 0;
+    height: 2px;
+    background-color: #1f2937;
+  }
   
   .badge {
     @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;

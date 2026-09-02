@@ -96,7 +96,8 @@ const Sales = () => {
     try {
       let params = {
         page: pagination.page,
-        limit: pagination.limit
+        limit: pagination.limit,
+        status: 'completada'
       };
       if (dateRange.useRange) {
         if (dateRange.startDate) params.startDate = dateRange.startDate;
@@ -774,18 +775,18 @@ const Sales = () => {
               </tr>
             </thead>
             <tbody>
-              {filteredSales.map((sale) => (
-                <tr key={sale._id}>
-                  <td>
+              {filteredSales.map((sale, index) => (
+                <tr key={sale._id} className={`table-row-divider ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'} hover:bg-blue-50`}>
+                  <td className="py-4">
                     {new Date(sale.date).toLocaleDateString('es-MX')}
                   </td>
-                  <td>
+                  <td className="py-4">
                     {sale.customer ? sale.customer.name : 'Cliente general'}
                   </td>
-                  <td>
+                  <td className="py-4">
                     {sale.user ? sale.user.name : 'Sin vendedor registrado'}
                   </td>
-                  <td>
+                  <td className="py-4">
                     <div className="space-y-1">
                       {sale.items.map((item, index) => (
                         <div key={index} className="text-sm">
@@ -794,22 +795,22 @@ const Sales = () => {
                       ))}
                     </div>
                   </td>
-                  <td className="text-right font-medium">
+                  <td className="py-4 text-right font-medium">
                     {formatCurrency(sale.subtotal || sale.total)}
                   </td>
-                  <td className="text-right">
+                  <td className="py-4 text-right">
                     {sale.cardCommission > 0 ? formatCurrency(sale.cardCommission) : '-'}
                   </td>
-                  <td className="text-right font-medium">
+                  <td className="py-4 text-right font-medium">
                     {formatCurrency(sale.total)}
                   </td>
-                  <td className="text-right font-medium text-success-600">
+                  <td className="py-4 text-right font-medium text-success-600">
                     {formatCurrency(sale.netIncome)}
                   </td>
-                  <td>
+                  <td className="py-4">
                     <span className="capitalize">{sale.paymentMethod}</span>
                   </td>
-                  <td>
+                  <td className="py-4">
                     <span className={`badge badge-${
                       sale.status === 'completada' ? 'success' :
                       sale.status === 'cancelada' ? 'danger' : 'warning'
@@ -817,7 +818,7 @@ const Sales = () => {
                       {sale.status}
                     </span>
                   </td>
-                  <td>
+                  <td className="py-4">
                     <div className="flex gap-2">
                       {userRole === 'admin' && sale.status !== 'cancelada' && (
                         <>

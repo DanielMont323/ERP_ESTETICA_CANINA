@@ -305,15 +305,16 @@ router.get('/archived', authenticateToken, requireAdmin, async (req, res) => {
 });
 
 // @route   GET /api/productos/expiring
-// @desc    Obtener productos próximos a caducar
+// @desc    Obtener productos perecederos próximos a caducar o caducados
 router.get('/expiring', authenticateToken, async (req, res) => {
   try {
-    const { days = 30 } = req.query;
+    const { days = 120 } = req.query;
     const today = new Date();
     const alertDate = new Date();
     alertDate.setDate(today.getDate() + parseInt(days));
 
     const productos = await Producto.find({
+      isPerishable: true,
       expirationDate: { $ne: null },
       expirationDate: { $lte: alertDate },
       isActive: true,

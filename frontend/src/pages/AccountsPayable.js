@@ -70,6 +70,29 @@ const AccountsPayable = () => {
     return new Date(dueDate) < new Date();
   };
 
+  const getDaysUntilDue = (dueDate) => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const due = new Date(dueDate);
+    due.setHours(0, 0, 0, 0);
+    const diffTime = due - today;
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays;
+  };
+
+  const getDueDateText = (dueDate) => {
+    const days = getDaysUntilDue(dueDate);
+    if (days < 0) {
+      return { text: `${Math.abs(days)} días vencida`, color: 'red' };
+    } else if (days === 0) {
+      return { text: 'Vence hoy', color: 'orange' };
+    } else if (days === 1) {
+      return { text: 'Vence mañana', color: 'yellow' };
+    } else {
+      return { text: `${days} días restantes`, color: 'green' };
+    }
+  };
+
   const getDiscountStatus = (discountInfo) => {
     if (!discountInfo || !discountInfo.available) {
       return { status: 'unavailable', color: 'gray', text: discountInfo?.reason || 'Sin descuento' };
@@ -78,7 +101,7 @@ const AccountsPayable = () => {
       return { 
         status: 'available', 
         color: 'green', 
-        text: `${discountInfo.daysRemaining} días restantes` 
+        text: `${discountInfo.daysRemaining} días` 
       };
     }
     return { status: 'expired', color: 'red', text: 'Vencido' };
@@ -290,11 +313,12 @@ const AccountsPayable = () => {
                 account.proveedor?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 account.compra?.invoice?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 account.receiptNumber?.toLowerCase().includes(searchTerm.toLowerCase())
-              ).map((account) => {
+              ).map((account, index) => {
                 const discountStatus = getDiscountStatus(account.discountInfo);
+                const dueDateText = getDueDateText(account.dueDate);
                 return (
-                  <tr key={account._id}>
-                    <td>
+                  <tr key={account._id} className={`table-row-divider ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'} hover:bg-blue-50`}>
+                    <td className="py-4">
                       <input
                         type="checkbox"
                         checked={selectedAccounts.includes(account._id)}
@@ -303,18 +327,18 @@ const AccountsPayable = () => {
                         className="h-4 w-4 text-brand-burgundy focus:ring-primary-500 border-gray-300 rounded"
                       />
                     </td>
-                    <td>{account.proveedor?.name}</td>
-                    <td>{account.receiptNumber || '-'}</td>
-                    <td>{account.compra?.invoice || 'N/A'}</td>
-                    <td>{formatCurrency(account.subtotal || account.montoBase || account.monto)}</td>
-                    <td className={account.hasIVA ? 'text-blue-600' : 'text-gray-400'}>
+                    <td className="py-4">{account.proveedor?.name}</td>
+                    <td className="py-4">{account.receiptNumber || '-'}</td>
+                    <td className="py-4">{account.compra?.invoice || 'N/A'}</td>
+                    <td className="py-4">{formatCurrency(account.subtotal || account.montoBase || account.monto)}</td>
+                    <td className={`py-4 ${account.hasIVA ? 'text-blue-600' : 'text-gray-400'}`}>
                       {account.hasIVA ? formatCurrency(account.ivaAmount) : '$0.00'}
                     </td>
-                    <td className="font-semibold">
+                    <td className="py-4 font-semibold">
                       {formatCurrency(account.monto)}
                     </td>
-                    <td>{formatCurrency(account.saldo)}</td>
-                    <td>
+                    <td className="py-4">{formatCurrency(account.saldo)}</td>
+                    <td className="py-4">
                       {account.discountDeadline ? (
                         <div>
                           <div className="text-sm">{new Date(account.discountDeadline).toLocaleDateString()}</div>
@@ -328,16 +352,18 @@ const AccountsPayable = () => {
                         </div>
                       ) : '-'}
                     </td>
-                    <td>
+                    <td className="py-4">
                       <div className="text-sm">{new Date(account.dueDate).toLocaleDateString()}</div>
-                      {isOverdue(account.dueDate) && account.status === 'pendiente' && (
-                        <span className="text-xs text-red-600 flex items-center">
-                          <AlertTriangle className="h-3 w-3 mr-1" />
-                          Vencido
-                        </span>
-                      )}
+                      <span className={`text-xs px-2 py-1 rounded ${
+                        dueDateText.color === 'green' ? 'bg-green-100 text-green-800' :
+                        dueDateText.color === 'orange' ? 'bg-orange-100 text-orange-800' :
+                        dueDateText.color === 'yellow' ? 'bg-yellow-100 text-yellow-800' :
+                        'bg-red-100 text-red-800'
+                      }`}>
+                        {dueDateText.text}
+                      </span>
                     </td>
-                    <td>
+                    <td className="py-4">
                       <span className={`px-2 py-1 rounded text-xs ${
                         account.status === 'pagado' ? 'bg-green-100 text-green-800' :
                         account.status === 'pendiente' ? 'bg-yellow-100 text-yellow-800' :
@@ -346,7 +372,7 @@ const AccountsPayable = () => {
                         {account.status}
                       </span>
                     </td>
-                    <td>
+                    <td className="py-4">
                       <div className="flex space-x-2">
                         <button 
                           onClick={() => handlePaymentClick(account)}
@@ -398,6 +424,7 @@ const AccountsPayable = () => {
           account.receiptNumber?.toLowerCase().includes(searchTerm.toLowerCase())
         ).map((account) => {
           const discountStatus = getDiscountStatus(account.discountInfo);
+          const dueDateText = getDueDateText(account.dueDate);
           return (
             <div key={account._id} className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
               <div className="flex justify-between items-start mb-3">
@@ -459,12 +486,14 @@ const AccountsPayable = () => {
                   <span className="text-gray-600">Vencimiento:</span>
                   <div className="text-right">
                     <div className="text-sm">{new Date(account.dueDate).toLocaleDateString()}</div>
-                    {isOverdue(account.dueDate) && account.status === 'pendiente' && (
-                      <span className="text-xs text-red-600 flex items-center justify-end">
-                        <AlertTriangle className="h-3 w-3 mr-1" />
-                        Vencido
-                      </span>
-                    )}
+                    <span className={`text-xs px-2 py-1 rounded ${
+                      dueDateText.color === 'green' ? 'bg-green-100 text-green-800' :
+                      dueDateText.color === 'orange' ? 'bg-orange-100 text-orange-800' :
+                      dueDateText.color === 'yellow' ? 'bg-yellow-100 text-yellow-800' :
+                      'bg-red-100 text-red-800'
+                    }`}>
+                      {dueDateText.text}
+                    </span>
                   </div>
                 </div>
               </div>

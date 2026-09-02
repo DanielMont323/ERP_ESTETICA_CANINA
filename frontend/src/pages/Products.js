@@ -39,11 +39,12 @@ const Products = () => {
     cost: '',
     price: '',
     stock: '',
-    minStock: '5',
+    minStock: '0',
     idealStock: '',
     sku: '',
     discountPercentage: '0',
-    expirationDate: ''
+    expirationDate: '',
+    isPerishable: false
   });
   const [filter, setFilter] = useState('all');
   const [pagination, setPagination] = useState({
@@ -91,11 +92,12 @@ const Products = () => {
         cost: '',
         price: '',
         stock: '',
-        minStock: '5',
+        minStock: '0',
         idealStock: '',
         sku: '',
         discountPercentage: '0',
-        expirationDate: ''
+        expirationDate: '',
+        isPerishable: false
       });
       setShowModal(true);
       // Colocar foco en el campo nombre después de que el modal se abra
@@ -251,7 +253,8 @@ const Products = () => {
       idealStock: product.idealStock ? product.idealStock.toString() : '',
       sku: product.sku || '',
       discountPercentage: (product.discountPercentage || 0).toString(),
-      expirationDate: product.expirationDate ? new Date(product.expirationDate).toISOString().split('T')[0] : ''
+      expirationDate: product.expirationDate ? new Date(product.expirationDate).toISOString().split('T')[0] : '',
+      isPerishable: product.isPerishable || false
     });
     setShowModal(true);
   };
@@ -297,11 +300,12 @@ const Products = () => {
       cost: '',
       price: '',
       stock: '',
-      minStock: '5',
+      minStock: '0',
       idealStock: '',
       sku: '',
       discountPercentage: '0',
-      expirationDate: ''
+      expirationDate: '',
+      isPerishable: false
     });
   };
 
@@ -371,6 +375,11 @@ const Products = () => {
                   placeholder="Buscar productos..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Delete') {
+                      setSearchTerm('');
+                    }
+                  }}
                   className="form-input pl-10"
                 />
               </div>
@@ -439,39 +448,39 @@ const Products = () => {
               </tr>
             </thead>
             <tbody>
-              {filteredProducts.map((product) => {
+              {filteredProducts.map((product, index) => {
                 const stockStatus = getStockStatus(product);
                 const expirationStatus = getExpirationStatus(product);
                 return (
-                  <tr key={product._id}>
-                    <td>
+                  <tr key={product._id} className={`table-row-divider ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'} hover:bg-blue-50`}>
+                    <td className="py-4">
                       <div>
                         <p className="font-medium text-gray-900">{product.name}</p>
                         <p className="text-sm text-gray-500">SKU: {product.sku}</p>
                       </div>
                     </td>
-                    <td>
+                    <td className="py-4">
                       <span>{product.category?.name || 'Sin categoría'}</span>
                     </td>
-                    <td>
+                    <td className="py-4">
                       <span>{product.supplier?.name || 'Sin proveedor'}</span>
                     </td>
-                    <td>
+                    <td className="py-4">
                       <div className="text-right">
                         <p className="font-medium">{product.stock}</p>
                         <p className="text-sm text-gray-500">Mín: {product.minStock}</p>
                       </div>
                     </td>
-                    <td className="text-right">{formatCurrency(product.cost)}</td>
-                    <td className="text-right">{formatCurrency(product.price)}</td>
-                    <td className="text-right">
+                    <td className="py-4 text-right">{formatCurrency(product.cost)}</td>
+                    <td className="py-4 text-right">{formatCurrency(product.price)}</td>
+                    <td className="py-4 text-right">
                       {product.discountPercentage > 0 ? (
                         <span className="text-success-600 font-medium">{product.discountPercentage}%</span>
                       ) : (
                         <span className="text-gray-400">-</span>
                       )}
                     </td>
-                    <td className="text-right font-semibold">
+                    <td className="py-4 text-right font-semibold">
                       {product.discountPercentage > 0 ? (
                         <div>
                           <span className="text-gray-400 line-through text-sm">{formatCurrency(product.price)}</span>
@@ -481,7 +490,7 @@ const Products = () => {
                         formatCurrency(product.price)
                       )}
                     </td>
-                    <td className="text-right">
+                    <td className="py-4 text-right">
                       <span className={`font-medium ${
                         product.margin > 30 ? 'text-success-600' : 
                         product.margin > 15 ? 'text-warning-600' : 'text-danger-600'
@@ -489,12 +498,12 @@ const Products = () => {
                         {product.margin}%
                       </span>
                     </td>
-                    <td>
+                    <td className="py-4">
                       <span className={`badge badge-${expirationStatus.color}`}>
                         {expirationStatus.text}
                       </span>
                     </td>
-                    <td>
+                    <td className="py-4">
                       <span className={`badge badge-${stockStatus.color}`}>
                         {stockStatus.text}
                       </span>
@@ -556,158 +565,224 @@ const Products = () => {
 
       {/* Modal */}
       {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center px-4 overflow-visible">
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
           <div className="modal-overlay" onClick={() => setShowModal(false)} />
           
-          <div className="relative modal-content max-w-md w-full p-6 animate-slide-up max-h-[90vh] overflow-visible">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">
-              {editingProduct ? 'Editar Producto' : 'Nuevo Producto'}
-            </h3>
+          <div className="relative modal-content max-w-3xl w-full animate-slide-up max-h-[90vh] flex flex-col">
+            {/* Header Sticky */}
+            <div className="sticky top-0 bg-white z-10 p-6 border-b border-gray-200 rounded-t-xl">
+              <h3 className="text-lg font-semibold text-gray-900">
+                {editingProduct ? 'Editar Producto' : 'Nuevo Producto'}
+              </h3>
+            </div>
             
-            <form ref={formRef} onSubmit={handleSubmit}>
-              <div className="space-y-4">
-                <div>
-                  <label className="form-label">Nombre del producto</label>
-                  <input
-                    ref={nameInputRef}
-                    type="text"
-                    required
-                    value={formData.name}
-                    onChange={(e) => setFormData({...formData, name: e.target.value})}
-                    className="form-input"
-                  />
-                </div>
-                
-                <div style={{ position: 'relative', zIndex: 100 }}>
-                  <label className="form-label">Categoría</label>
-                  <Autocomplete
-                    placeholder="Buscar categoría..."
-                    localOptions={categories}
-                    displayValue={(item) => item.name}
-                    getOptionValue={(item) => item._id}
-                    value={categories.find(c => c._id === formData.category) || null}
-                    onChange={(value) => setFormData({...formData, category: value})}
-                    minLength={1}
-                  />
-                </div>
-                
-                <div style={{ position: 'relative', zIndex: 100 }}>
-                  <label className="form-label">Proveedor</label>
-                  <Autocomplete
-                    placeholder="Buscar proveedor..."
-                    fetchOptions={fetchSuppliersForAutocomplete}
-                    displayValue={(item) => item.name}
-                    getOptionValue={(item) => item._id}
-                    value={suppliers.find(s => s._id === formData.supplier) || null}
-                    onChange={(value) => setFormData({...formData, supplier: value})}
-                    minLength={1}
-                  />
-                </div>
-                
-                <div>
-                  <label className="form-label">SKU</label>
-                  <input
-                    type="text"
-                    value={formData.sku}
-                    onChange={(e) => setFormData({...formData, sku: e.target.value})}
-                    className="form-input"
-                    placeholder="Se generará automáticamente si se deja vacío"
-                  />
-                </div>
-                
-                <div>
-                  <label className="form-label">Descuento (%)</label>
-                  <input
-                    type="number"
-                    min="0"
-                    max="100"
-                    step="0.1"
-                    value={formData.discountPercentage}
-                    onChange={(e) => setFormData({...formData, discountPercentage: e.target.value})}
-                    className="form-input"
-                    placeholder="0 para sin descuento"
-                  />
-                </div>
-                
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="form-label">Costo</label>
-                    <input
-                      type="number"
-                      step="0.01"
-                      required
-                      value={formData.cost}
-                      onChange={(e) => setFormData({...formData, cost: e.target.value})}
-                      className="form-input"
-                    />
-                  </div>
-                  
-                  <div>
-                    <label className="form-label">Precio</label>
-                    <input
-                      type="number"
-                      step="0.01"
-                      required
-                      value={formData.price}
-                      onChange={(e) => setFormData({...formData, price: e.target.value})}
-                      className="form-input"
-                    />
+            {/* Contenido Scrolleable */}
+            <div className="flex-1 overflow-y-auto p-6">
+              <form ref={formRef} onSubmit={handleSubmit}>
+                {/* Sección: Información del Producto */}
+                <div className="mb-6">
+                  <h4 className="text-sm font-semibold text-gray-700 mb-4 pb-2 border-b border-gray-200">
+                    Información del Producto
+                  </h4>
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="md:col-span-2">
+                        <label className="form-label">Nombre del producto</label>
+                        <input
+                          ref={nameInputRef}
+                          type="text"
+                          required
+                          value={formData.name}
+                          onChange={(e) => setFormData({...formData, name: e.target.value})}
+                          className="form-input"
+                        />
+                      </div>
+                      
+                      <div style={{ position: 'relative', zIndex: 100 }}>
+                        <label className="form-label">Categoría</label>
+                        <Autocomplete
+                          placeholder="Buscar categoría..."
+                          localOptions={categories}
+                          displayValue={(item) => item.name}
+                          getOptionValue={(item) => item._id}
+                          value={categories.find(c => c._id === formData.category) || null}
+                          onChange={(value) => setFormData({...formData, category: value})}
+                          minLength={1}
+                        />
+                      </div>
+                      
+                      <div style={{ position: 'relative', zIndex: 100 }}>
+                        <label className="form-label">Proveedor</label>
+                        <Autocomplete
+                          placeholder="Buscar proveedor..."
+                          fetchOptions={fetchSuppliersForAutocomplete}
+                          displayValue={(item) => item.name}
+                          getOptionValue={(item) => item._id}
+                          value={suppliers.find(s => s._id === formData.supplier) || null}
+                          onChange={(value) => setFormData({...formData, supplier: value})}
+                          minLength={1}
+                        />
+                      </div>
+                      
+                      <div>
+                        <label className="form-label">SKU</label>
+                        <input
+                          type="text"
+                          value={formData.sku}
+                          onChange={(e) => setFormData({...formData, sku: e.target.value})}
+                          className="form-input"
+                          placeholder="Se generará automáticamente si se deja vacío"
+                        />
+                      </div>
+                      
+                      <div>
+                        <label className="form-label">Descuento (%)</label>
+                        <input
+                          type="number"
+                          min="0"
+                          max="100"
+                          step="0.1"
+                          value={formData.discountPercentage}
+                          onChange={(e) => setFormData({...formData, discountPercentage: e.target.value})}
+                          className="form-input"
+                          placeholder="0 para sin descuento"
+                        />
+                      </div>
+                    </div>
                   </div>
                 </div>
-                
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="form-label">Stock inicial</label>
-                    <input
-                      type="number"
-                      required
-                      min="0"
-                      value={formData.stock}
-                      onChange={(e) => setFormData({...formData, stock: e.target.value})}
-                      className="form-input"
-                    />
-                  </div>
-                  
-                  <div>
-                    <label className="form-label">Stock mínimo</label>
-                    <input
-                      type="number"
-                      required
-                      min="0"
-                      value={formData.minStock}
-                      onChange={(e) => setFormData({...formData, minStock: e.target.value})}
-                      className="form-input"
-                    />
-                  </div>
-                  
-                  <div>
-                    <label className="form-label">Stock ideal</label>
-                    <input
-                      type="number"
-                      min="0"
-                      value={formData.idealStock}
-                      onChange={(e) => setFormData({...formData, idealStock: e.target.value})}
-                      className="form-input"
-                      placeholder="Opcional"
-                    />
-                  </div>
-                </div>
-              </div>
 
-              <div className="mt-4 pt-4 border-t border-gray-200">
-                <h4 className="text-sm font-semibold text-gray-700 mb-3">Control de caducidad</h4>
-                <div>
-                  <label className="form-label">Fecha de caducidad</label>
-                  <input
-                    type="date"
-                    value={formData.expirationDate}
-                    onChange={(e) => setFormData({...formData, expirationDate: e.target.value})}
-                    className="form-input"
-                  />
+                {/* Sección: Precios e Inventario */}
+                <div className="mb-6">
+                  <h4 className="text-sm font-semibold text-gray-700 mb-4 pb-2 border-b border-gray-200">
+                    Precios e Inventario
+                  </h4>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <label className="form-label">Costo</label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        required
+                        value={formData.cost}
+                        onChange={(e) => setFormData({...formData, cost: e.target.value})}
+                        className="form-input"
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="form-label">Precio</label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        required
+                        value={formData.price}
+                        onChange={(e) => setFormData({...formData, price: e.target.value})}
+                        className="form-input"
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="form-label">Stock inicial</label>
+                      <input
+                        type="number"
+                        required
+                        min="0"
+                        value={formData.stock}
+                        onChange={(e) => setFormData({...formData, stock: e.target.value})}
+                        className="form-input"
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="form-label">Stock mínimo</label>
+                      <input
+                        type="number"
+                        required
+                        min="0"
+                        value={formData.minStock}
+                        onChange={(e) => setFormData({...formData, minStock: e.target.value})}
+                        className="form-input"
+                      />
+                    </div>
+                    
+                    <div className="md:col-span-2">
+                      <label className="form-label">Stock ideal</label>
+                      <input
+                        type="number"
+                        min="0"
+                        value={formData.idealStock}
+                        onChange={(e) => setFormData({...formData, idealStock: e.target.value})}
+                        className="form-input"
+                        placeholder="Opcional"
+                      />
+                    </div>
+                  </div>
                 </div>
-              </div>
-              
-              <div className="flex justify-end space-x-3 mt-6">
+
+                {/* Sección: Caducidad */}
+                <div>
+                  <h4 className="text-sm font-semibold text-gray-700 mb-4 pb-2 border-b border-gray-200">
+                    Caducidad
+                  </h4>
+                  <div className="space-y-4">
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        id="isPerishable"
+                        checked={formData.isPerishable}
+                        onChange={(e) => {
+                          const isPerishable = e.target.checked;
+                          setFormData({...formData, isPerishable});
+                          // Si se marca como perecedero y no hay fecha, establecer +120 días
+                          if (isPerishable && !formData.expirationDate && !editingProduct) {
+                            const futureDate = new Date();
+                            futureDate.setDate(futureDate.getDate() + 120);
+                            setFormData(prev => ({
+                              ...prev,
+                              isPerishable: true,
+                              expirationDate: futureDate.toISOString().split('T')[0]
+                            }));
+                          }
+                          // Si se desmarca como perecedero, limpiar fecha
+                          if (!isPerishable && !editingProduct) {
+                            setFormData(prev => ({
+                              ...prev,
+                              isPerishable: false,
+                              expirationDate: ''
+                            }));
+                          }
+                        }}
+                        className="h-4 w-4 text-brand-burgundy focus:ring-brand-burgundy border-gray-300 rounded"
+                      />
+                      <label htmlFor="isPerishable" className="text-sm text-gray-700">
+                        Producto perecedero
+                      </label>
+                    </div>
+                    <div>
+                      <label className="form-label">Fecha de caducidad</label>
+                      <input
+                        type="date"
+                        value={formData.expirationDate}
+                        onChange={(e) => setFormData({...formData, expirationDate: e.target.value})}
+                        disabled={!formData.isPerishable}
+                        className={`form-input ${!formData.isPerishable ? 'bg-gray-100' : ''}`}
+                      />
+                      <p className="text-xs text-gray-500 mt-1">
+                        {formData.isPerishable 
+                          ? 'El producto perecedero tiene fecha de caducidad automática de 120 días (modificable)'
+                          : 'Marque como perecedero para establecer fecha de caducidad'
+                        }
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </form>
+            </div>
+            
+            {/* Footer Sticky */}
+            <div className="sticky bottom-0 bg-white p-6 border-t border-gray-200 rounded-b-xl">
+              <div className="flex justify-end space-x-3">
                 <button
                   type="button"
                   onClick={() => setShowModal(false)}
@@ -717,12 +792,16 @@ const Products = () => {
                 </button>
                 <button
                   type="submit"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    formRef.current?.requestSubmit();
+                  }}
                   className="btn btn-primary btn-md"
                 >
                   {editingProduct ? 'Actualizar' : 'Crear'}
                 </button>
               </div>
-            </form>
+            </div>
           </div>
         </div>
       )}

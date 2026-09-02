@@ -373,18 +373,22 @@ const Customers = () => {
 
       {/* Modal */}
       {showModal && (
-        <div className="fixed inset-0 z-50 overflow-y-auto">
-          <div className="flex items-center justify-center min-h-screen px-4">
-            <div className="modal-overlay" onClick={() => setShowModal(false)} />
-            
-            <div className="relative modal-content max-w-md w-full sm:max-w-md p-6 animate-slide-up">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+          <div className="modal-overlay" onClick={() => setShowModal(false)} />
+          
+          <div className="relative modal-content max-w-lg w-full max-h-[90vh] flex flex-col animate-slide-up">
+            {/* Header Sticky */}
+            <div className="sticky top-0 bg-white z-10 p-6 border-b border-gray-200 rounded-t-xl">
+              <h3 className="text-lg font-semibold text-gray-900">
                 {editingCustomer ? 'Editar Cliente' : 'Nuevo Cliente'}
               </h3>
-              
+            </div>
+            
+            {/* Contenido Scrolleable */}
+            <div className="flex-1 overflow-y-auto p-6">
               <form ref={formRef} onSubmit={handleSubmit}>
-                <div className="space-y-4">
-                  <div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="md:col-span-2">
                     <label className="form-label">Nombre completo *</label>
                     <input
                       ref={nameInputRef}
@@ -419,7 +423,7 @@ const Customers = () => {
                     />
                   </div>
                   
-                  <div>
+                  <div className="md:col-span-2">
                     <label className="form-label">Dirección</label>
                     <textarea
                       value={formData.address}
@@ -430,7 +434,7 @@ const Customers = () => {
                     />
                   </div>
                   
-                  <div>
+                  <div className="md:col-span-2">
                     <label className="form-label">Notas</label>
                     <textarea
                       value={formData.notes}
@@ -441,23 +445,30 @@ const Customers = () => {
                     />
                   </div>
                 </div>
-                
-                <div className="flex justify-end space-x-3 mt-6">
-                  <button
-                    type="button"
-                    onClick={() => setShowModal(false)}
-                    className="btn btn-secondary btn-md"
-                  >
-                    Cancelar
-                  </button>
-                  <button
-                    type="submit"
-                    className="btn btn-primary btn-md"
-                  >
-                    {editingCustomer ? 'Actualizar' : 'Crear'}
-                  </button>
-                </div>
               </form>
+            </div>
+            
+            {/* Footer Sticky */}
+            <div className="sticky bottom-0 bg-white p-6 border-t border-gray-200 rounded-b-xl">
+              <div className="flex justify-end space-x-3">
+                <button
+                  type="button"
+                  onClick={() => setShowModal(false)}
+                  className="btn btn-secondary btn-md"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    formRef.current?.requestSubmit();
+                  }}
+                  className="btn btn-primary btn-md"
+                >
+                  {editingCustomer ? 'Actualizar' : 'Crear'}
+                </button>
+              </div>
             </div>
           </div>
         </div>

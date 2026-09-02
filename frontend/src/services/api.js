@@ -89,6 +89,7 @@ export const vaccinationCardAPI = {
   getByPet: (petId) => api.get(`/carnet-vacunacion/mascota/${petId}`),
   create: (data) => api.post('/carnet-vacunacion', data),
   update: (id, data) => api.put(`/carnet-vacunacion/${id}`, data),
+  delete: (id) => api.delete(`/carnet-vacunacion/${id}`),
   addVaccine: (id, data) => api.post(`/carnet-vacunacion/${id}/vacunas`, data),
   removeVaccine: (id, vaccineId) => api.delete(`/carnet-vacunacion/${id}/vacunas/${vaccineId}`),
 };

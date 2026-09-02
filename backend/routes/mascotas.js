@@ -186,10 +186,14 @@ router.put('/:id', async (req, res) => {
 });
 
 // @route   DELETE /api/mascotas/:id
-// @desc    Eliminar mascota permanentemente
+// @desc    Eliminar mascota (eliminación lógica)
 router.delete('/:id', async (req, res) => {
   try {
-    const mascota = await Mascota.findByIdAndDelete(req.params.id);
+    const mascota = await Mascota.findByIdAndUpdate(
+      req.params.id,
+      { isActive: false },
+      { new: true }
+    );
     
     if (!mascota) {
       return res.status(404).json({
@@ -200,7 +204,7 @@ router.delete('/:id', async (req, res) => {
     
     res.json({
       success: true,
-      message: 'Mascota eliminada permanentemente'
+      message: 'Mascota eliminada correctamente'
     });
   } catch (error) {
     console.error(error);

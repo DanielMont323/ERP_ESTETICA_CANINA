@@ -127,11 +127,11 @@ const VaccinesCatalog = () => {
               </tr>
             </thead>
             <tbody>
-              {filteredVaccines.map((vaccine) => (
-                <tr key={vaccine._id}>
-                  <td className="font-medium">{vaccine.name}</td>
-                  <td className="text-gray-600">{vaccine.categoryName || '-'}</td>
-                  <td>
+              {filteredVaccines.map((vaccine, index) => (
+                <tr key={vaccine._id} className={`table-row-divider ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'} hover:bg-blue-50`}>
+                  <td className="py-4 font-medium">{vaccine.name}</td>
+                  <td className="py-4 text-gray-600">{vaccine.categoryName || '-'}</td>
+                  <td className="py-4">
                     <span
                       className={`px-2 py-1 rounded text-xs ${
                         vaccine.type === 'vacuna'
@@ -142,10 +142,10 @@ const VaccinesCatalog = () => {
                       {vaccine.type === 'vacuna' ? 'VACUNA' : 'DESPARASITANTE'}
                     </span>
                   </td>
-                  <td className="text-gray-600">{vaccine.sku || '-'}</td>
-                  <td className="text-gray-600">${vaccine.price ? vaccine.price.toFixed(2) : '0.00'}</td>
-                  <td className="text-gray-600">{vaccine.stock}</td>
-                  <td>
+                  <td className="py-4 text-gray-600">{vaccine.sku || '-'}</td>
+                  <td className="py-4 text-gray-600">${vaccine.price ? vaccine.price.toFixed(2) : '0.00'}</td>
+                  <td className="py-4 text-gray-600">{vaccine.stock}</td>
+                  <td className="py-4">
                     <span
                       className={`px-2 py-1 rounded text-xs ${
                         vaccine.isActive

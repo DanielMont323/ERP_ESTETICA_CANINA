@@ -46,6 +46,15 @@ const itemCompraSchema = new mongoose.Schema({
     type: Number,
     default: 0,
     min: 0
+  },
+  hasTax: {
+    type: Boolean,
+    default: true
+  },
+  taxRate: {
+    type: Number,
+    default: 0.16,
+    min: 0
   }
 });
 
@@ -126,9 +135,10 @@ const compraSchema = new mongoose.Schema({
 
 // Calcular totales antes de guardar
 compraSchema.pre('save', async function(next) {
-  // Calcular subtotal y descuentos de cada item
+  // Calcular subtotal, descuentos e IVA de cada item
   let baseTotal = 0;
   let totalDiscount = 0;
+  let totalIVA = 0;
   
   this.items.forEach(item => {
     // Calcular subtotal base (sin descuento)
@@ -144,8 +154,12 @@ compraSchema.pre('save', async function(next) {
     item.subtotal = baseSubtotal - discountAmount;
     item.discountAmount = discountAmount;
     
+    // Calcular IVA del item si aplica
+    const itemTax = (item.hasTax !== false) ? (item.subtotal * (item.taxRate || 0.16)) : 0;
+    
     baseTotal += baseSubtotal;
     totalDiscount += discountAmount;
+    totalIVA += itemTax;
   });
   
   // Establecer totales base
@@ -155,11 +169,14 @@ compraSchema.pre('save', async function(next) {
   if (this.type === 'credito' && this.earlyPaymentDiscount > 0) {
     const earlyPaymentDiscountAmount = baseTotal * (this.earlyPaymentDiscount / 100);
     this.totalDiscount = totalDiscount + earlyPaymentDiscountAmount;
-    this.total = baseTotal - this.totalDiscount;
+    this.total = baseTotal - this.totalDiscount + totalIVA;
   } else {
     this.totalDiscount = totalDiscount;
-    this.total = baseTotal - totalDiscount;
+    this.total = baseTotal - totalDiscount + totalIVA;
   }
+  
+  // Guardar IVA total en el documento para referencia
+  this.totalIVA = totalIVA;
   
   // Establecer fecha límite de descuento (ya viene del backend si es crédito)
   // No recalcular aquí porque ya se establece en el endpoint

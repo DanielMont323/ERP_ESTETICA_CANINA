@@ -13,7 +13,8 @@ import {
   Search,
   Dog,
   User,
-  Pill
+  Pill,
+  Edit
 } from 'lucide-react';
 
 const VaccinationCards = () => {
@@ -25,6 +26,16 @@ const VaccinationCards = () => {
   const [showVaccineModal, setShowVaccineModal] = useState(false);
   const [showDeleteVaccineModal, setShowDeleteVaccineModal] = useState(false);
   const [deleteVaccineId, setDeleteVaccineId] = useState(null);
+  const [showDeleteCardModal, setShowDeleteCardModal] = useState(false);
+  const [deleteCardId, setDeleteCardId] = useState(null);
+  const [showEditCardModal, setShowEditCardModal] = useState(false);
+  const [editingCard, setEditingCard] = useState(null);
+  const [editCardForm, setEditCardForm] = useState({
+    nombreMascota: '',
+    especie: '',
+    raza: '',
+    nombrePropietario: ''
+  });
   const [vaccines, setVaccines] = useState([]);
   const [loadingVaccines, setLoadingVaccines] = useState(false);
   const [vaccineForm, setVaccineForm] = useState({
@@ -122,6 +133,50 @@ const VaccinationCards = () => {
     }
   };
 
+  const handleDeleteCard = (cardId) => {
+    setDeleteCardId(cardId);
+    setShowDeleteCardModal(true);
+  };
+
+  const confirmDeleteCard = async () => {
+    try {
+      await vaccinationCardAPI.delete(deleteCardId);
+      toast.success('Carnet eliminado correctamente');
+      setShowDeleteCardModal(false);
+      setDeleteCardId(null);
+      if (selectedCard?._id === deleteCardId) {
+        setSelectedCard(null);
+      }
+      fetchCards();
+    } catch (error) {
+      toast.error('Error al eliminar carnet');
+    }
+  };
+
+  const handleEditCard = (card) => {
+    setEditingCard(card);
+    setEditCardForm({
+      nombreMascota: card.nombreMascota,
+      especie: card.especie,
+      raza: card.raza,
+      nombrePropietario: card.nombrePropietario
+    });
+    setShowEditCardModal(true);
+  };
+
+  const handleUpdateCard = async (e) => {
+    e.preventDefault();
+    try {
+      await vaccinationCardAPI.update(editingCard._id, editCardForm);
+      toast.success('Carnet actualizado correctamente');
+      setShowEditCardModal(false);
+      setEditingCard(null);
+      fetchCards();
+    } catch (error) {
+      toast.error('Error al actualizar carnet');
+    }
+  };
+
   const formatDate = (dateString) => {
     if (!dateString) return '-';
     return new Date(dateString).toLocaleDateString('es-MX');
@@ -203,12 +258,28 @@ const VaccinationCards = () => {
                     <p className="text-sm text-gray-600">{card.especie} - {card.raza}</p>
                   </div>
                 </div>
-                <button
-                  onClick={() => setSelectedCard(card)}
-                  className="text-brand-burgundy hover:text-primary-900 text-sm font-medium"
-                >
-                  {selectedCard?._id === card._id ? 'Cerrar' : 'Ver detalles'}
-                </button>
+                <div className="flex items-center space-x-2">
+                  <button
+                    onClick={() => handleEditCard(card)}
+                    className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                    title="Editar carnet"
+                  >
+                    <Edit className="h-4 w-4" />
+                  </button>
+                  <button
+                    onClick={() => handleDeleteCard(card._id)}
+                    className="text-danger-600 hover:text-danger-900 text-sm font-medium"
+                    title="Eliminar carnet"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                  <button
+                    onClick={() => setSelectedCard(card)}
+                    className="text-brand-burgundy hover:text-primary-900 text-sm font-medium"
+                  >
+                    {selectedCard?._id === card._id ? 'Cerrar' : 'Ver detalles'}
+                  </button>
+                </div>
               </div>
 
               {/* Owner Info */}
@@ -400,6 +471,99 @@ const VaccinationCards = () => {
         confirmText="Eliminar"
         type="danger"
       />
+
+      {/* Delete Card Confirmation Modal */}
+      <ConfirmModal
+        isOpen={showDeleteCardModal}
+        onClose={() => {
+          setShowDeleteCardModal(false);
+          setDeleteCardId(null);
+        }}
+        onConfirm={confirmDeleteCard}
+        title="Eliminar carnet"
+        message="¿Estás seguro de que deseas eliminar este carnet de vacunación? Esta acción eliminará todas las vacunas registradas y no se puede deshacer."
+        confirmText="Eliminar"
+        type="danger"
+      />
+
+      {/* Edit Card Modal */}
+      {showEditCardModal && editingCard && (
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          <div className="flex items-center justify-center min-h-screen px-4">
+            <div className="modal-overlay" onClick={() => setShowEditCardModal(false)} />
+            
+            <div className="relative modal-content max-w-md w-full sm:max-w-md p-6 animate-slide-up">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                Editar Carnet - {editingCard.nombreMascota}
+              </h3>
+              
+              <form onSubmit={handleUpdateCard} className="space-y-4">
+                <div>
+                  <label className="form-label">Nombre de mascota</label>
+                  <input
+                    type="text"
+                    required
+                    value={editCardForm.nombreMascota}
+                    onChange={(e) => setEditCardForm({...editCardForm, nombreMascota: e.target.value})}
+                    className="form-input"
+                  />
+                </div>
+                
+                <div>
+                  <label className="form-label">Especie</label>
+                  <input
+                    type="text"
+                    required
+                    value={editCardForm.especie}
+                    onChange={(e) => setEditCardForm({...editCardForm, especie: e.target.value})}
+                    className="form-input"
+                  />
+                </div>
+                
+                <div>
+                  <label className="form-label">Raza</label>
+                  <input
+                    type="text"
+                    value={editCardForm.raza}
+                    onChange={(e) => setEditCardForm({...editCardForm, raza: e.target.value})}
+                    className="form-input"
+                  />
+                </div>
+                
+                <div>
+                  <label className="form-label">Nombre del propietario</label>
+                  <input
+                    type="text"
+                    required
+                    value={editCardForm.nombrePropietario}
+                    onChange={(e) => setEditCardForm({...editCardForm, nombrePropietario: e.target.value})}
+                    className="form-input"
+                  />
+                </div>
+                
+                <div className="flex justify-end space-x-3 mt-6">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowEditCardModal(false);
+                      setEditingCard(null);
+                    }}
+                    className="btn btn-secondary btn-md"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="submit"
+                    className="btn btn-primary btn-md"
+                  >
+                    Guardar Cambios
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

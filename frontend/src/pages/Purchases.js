@@ -550,6 +550,20 @@ const Purchases = () => {
     return baseTotal - discount;
   };
 
+  const handleCancelPurchase = async (purchaseId) => {
+    if (!window.confirm('¿Estás seguro de que deseas cancelar esta compra?\n\nEsto revertirá el stock al inventario y, si es una compra a crédito, cancelará la cuenta por pagar asociada.')) {
+      return;
+    }
+
+    try {
+      await purchasesAPI.delete(purchaseId);
+      toast.success('Compra cancelada correctamente');
+      fetchData();
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Error al cancelar compra');
+    }
+  };
+
   const filteredPurchases = purchases.filter(purchase => {
     const matchesSupplier = selectedSupplier ? purchase.proveedor?._id === selectedSupplier : true;
     const matchesSearch = searchTerm === '' || 
@@ -633,51 +647,58 @@ const Purchases = () => {
               <tr>
                 <th>Fecha</th>
                 <th>Proveedor</th>
+                <th>Folio</th>
                 <th>Productos</th>
-                <th>Total Base</th>
+                <th>Subtotal</th>
+                <th>IVA</th>
                 <th>Descuento</th>
-                <th>Total Final</th>
+                <th>Total</th>
                 <th>Tipo</th>
                 <th>Estado</th>
                 {user?.role === 'admin' && <th>Acciones</th>}
               </tr>
             </thead>
             <tbody>
-              {filteredPurchases.map((purchase) => (
-                <tr key={purchase._id}>
-                  <td>{new Date(purchase.date).toLocaleDateString()}</td>
-                  <td>{purchase.proveedor?.name}</td>
-                  <td>
+              {filteredPurchases.map((purchase, index) => (
+                <tr key={purchase._id} className={`table-row-divider ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'} hover:bg-blue-50`}>
+                  <td className="py-4">{new Date(purchase.date).toLocaleDateString()}</td>
+                  <td className="py-4">{purchase.proveedor?.name}</td>
+                  <td className="py-4">{purchase.invoice || '-'}</td>
+                  <td className="py-4">
                     {purchase.items?.map((item, idx) => (
                       <div key={idx} className="text-sm">
                         {item.productName || item.product?.name || 'Producto no disponible'} x {item.quantity}
                       </div>
                     ))}
                   </td>
-                  <td>{formatCurrency(purchase.baseTotal || purchase.total)}</td>
-                  <td className="text-green-600">
+                  <td className="py-4">{formatCurrency(purchase.baseTotal || purchase.total)}</td>
+                  <td className={`py-4 ${purchase.totalIVA > 0 ? 'text-blue-600' : 'text-gray-400'}`}>
+                    {formatCurrency(purchase.totalIVA || 0)}
+                  </td>
+                  <td className="py-4 text-green-600">
                     {purchase.totalDiscount > 0 ? formatCurrency(purchase.totalDiscount) : '-'}
                   </td>
-                  <td className="font-semibold">
+                  <td className="py-4 font-semibold">
                     {formatCurrency(purchase.total)}
                   </td>
-                  <td>
+                  <td className="py-4">
                     <span className={`px-2 py-1 rounded text-xs ${
                       purchase.type === 'contado' ? 'bg-blue-100 text-blue-800' : 'bg-yellow-100 text-yellow-800'
                     }`}>
                       {purchase.type}
                     </span>
                   </td>
-                  <td>
+                  <td className="py-4">
                     <span className={`px-2 py-1 rounded text-xs ${
                       purchase.status === 'pagada' ? 'bg-green-100 text-green-800' : 
-                      purchase.status === 'pendiente' ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800'
+                      purchase.status === 'pendiente' ? 'bg-yellow-100 text-yellow-800' : 
+                      purchase.status === 'cancelada' ? 'bg-red-100 text-red-800' : 'bg-red-100 text-red-800'
                     }`}>
                       {purchase.status}
                     </span>
                   </td>
                   {user?.role === 'admin' && (
-                    <td>
+                    <td className="py-4 flex space-x-2">
                       <button
                         onClick={() => handleEditClick(purchase)}
                         disabled={purchase.status === 'cancelada'}
@@ -686,6 +707,15 @@ const Purchases = () => {
                       >
                         <Edit className="h-4 w-4" />
                       </button>
+                      {purchase.status !== 'cancelada' && (
+                        <button
+                          onClick={() => handleCancelPurchase(purchase._id)}
+                          className="text-red-600 hover:text-red-800"
+                          title="Cancelar compra"
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
+                      )}
                     </td>
                   )}
                 </tr>

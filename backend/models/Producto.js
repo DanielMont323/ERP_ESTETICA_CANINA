@@ -75,6 +75,10 @@ const productoSchema = new mongoose.Schema({
     type: Date,
     required: false
   },
+  isPerishable: {
+    type: Boolean,
+    default: false
+  },
   lotNumber: {
     type: String,
     trim: true,
