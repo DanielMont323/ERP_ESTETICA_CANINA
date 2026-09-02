@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { vaccinationCardAPI, vaccinesAPI } from '../services/api';
 import toast from 'react-hot-toast';
 import { Skeleton, SkeletonCard } from '../components/Skeleton';
@@ -16,6 +17,7 @@ import {
 } from 'lucide-react';
 
 const VaccinationCards = () => {
+  const location = useLocation();
   const [cards, setCards] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -34,6 +36,17 @@ const VaccinationCards = () => {
   useEffect(() => {
     fetchCards();
   }, []);
+
+  // Si viene de Dashboard con mascotaId, filtrar y expandir esa tarjeta
+  useEffect(() => {
+    if (location.state?.mascotaId && cards.length > 0) {
+      const targetCard = cards.find(card => card.mascota?._id === location.state.mascotaId);
+      if (targetCard) {
+        setSelectedCard(targetCard);
+        setSearchTerm(targetCard.nombreMascota);
+      }
+    }
+  }, [location.state, cards]);
 
   // Cargar vacunas cuando se abre el modal
   useEffect(() => {

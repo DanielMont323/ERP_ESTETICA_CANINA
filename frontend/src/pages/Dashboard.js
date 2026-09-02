@@ -15,7 +15,8 @@ import {
   X,
   Dog,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  Bell
 } from 'lucide-react';
 
 const Dashboard = () => {
@@ -23,22 +24,25 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const [dashboardData, setDashboardData] = useState(null);
   const [remindersData, setRemindersData] = useState(null);
+  const [manualReminders, setManualReminders] = useState(null);
   const [expandedSection, setExpandedSection] = useState(null);
   const [showAlert, setShowAlert] = useState(false);
 
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
-        const [reportsRes, remindersRes, expiringRes] = await Promise.all([
+        const [reportsRes, remindersRes, expiringRes, upcomingRes] = await Promise.all([
           reportsAPI.getDashboard(),
           remindersAPI.getDashboard(),
-          productsAPI.getExpiring(30)
+          productsAPI.getExpiring(120),
+          remindersAPI.getUpcoming()
         ]);
         setDashboardData(reportsRes.data.data);
         setRemindersData({
           ...remindersRes.data.data,
           expiringProducts: expiringRes.data.data
         });
+        setManualReminders(upcomingRes.data.data || []);
         
         // Mostrar alerta si hay cuentas vencidas o que vencen mañana
         const urgentAccounts = remindersRes.data.data.accounts.filter(
@@ -62,6 +66,7 @@ const Dashboard = () => {
           expiringProducts: [],
           counts: { accounts: 0, vaccines: 0, lowStockProducts: 0 }
         });
+        setManualReminders([]);
       } finally {
         setLoading(false);
       }
@@ -186,8 +191,10 @@ const Dashboard = () => {
         />
       </div>
 
-      {/* Alerts Section - Three Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+      {/* Attention Required Section */}
+      <div>
+        <h2 className="text-xl font-semibold text-gray-900 mb-4">Atención requerida</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
         {/* Mascotas - Vacunas Próximas */}
         <div className="card">
           <div 
@@ -217,19 +224,19 @@ const Dashboard = () => {
             </div>
           </div>
           {expandedSection === 'pets' && (
-            <div className="card-body border-t border-gray-200">
+            <div className="card-body border-t border-gray-200 p-4">
               {remindersData?.vaccines?.length > 0 ? (
-                <div className="space-y-3">
+                <div className="space-y-2">
                   {remindersData.vaccines.map((vaccine) => (
                     <div 
                       key={vaccine.id} 
-                      className="p-3 bg-brand-cream rounded-lg cursor-pointer hover:bg-brand-cream transition-colors"
-                      onClick={() => navigate('/vaccination-cards')}
+                      className="p-3 bg-brand-cream rounded-lg cursor-pointer hover:bg-brand-cream/80 transition-colors"
+                      onClick={() => navigate('/vaccination-cards', { state: { mascotaId: vaccine.mascotaId } })}
                     >
                       <div className="flex items-center justify-between">
-                        <div>
-                          <p className="font-medium text-gray-900">{vaccine.mascotaNombre}</p>
-                          <p className="text-sm text-gray-600">{vaccine.title}</p>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-gray-900 truncate" title={vaccine.mascotaNombre}>{vaccine.mascotaNombre}</p>
+                          <p className="text-sm text-gray-600 truncate" title={vaccine.title}>{vaccine.title}</p>
                         </div>
                         <div className="text-right">
                           <p className="text-sm font-medium text-brand-burgundy">
@@ -284,19 +291,19 @@ const Dashboard = () => {
             </div>
           </div>
           {expandedSection === 'accounts' && (
-            <div className="card-body border-t border-gray-200">
+            <div className="card-body border-t border-gray-200 p-4">
               {remindersData?.accounts?.length > 0 ? (
-                <div className="space-y-3">
+                <div className="space-y-2">
                   {remindersData.accounts.map((account) => (
                     <div 
                       key={account.id} 
-                      className="p-3 bg-success-50 rounded-lg cursor-pointer hover:bg-success-100 transition-colors"
+                      className="p-3 bg-success-50 rounded-lg cursor-pointer hover:bg-success-100/80 transition-colors"
                       onClick={() => navigate('/accounts-payable')}
                     >
                       <div className="flex items-center justify-between">
-                        <div>
-                          <p className="font-medium text-gray-900">{account.title}</p>
-                          <p className="text-sm text-gray-600">{account.description}</p>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-gray-900 truncate" title={account.title}>{account.title}</p>
+                          <p className="text-sm text-gray-600 truncate" title={account.description}>{account.description}</p>
                         </div>
                         <div className="text-right">
                           <p className="text-sm font-medium text-success-600">
@@ -352,75 +359,209 @@ const Dashboard = () => {
             </div>
           </div>
           {expandedSection === 'products' && (
-            <div className="card-body border-t border-gray-200 space-y-4">
+            <div className="card-body border-t border-gray-200 p-4">
               {remindersData?.lowStockProducts?.length > 0 ? (
-                <div>
-                  <h4 className="text-sm font-semibold text-gray-700 mb-2">Stock bajo</h4>
-                  <div className="space-y-2">
-                    {remindersData.lowStockProducts.map((product) => (
-                      <div 
-                        key={product.id} 
-                        className="p-3 bg-warning-50 rounded-lg cursor-pointer hover:bg-warning-100 transition-colors"
-                        onClick={() => navigate('/products')}
-                      >
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <p className="font-medium text-gray-900">{product.title}</p>
-                            <p className="text-sm text-gray-600">SKU: {product.sku}</p>
-                          </div>
-                          <div className="text-right">
-                            <p className="text-sm font-medium text-warning-600">
-                              Stock: {product.stock}
-                            </p>
-                            <p className="text-xs text-gray-600">Mínimo: {product.minStock}</p>
-                          </div>
+                <div className="space-y-2">
+                  {remindersData.lowStockProducts.map((product) => (
+                    <div 
+                      key={product.id} 
+                      className="p-3 bg-warning-50 rounded-lg cursor-pointer hover:bg-warning-100/80 transition-colors"
+                      onClick={() => navigate('/products')}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-gray-900 truncate" title={product.title}>{product.title}</p>
+                          <p className="text-sm text-gray-600 truncate" title={`SKU: ${product.sku}`}>SKU: {product.sku}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-sm font-medium text-warning-600">
+                            Stock: {product.stock}
+                          </p>
+                          <p className="text-xs text-gray-600">Mínimo: {product.minStock}</p>
                         </div>
                       </div>
-                    ))}
-                  </div>
+                    </div>
+                  ))}
                 </div>
               ) : (
-                <p className="text-gray-500 text-center py-2">
+                <p className="text-gray-500 text-center py-4">
                   ✓ No hay productos con stock bajo
                 </p>
               )}
-              {remindersData?.expiringProducts?.length > 0 ? (
+            </div>
+          )}
+        </div>
+
+        {/* Productos - Por Caducar */}
+        <div className="card">
+          <div 
+            className="card-header cursor-pointer hover:bg-gray-50 transition-colors"
+            onClick={() => setExpandedSection(expandedSection === 'expiring' ? null : 'expiring')}
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center">
+                <div className="p-2 rounded-full bg-orange-100 text-orange-600 mr-3">
+                  <Package className="h-5 w-5" />
+                </div>
                 <div>
-                  <h4 className="text-sm font-semibold text-gray-700 mb-2">Próximos a caducar</h4>
-                  <div className="space-y-2">
-                    {remindersData.expiringProducts.map((product) => {
-                      const daysUntilExpiration = Math.ceil((new Date(product.expirationDate) - new Date()) / (1000 * 60 * 60 * 24));
-                      return (
-                        <div 
-                          key={product._id} 
-                          className="p-3 bg-red-50 rounded-lg cursor-pointer hover:bg-red-100 transition-colors"
-                          onClick={() => navigate('/products')}
-                        >
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <p className="font-medium text-gray-900">{product.name}</p>
-                              <p className="text-sm text-gray-600">SKU: {product.sku}</p>
-                              {product.lotNumber && (
-                                <p className="text-xs text-gray-500">Lote: {product.lotNumber}</p>
-                              )}
-                            </div>
-                            <div className="text-right">
-                              <p className="text-sm font-medium text-red-600">
-                                {daysUntilExpiration <= 0 ? 'Caducado' : `${daysUntilExpiration} días`}
-                              </p>
-                              <p className="text-xs text-gray-600">
-                                {new Date(product.expirationDate).toLocaleDateString()}
-                              </p>
-                            </div>
+                  <h3 className="text-lg font-medium text-gray-900">Productos</h3>
+                  <p className="text-sm text-gray-600">Por caducar</p>
+                </div>
+              </div>
+              <div className="flex items-center">
+                <span className="text-2xl font-semibold text-gray-900 mr-3">
+                  {remindersData?.expiringProducts?.length || 0}
+                </span>
+                {expandedSection === 'expiring' ? (
+                  <ChevronUp className="h-5 w-5 text-gray-400" />
+                ) : (
+                  <ChevronDown className="h-5 w-5 text-gray-400" />
+                )}
+              </div>
+            </div>
+          </div>
+          {expandedSection === 'expiring' && (
+            <div className="card-body border-t border-gray-200 p-4">
+              {remindersData?.expiringProducts?.length > 0 ? (
+                <div className="space-y-2">
+                  {remindersData.expiringProducts
+                    .sort((a, b) => {
+                      const daysA = Math.ceil((new Date(a.expirationDate) - new Date()) / (1000 * 60 * 60 * 24));
+                      const daysB = Math.ceil((new Date(b.expirationDate) - new Date()) / (1000 * 60 * 60 * 24));
+                      return daysA - daysB;
+                    })
+                    .map((product) => {
+                    const daysUntilExpiration = Math.ceil((new Date(product.expirationDate) - new Date()) / (1000 * 60 * 60 * 24));
+                    let status, bgColor, textColor;
+                    
+                    if (daysUntilExpiration < 0) {
+                      status = '🔴 Caducado';
+                      bgColor = 'bg-red-50';
+                      textColor = 'text-red-600';
+                    } else if (daysUntilExpiration <= 30) {
+                      status = '🟠 Próximo';
+                      bgColor = 'bg-orange-50';
+                      textColor = 'text-orange-600';
+                    } else {
+                      status = '🟢 Vigente';
+                      bgColor = 'bg-green-50';
+                      textColor = 'text-green-600';
+                    }
+                    
+                    return (
+                      <div 
+                        key={product._id} 
+                        className={`p-3 ${bgColor} rounded-lg cursor-pointer hover:opacity-80 transition-colors`}
+                        onClick={() => navigate('/products')}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium text-gray-900 truncate" title={product.name}>{product.name}</p>
+                            <p className="text-sm text-gray-600 truncate" title={`SKU: ${product.sku}`}>SKU: {product.sku}</p>
+                            {product.lotNumber && (
+                              <p className="text-xs text-gray-500 truncate" title={`Lote: ${product.lotNumber}`}>Lote: {product.lotNumber}</p>
+                            )}
+                          </div>
+                          <div className="text-right">
+                            <p className={`text-sm font-medium ${textColor}`}>
+                              {status}
+                            </p>
+                            <p className="text-xs text-gray-600">
+                              {daysUntilExpiration < 0 
+                                ? `${Math.abs(daysUntilExpiration)} días vencido`
+                                : `${daysUntilExpiration} días restantes`
+                              }
+                            </p>
+                            <p className="text-xs text-gray-500">
+                              {new Date(product.expirationDate).toLocaleDateString('es-MX')}
+                            </p>
                           </div>
                         </div>
-                      );
-                    })}
-                  </div>
+                      </div>
+                    );
+                  })}
                 </div>
               ) : (
-                <p className="text-gray-500 text-center py-2">
-                  ✓ No hay productos próximos a caducar
+                <p className="text-gray-500 text-center py-4">
+                  ✓ No hay productos perecederos próximos a caducar
+                </p>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Recordatorios Manuales */}
+        <div className="card">
+          <div 
+            className="card-header cursor-pointer hover:bg-gray-50 transition-colors"
+            onClick={() => setExpandedSection(expandedSection === 'reminders' ? null : 'reminders')}
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center">
+                <div className="p-2 rounded-full bg-purple-100 text-purple-600 mr-3">
+                  <Bell className="h-5 w-5" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-medium text-gray-900">Recordatorios</h3>
+                  <p className="text-sm text-gray-600">Tareas pendientes</p>
+                </div>
+              </div>
+              <div className="flex items-center">
+                <span className="text-2xl font-semibold text-gray-900 mr-3">
+                  {manualReminders?.length || 0}
+                </span>
+                {expandedSection === 'reminders' ? (
+                  <ChevronUp className="h-5 w-5 text-gray-400" />
+                ) : (
+                  <ChevronDown className="h-5 w-5 text-gray-400" />
+                )}
+              </div>
+            </div>
+          </div>
+          {expandedSection === 'reminders' && (
+            <div className="card-body border-t border-gray-200 p-4">
+              {manualReminders?.length > 0 ? (
+                <div className="space-y-2">
+                  {manualReminders.slice(0, 7).map((reminder) => (
+                    <div 
+                      key={reminder._id} 
+                      className="p-3 bg-purple-50 rounded-lg cursor-pointer hover:bg-purple-100/80 transition-colors"
+                      onClick={() => navigate('/reminders')}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-gray-900 truncate" title={reminder.title}>{reminder.title}</p>
+                          {reminder.description && (
+                            <p className="text-sm text-gray-600 line-clamp-2" title={reminder.description}>{reminder.description}</p>
+                          )}
+                          <div className="flex items-center text-sm text-gray-600 mt-1">
+                            <Calendar className="h-4 w-4 mr-2 flex-shrink-0" />
+                            {new Date(reminder.date).toLocaleDateString('es-MX')}
+                          </div>
+                        </div>
+                        <div className="text-right ml-3">
+                          <span className={`capitalize badge badge-${
+                            reminder.priority === 'alta' ? 'danger' :
+                            reminder.priority === 'media' ? 'warning' : 'success'
+                          }`}>
+                            {reminder.priority}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                  {manualReminders.length > 7 && (
+                    <button 
+                      onClick={() => navigate('/reminders')}
+                      className="w-full text-center text-sm text-purple-600 hover:text-purple-800 font-medium"
+                    >
+                      Ver todos ({manualReminders.length})
+                    </button>
+                  )}
+                </div>
+              ) : (
+                <p className="text-gray-500 text-center py-4">
+                  ✓ No hay recordatorios pendientes
                 </p>
               )}
             </div>
@@ -465,6 +606,7 @@ const Dashboard = () => {
             </button>
           </div>
         </div>
+      </div>
       </div>
     </div>
   );
