@@ -49,18 +49,53 @@ const Purchases = () => {
     product: '',
     productName: '',
     quantity: 1,
-    unitCost: 0
+    unitCost: 0,
+    hasTax: true,
+    taxRate: 0.16
   });
+  const [selectedProduct, setSelectedProduct] = useState(null);
   const [discountInfo, setDiscountInfo] = useState(null);
   const [selectedSupplierInfo, setSelectedSupplierInfo] = useState(null);
   const [productSearchQuery, setProductSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const productSearchInputRef = useRef(null);
   const formRef = useRef(null);
+  const selectAllTaxRef = useRef(null);
+
+  // Función para reiniciar el formulario a valores iniciales
+  const resetForm = () => {
+    setFormData({
+      proveedor: '',
+      type: 'contado',
+      paymentMethod: 'efectivo',
+      user: 'default_user',
+      items: [],
+      notes: '',
+      invoice: '',
+      receiptNumber: '',
+      hasIVA: false,
+      ivaRate: 0.16,
+      date: ''
+    });
+    setCurrentItem({
+      product: '',
+      productName: '',
+      quantity: 1,
+      unitCost: 0,
+      hasTax: true,
+      taxRate: 0.16
+    });
+    setSelectedProduct(null);
+    setDiscountInfo(null);
+    setSelectedSupplierInfo(null);
+    setProductSearchQuery('');
+    setSearchResults([]);
+  };
 
   // Listener para evento personalizado de F4 contextual (nueva compra)
   useEffect(() => {
     const handleOpenNewPurchase = () => {
+      resetForm();
       setShowModal(true);
       setIsEditMode(false);
       setSelectedPurchase(null);
@@ -104,6 +139,15 @@ const Purchases = () => {
     fetchProducts();
   }, []);
 
+  // Actualizar estado indeterminate del checkbox "Seleccionar todos" IVA
+  useEffect(() => {
+    if (selectAllTaxRef.current) {
+      const { checked, indeterminate } = getSelectAllTaxState();
+      selectAllTaxRef.current.checked = checked;
+      selectAllTaxRef.current.indeterminate = indeterminate;
+    }
+  }, [formData.items]);
+
   // Atajo ESC para cerrar modal
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -111,8 +155,7 @@ const Purchases = () => {
         setShowModal(false);
         setIsEditMode(false);
         setSelectedPurchase(null);
-        setProductSearchQuery('');
-        setSearchResults([]);
+        resetForm();
       }
     };
 
@@ -250,7 +293,8 @@ const Purchases = () => {
       ...formData,
       items: [...formData.items, newItem]
     });
-    setCurrentItem({ product: '', productName: '', quantity: 1, unitCost: 0 });
+    setCurrentItem({ product: '', productName: '', quantity: 1, unitCost: 0, hasTax: true, taxRate: 0.16 });
+    setSelectedProduct(null);
     setDiscountInfo(null);
   };
 
@@ -275,15 +319,51 @@ const Purchases = () => {
     setFormData({ ...formData, items: updatedItems });
   };
 
-  const handleProductChange = async (productId) => {
-    const product = products.find(p => p._id === productId);
-    setCurrentItem({
-      ...currentItem,
-      product: productId,
-      productName: product?.name || '',
-      unitCost: product?.cost || 0
-    });
+  const handleItemTaxChange = (index, hasTax) => {
+    const updatedItems = [...formData.items];
+    updatedItems[index].hasTax = hasTax;
+    setFormData({ ...formData, items: updatedItems });
+  };
 
+  const handleSelectAllTax = (selectAll) => {
+    const updatedItems = formData.items.map(item => ({
+      ...item,
+      hasTax: selectAll
+    }));
+    setFormData({ ...formData, items: updatedItems });
+  };
+
+  const getSelectAllTaxState = () => {
+    if (formData.items.length === 0) return { checked: false, indeterminate: false };
+    
+    const allHaveTax = formData.items.every(item => item.hasTax !== false);
+    const noneHaveTax = formData.items.every(item => item.hasTax === false);
+    
+    if (allHaveTax) return { checked: true, indeterminate: false };
+    if (noneHaveTax) return { checked: false, indeterminate: false };
+    return { checked: false, indeterminate: true };
+  };
+
+  const handleProductChange = async (productId) => {
+    let product = products.find(p => p._id === productId);
+    
+    // Si no se encuentra en el array local, buscarlo por ID
+    if (!product && productId) {
+      try {
+        const productRes = await productsAPI.getById(productId);
+        if (productRes.data.data) {
+          product = productRes.data.data;
+        }
+      } catch (error) {
+        console.error('Error al buscar producto por ID:', error);
+      }
+    }
+    
+    // Guardar el producto seleccionado para el Autocomplete
+    setSelectedProduct(product);
+    
+    let unitCost = product?.cost || 0;
+    
     // Buscar condiciones de descuento si hay proveedor seleccionado
     if (formData.proveedor && productId) {
       try {
@@ -302,11 +382,7 @@ const Purchases = () => {
           });
           
           // Actualizar el costo unitario con el costo base del proveedor
-          setCurrentItem({
-            ...currentItem,
-            product: productId,
-            unitCost: supplierProduct.baseCost
-          });
+          unitCost = supplierProduct.baseCost;
         } else {
           setDiscountInfo(null);
         }
@@ -315,6 +391,14 @@ const Purchases = () => {
         setDiscountInfo(null);
       }
     }
+    
+    // Actualizar currentItem en una sola operación
+    setCurrentItem({
+      ...currentItem,
+      product: productId,
+      productName: product?.name || '',
+      unitCost: unitCost
+    });
   };
 
   const handleSupplierChange = async (supplierId) => {
@@ -387,10 +471,17 @@ const Purchases = () => {
     // Procesar items para asegurar que tengan productName
     const processedItems = (purchase.items || []).map(item => ({
       ...item,
-      productName: item.productName || item.product?.name || 'Producto no disponible'
+      productName: item.productName || item.product?.name || 'Producto no disponible',
+      hasTax: item.hasTax !== undefined ? item.hasTax : true,
+      taxRate: item.taxRate !== undefined ? item.taxRate : 0.16
     }));
     
     // Cargar datos de la compra en el formulario
+    const purchaseDate = purchase.date ? new Date(purchase.date) : null;
+    const formattedDate = purchaseDate && !isNaN(purchaseDate.getTime()) 
+      ? `${purchaseDate.getFullYear()}-${String(purchaseDate.getMonth() + 1).padStart(2, '0')}-${String(purchaseDate.getDate()).padStart(2, '0')}` 
+      : '';
+    
     setFormData({
       proveedor: purchase.proveedor?._id || '',
       type: purchase.type || 'contado',
@@ -402,7 +493,7 @@ const Purchases = () => {
       receiptNumber: purchase.receiptNumber || '',
       hasIVA: purchase.hasIVA || false,
       ivaRate: purchase.ivaRate || 0.16,
-      date: purchase.date ? new Date(purchase.date).toISOString().split('T')[0] : ''
+      date: formattedDate
     });
     
     // Cargar información del proveedor para descuento
@@ -435,6 +526,14 @@ const Purchases = () => {
 
   const calculateBaseTotal = () => {
     return formData.items.reduce((sum, item) => sum + (item.quantity * item.unitCost), 0);
+  };
+
+  const calculateTotalIVA = () => {
+    return formData.items.reduce((sum, item) => {
+      const subtotal = item.quantity * item.unitCost;
+      const itemTax = (item.hasTax !== false) ? (subtotal * (item.taxRate || 0.16)) : 0;
+      return sum + itemTax;
+    }, 0);
   };
 
   const calculateEarlyPaymentDiscount = () => {
@@ -474,7 +573,7 @@ const Purchases = () => {
             Gestiona las compras a proveedores con descuentos por pronto pago
           </p>
         </div>
-        <button onClick={() => setShowModal(true)} className="btn btn-primary btn-md">
+        <button onClick={() => { resetForm(); setShowModal(true); }} className="btn btn-primary btn-md">
           <Plus className="h-4 w-4 mr-2" />
           Nueva Compra
         </button>
@@ -618,8 +717,7 @@ const Purchases = () => {
                   setShowModal(false);
                   setIsEditMode(false);
                   setSelectedPurchase(null);
-                  setProductSearchQuery('');
-                  setSearchResults([]);
+                  resetForm();
                 }} className="text-gray-400 hover:text-gray-600 transition-colors">
                   <X className="h-6 w-6" />
                 </button>
@@ -763,7 +861,7 @@ const Purchases = () => {
                         fetchOptions={fetchProductsForAutocomplete}
                         displayValue={(item) => `${item.name} (${item.sku || 'Sin SKU'})`}
                         getOptionValue={(item) => item._id}
-                        value={products.find(p => p._id === currentItem.product) || null}
+                        value={selectedProduct || null}
                         onChange={(value) => handleProductChange(value)}
                         minLength={1}
                         allowDeleteClear={true}
@@ -827,6 +925,19 @@ const Purchases = () => {
                             <th className="text-left py-2">Producto</th>
                             <th className="text-left py-2">Cantidad</th>
                             <th className="text-left py-2">Costo Unitario</th>
+                            <th className="text-left py-2">
+                              <div className="flex items-center gap-2">
+                                <input
+                                  ref={selectAllTaxRef}
+                                  type="checkbox"
+                                  checked={getSelectAllTaxState().checked}
+                                  onChange={(e) => handleSelectAllTax(e.target.checked)}
+                                  disabled={formData.items.length === 0}
+                                  className="h-4 w-4 text-brand-burgundy focus:ring-primary-500 border-gray-300 rounded"
+                                />
+                                <span>IVA</span>
+                              </div>
+                            </th>
                             <th className="text-left py-2">Subtotal</th>
                             <th className="py-2"></th>
                           </tr>
@@ -854,6 +965,14 @@ const Purchases = () => {
                                   className="form-input w-24"
                                 />
                               </td>
+                              <td>
+                                <input
+                                  type="checkbox"
+                                  checked={item.hasTax !== false}
+                                  onChange={(e) => handleItemTaxChange(index, e.target.checked)}
+                                  className="h-4 w-4 text-brand-burgundy focus:ring-primary-500 border-gray-300 rounded"
+                                />
+                              </td>
                               <td>{formatCurrency(item.quantity * item.unitCost)}</td>
                               <td>
                                 <button
@@ -877,8 +996,12 @@ const Purchases = () => {
                       <h4 className="font-semibold text-gray-900 mb-3">Resumen de Compra</h4>
                       <div className="text-sm space-y-2">
                         <div className="flex justify-between">
-                          <span className="text-gray-600">Subtotal / Total sin descuento:</span>
+                          <span className="text-gray-600">Subtotal:</span>
                           <span className="font-medium">{formatCurrency(calculateBaseTotal())}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">IVA:</span>
+                          <span className="font-medium">{formatCurrency(calculateTotalIVA())}</span>
                         </div>
                         {formData.type === 'credito' && calculateEarlyPaymentDiscount() > 0 && (
                           <>
@@ -886,9 +1009,9 @@ const Purchases = () => {
                               <span className="text-gray-600">Descuento pronto pago ({selectedSupplierInfo?.earlyPaymentDiscount}%):</span>
                               <span className="font-medium">-{formatCurrency(calculateEarlyPaymentDiscount())}</span>
                             </div>
-                            <div className="flex justify-between">
-                              <span className="text-gray-600">Total por pronto pago:</span>
-                              <span className="font-semibold text-green-600">{formatCurrency(calculateTotalWithDiscount())}</span>
+                            <div className="flex justify-between border-t border-gray-200 pt-2">
+                              <span className="font-semibold">Total:</span>
+                              <span className="font-semibold text-brand-burgundy">{formatCurrency(calculateBaseTotal() + calculateTotalIVA() - calculateEarlyPaymentDiscount())}</span>
                             </div>
                             <div className="flex justify-between text-green-600 text-xs pt-1 border-t border-green-200">
                               <span>Ahorro:</span>
@@ -897,81 +1020,33 @@ const Purchases = () => {
                           </>
                         )}
                         {formData.type === 'credito' && calculateEarlyPaymentDiscount() === 0 && (
-                          <div className="flex justify-between text-gray-500 text-xs">
-                            <span>Descuento pronto pago:</span>
-                            <span>No disponible</span>
-                          </div>
+                          <>
+                            <div className="flex justify-between text-gray-500 text-xs">
+                              <span>Descuento pronto pago:</span>
+                              <span>No disponible</span>
+                            </div>
+                            <div className="flex justify-between border-t border-gray-200 pt-2">
+                              <span className="font-semibold">Total:</span>
+                              <span className="font-semibold text-brand-burgundy">{formatCurrency(calculateBaseTotal() + calculateTotalIVA())}</span>
+                            </div>
+                          </>
                         )}
                         {formData.type === 'contado' && (
-                          <div className="flex justify-between text-gray-500 text-xs">
-                            <span>Descuento pronto pago:</span>
-                            <span>No aplica en contado</span>
-                          </div>
+                          <>
+                            <div className="flex justify-between text-gray-500 text-xs">
+                              <span>Descuento pronto pago:</span>
+                              <span>No aplica en contado</span>
+                            </div>
+                            <div className="flex justify-between border-t border-gray-200 pt-2">
+                              <span className="font-semibold">Total:</span>
+                              <span className="font-semibold text-brand-burgundy">{formatCurrency(calculateBaseTotal() + calculateTotalIVA())}</span>
+                            </div>
+                          </>
                         )}
                       </div>
                     </div>
                   )}
                 </div>
-
-                {/* IVA Section - Solo para compras a crédito */}
-                {formData.type === 'credito' && (
-                  <div className="border border-gray-200 rounded-xl p-4 mb-4 bg-gray-50">
-                    <div className="flex items-center mb-3">
-                      <input
-                        type="checkbox"
-                        id="hasIVA"
-                        checked={formData.hasIVA}
-                        onChange={(e) => setFormData({...formData, hasIVA: e.target.checked})}
-                        className="h-4 w-4 text-brand-burgundy focus:ring-primary-500 border-gray-300 rounded"
-                      />
-                      <label htmlFor="hasIVA" className="ml-2 block text-sm font-medium text-gray-900">
-                        Aplicar IVA
-                      </label>
-                    </div>
-                    
-                    {formData.hasIVA && (
-                      <div className="space-y-2 ml-6">
-                        <div className="flex items-center gap-2">
-                          <label className="text-sm text-gray-600">Tasa de IVA:</label>
-                          <input
-                            type="number"
-                            step="0.01"
-                            min="0"
-                            max="1"
-                            value={formData.ivaRate}
-                            onChange={(e) => setFormData({...formData, ivaRate: parseFloat(e.target.value)})}
-                            className="form-input w-24"
-                          />
-                          <span className="text-sm text-gray-600">{(formData.ivaRate * 100).toFixed(0)}%</span>
-                        </div>
-                        
-                        {formData.items.length > 0 && (
-                          <div className="bg-white border border-gray-200 rounded-lg p-3 mt-2">
-                            <div className="text-sm space-y-1">
-                              <div className="flex justify-between">
-                                <span className="text-gray-600">Base para IVA:</span>
-                                <span className="font-medium">{formatCurrency(formData.type === 'credito' && calculateEarlyPaymentDiscount() > 0 ? calculateTotalWithDiscount() : calculateBaseTotal())}</span>
-                              </div>
-                              <div className="flex justify-between">
-                                <span className="text-gray-600">IVA ({(formData.ivaRate * 100).toFixed(0)}%):</span>
-                                <span className="font-medium">{formatCurrency((formData.type === 'credito' && calculateEarlyPaymentDiscount() > 0 ? calculateTotalWithDiscount() : calculateBaseTotal()) * formData.ivaRate)}</span>
-                              </div>
-                              <div className="flex justify-between border-t border-gray-200 pt-1">
-                                <span className="font-semibold">Total con IVA:</span>
-                                <span className="font-semibold text-brand-burgundy">
-                                  {formData.type === 'credito' && calculateEarlyPaymentDiscount() > 0
-                                    ? formatCurrency((calculateTotalWithDiscount() * (1 + formData.ivaRate)))
-                                    : formatCurrency(calculateBaseTotal() * (1 + formData.ivaRate))
-                                  }
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                )}
 
                 <div className="grid grid-cols-2 gap-4 mb-4">
                   <div>
