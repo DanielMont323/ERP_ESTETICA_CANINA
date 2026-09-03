@@ -428,59 +428,59 @@ const Products = () => {
       </div>
 
       {/* Products Table */}
-      <div className="card">
-        <div className="table-container">
-          <table className="table table-responsive">
-            <thead>
-              <tr>
-                <th>Producto</th>
-                <th>Categoría</th>
-                <th>Proveedor</th>
-                <th>Stock</th>
-                <th>Costo</th>
-                <th>Precio</th>
-                <th>Descuento</th>
-                <th>Precio Final</th>
-                <th>Margen</th>
-                <th>Caducidad</th>
-                <th>Estado</th>
-                <th>Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
+<div className="card hover:shadow-md transition-shadow duration-200 flex flex-col max-h-[calc(100vh-320px)]">
+  <div className="table-container flex-1 overflow-auto">
+    <table className="table table-fixed w-full">
+      <thead className="sticky top-0 bg-gray-50 z-10">
+        <tr>
+          <th className="text-sm font-semibold text-gray-700 py-3 w-[17%]">Producto</th>
+          <th className="text-sm font-semibold text-gray-700 py-3 w-[9%]">Categoría</th>
+          <th className="text-sm font-semibold text-gray-700 py-3 w-[9%]">Proveedor</th>
+          <th className="text-sm font-semibold text-gray-700 py-3 w-[7%]">Stock</th>
+          <th className="text-sm font-semibold text-gray-700 py-3 w-[7%]">Costo</th>
+          <th className="text-sm font-semibold text-gray-700 py-3 w-[7%]">Precio</th>
+          <th className="text-sm font-semibold text-gray-700 py-3 w-[8%]">Descuento</th>
+          <th className="text-sm font-semibold text-gray-700 py-3 w-[9%]">Precio Final</th>
+          <th className="text-sm font-semibold text-gray-700 py-3 w-[6%]">Margen</th>
+          <th className="text-sm font-semibold text-gray-700 py-3 w-[8%]">Caducidad</th>
+          <th className="text-sm font-semibold text-gray-700 py-3 w-[6%]">Estado</th>
+          <th className="text-sm font-semibold text-gray-700 py-3 w-[7%]">Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
               {filteredProducts.map((product, index) => {
                 const stockStatus = getStockStatus(product);
                 const expirationStatus = getExpirationStatus(product);
                 return (
-                  <tr key={product._id} className={`table-row-divider ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'} hover:bg-blue-50`}>
-                    <td className="py-4">
+                  <tr key={product._id} className={`table-row-divider ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'} hover:bg-yellow-100`}>
+                    <td className="py-5">
                       <div>
                         <p className="font-medium text-gray-900">{product.name}</p>
                         <p className="text-sm text-gray-500">SKU: {product.sku}</p>
                       </div>
                     </td>
-                    <td className="py-4">
+                    <td className="py-5">
                       <span>{product.category?.name || 'Sin categoría'}</span>
                     </td>
-                    <td className="py-4">
+                    <td className="py-5">
                       <span>{product.supplier?.name || 'Sin proveedor'}</span>
                     </td>
-                    <td className="py-4">
+                    <td className="py-5">
                       <div className="text-right">
                         <p className="font-medium">{product.stock}</p>
                         <p className="text-sm text-gray-500">Mín: {product.minStock}</p>
                       </div>
                     </td>
-                    <td className="py-4 text-right">{formatCurrency(product.cost)}</td>
-                    <td className="py-4 text-right">{formatCurrency(product.price)}</td>
-                    <td className="py-4 text-right">
+                    <td className="py-5 text-right">{formatCurrency(product.cost)}</td>
+                    <td className="py-5 text-right">{formatCurrency(product.price)}</td>
+                    <td className="py-5 text-right">
                       {product.discountPercentage > 0 ? (
                         <span className="text-success-600 font-medium">{product.discountPercentage}%</span>
                       ) : (
                         <span className="text-gray-400">-</span>
                       )}
                     </td>
-                    <td className="py-4 text-right font-semibold">
+                    <td className="py-5 text-right font-semibold">
                       {product.discountPercentage > 0 ? (
                         <div>
                           <span className="text-gray-400 line-through text-sm">{formatCurrency(product.price)}</span>
@@ -490,7 +490,7 @@ const Products = () => {
                         formatCurrency(product.price)
                       )}
                     </td>
-                    <td className="py-4 text-right">
+                    <td className="py-5 text-right">
                       <span className={`font-medium ${
                         product.margin > 30 ? 'text-success-600' : 
                         product.margin > 15 ? 'text-warning-600' : 'text-danger-600'
@@ -498,12 +498,12 @@ const Products = () => {
                         {product.margin}%
                       </span>
                     </td>
-                    <td className="py-4">
+                    <td className="py-5">
                       <span className={`badge badge-${expirationStatus.color}`}>
                         {expirationStatus.text}
                       </span>
                     </td>
-                    <td className="py-4">
+                    <td className="py-5">
                       <span className={`badge badge-${stockStatus.color}`}>
                         {stockStatus.text}
                       </span>
@@ -552,15 +552,17 @@ const Products = () => {
               <p className="text-gray-500">No se encontraron productos</p>
             </div>
           )}
-          
-          {!showDeleted && (
+        </div>
+        
+        {!showDeleted && (
+          <div className="border-t border-gray-200 p-4 bg-gray-50">
             <Pagination
               pagination={pagination}
               onPageChange={(page) => setPagination({ ...pagination, page })}
               onLimitChange={(limit) => setPagination({ ...pagination, limit, page: 1 })}
             />
-          )}
-        </div>
+          </div>
+        )}
       </div>
 
       {/* Modal */}

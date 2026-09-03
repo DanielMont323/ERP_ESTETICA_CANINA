@@ -582,22 +582,22 @@ const Purchases = () => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-gray-900">Compras</h1>
+          <h1 className="text-2xl font-semibold text-brand-burgundy">Compras</h1>
           <p className="mt-1 text-sm text-gray-600">
             Gestiona las compras a proveedores con descuentos por pronto pago
           </p>
         </div>
-        <button onClick={() => { resetForm(); setShowModal(true); }} className="btn btn-primary btn-md">
+        <button onClick={() => { resetForm(); setShowModal(true); }} className="btn btn-primary btn-md hover:shadow-sm transition-shadow duration-200">
           <Plus className="h-4 w-4 mr-2" />
           Nueva Compra
         </button>
       </div>
 
       {/* Filters */}
-      <div className="card">
-        <div className="card-body">
-          <div className="flex flex-col sm:flex-row items-center gap-4">
-            <div className="flex-1">
+      <div className="card hover:shadow-md transition-shadow duration-200">
+        <div className="card-body p-5">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            <div>
               <label className="form-label">Filtrar por proveedor</label>
               <Autocomplete
                 placeholder="Todos los proveedores"
@@ -609,7 +609,7 @@ const Purchases = () => {
                 minLength={1}
               />
             </div>
-            <div className="flex-1">
+            <div>
               <label className="form-label">Buscar compras</label>
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
@@ -622,7 +622,7 @@ const Purchases = () => {
                 />
               </div>
             </div>
-            <div className="flex-1">
+            <div>
               <label className="form-label">Buscar por SKU</label>
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
@@ -640,56 +640,60 @@ const Purchases = () => {
       </div>
 
       {/* Purchases Table */}
-      <div className="card">
-        <div className="table-container">
-          <table className="table table-responsive">
-            <thead>
+      <div className="card hover:shadow-md transition-shadow duration-200 flex flex-col max-h-[calc(100vh-320px)]">
+        <div className="table-container flex-1 overflow-auto">
+          <table className="table table-fixed w-full">
+            <thead className="sticky top-0 bg-gray-50 z-10">
               <tr>
-                <th>Fecha</th>
-                <th>Proveedor</th>
-                <th>Folio</th>
-                <th>Productos</th>
-                <th>Subtotal</th>
-                <th>IVA</th>
-                <th>Descuento</th>
-                <th>Total</th>
-                <th>Tipo</th>
-                <th>Estado</th>
-                {user?.role === 'admin' && <th>Acciones</th>}
+                <th className="text-sm font-semibold text-gray-700 py-3 w-[8%]">Fecha</th>
+                <th className="text-sm font-semibold text-gray-700 py-3 w-[16%]">Proveedor</th>
+                <th className="text-sm font-semibold text-gray-700 py-3 w-[9%]">Folio</th>
+                <th className="text-sm font-semibold text-gray-700 py-3 w-[20%]">Productos</th>
+                <th className="text-sm font-semibold text-gray-700 py-3 w-[7%]">Subtotal</th>
+                <th className="text-sm font-semibold text-gray-700 py-3 w-[6%]">IVA</th>
+                <th className="text-sm font-semibold text-gray-700 py-3 w-[6%]">Descuento</th>
+                <th className="text-sm font-semibold text-gray-700 py-3 w-[10%]">Total</th>
+                <th className="text-sm font-semibold text-gray-700 py-3 w-[6%]">Tipo</th>
+                <th className="text-sm font-semibold text-gray-700 py-3 w-[6%]">Estado</th>
+                {user?.role === 'admin' && <th className="text-sm font-semibold text-gray-700 py-3 w-[6%]">Acciones</th>}
               </tr>
             </thead>
             <tbody>
               {filteredPurchases.map((purchase, index) => (
-                <tr key={purchase._id} className={`table-row-divider ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'} hover:bg-blue-50`}>
-                  <td className="py-4">{new Date(purchase.date).toLocaleDateString()}</td>
-                  <td className="py-4">{purchase.proveedor?.name}</td>
-                  <td className="py-4">{purchase.invoice || '-'}</td>
-                  <td className="py-4">
+                <tr key={purchase._id} className={`table-row-divider ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'} hover:bg-yellow-100`}>
+                  <td className="py-5">{new Date(purchase.date).toLocaleDateString()}</td>
+                  <td className="py-5">
+                    <span className="truncate block" title={purchase.proveedor?.name}>{purchase.proveedor?.name}</span>
+                  </td>
+                  <td className="py-5">
+                    <span className="truncate block" title={purchase.invoice || '-'}>{purchase.invoice || '-'}</span>
+                  </td>
+                  <td className="py-5">
                     {purchase.items?.map((item, idx) => (
                       <div key={idx} className="text-sm">
-                        {item.productName || item.product?.name || 'Producto no disponible'} x {item.quantity}
+                        <span className="truncate block" title={item.productName || item.product?.name || 'Producto no disponible'}>{item.productName || item.product?.name || 'Producto no disponible'}</span> x {item.quantity}
                       </div>
                     ))}
                   </td>
-                  <td className="py-4">{formatCurrency(purchase.baseTotal || purchase.total)}</td>
-                  <td className={`py-4 ${purchase.totalIVA > 0 ? 'text-blue-600' : 'text-gray-400'}`}>
+                  <td className="py-5">{formatCurrency(purchase.baseTotal || purchase.total)}</td>
+                  <td className={`py-5 ${purchase.totalIVA > 0 ? 'text-blue-600' : 'text-gray-400'}`}>
                     {formatCurrency(purchase.totalIVA || 0)}
                   </td>
-                  <td className="py-4 text-green-600">
+                  <td className="py-5 text-green-600">
                     {purchase.totalDiscount > 0 ? formatCurrency(purchase.totalDiscount) : '-'}
                   </td>
-                  <td className="py-4 font-semibold">
+                  <td className="py-5 font-bold text-gray-900">
                     {formatCurrency(purchase.total)}
                   </td>
-                  <td className="py-4">
-                    <span className={`px-2 py-1 rounded text-xs ${
+                  <td className="py-5">
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                       purchase.type === 'contado' ? 'bg-blue-100 text-blue-800' : 'bg-yellow-100 text-yellow-800'
                     }`}>
                       {purchase.type}
                     </span>
                   </td>
-                  <td className="py-4">
-                    <span className={`px-2 py-1 rounded text-xs ${
+                  <td className="py-5">
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                       purchase.status === 'pagada' ? 'bg-green-100 text-green-800' : 
                       purchase.status === 'pendiente' ? 'bg-yellow-100 text-yellow-800' : 
                       purchase.status === 'cancelada' ? 'bg-red-100 text-red-800' : 'bg-red-100 text-red-800'
@@ -698,7 +702,7 @@ const Purchases = () => {
                     </span>
                   </td>
                   {user?.role === 'admin' && (
-                    <td className="py-4 flex space-x-2">
+                    <td className="py-5 flex space-x-2">
                       <button
                         onClick={() => handleEditClick(purchase)}
                         disabled={purchase.status === 'cancelada'}
@@ -722,7 +726,9 @@ const Purchases = () => {
               ))}
             </tbody>
           </table>
-          
+        </div>
+        
+        <div className="border-t border-gray-200 p-4 bg-gray-50">
           <Pagination
             pagination={pagination}
             onPageChange={(page) => setPagination({ ...pagination, page })}

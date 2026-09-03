@@ -756,37 +756,37 @@ const Sales = () => {
       </div>
 
       {/* Sales Table */}
-      <div className="card">
-        <div className="table-container">
-          <table className="table table-responsive">
-            <thead>
+      <div className="card hover:shadow-md transition-shadow duration-200 flex flex-col max-h-[calc(100vh-320px)]">
+        <div className="table-container flex-1 overflow-auto">
+          <table className="table table-fixed w-full">
+            <thead className="sticky top-0 bg-gray-50 z-10">
               <tr>
-                <th>Fecha</th>
-                <th>Cliente</th>
-                <th>Vendedor</th>
-                <th>Items</th>
-                <th>Subtotal</th>
-                <th>Comisión Tarjeta</th>
-                <th>Total</th>
-                <th>Ingreso Neto</th>
-                <th>Método</th>
-                <th>Estado</th>
-                <th>Acciones</th>
+                <th className="text-sm font-semibold text-gray-700 py-3 w-[8%]">Fecha</th>
+                <th className="text-sm font-semibold text-gray-700 py-3 w-[15%]">Cliente</th>
+                <th className="text-sm font-semibold text-gray-700 py-3 w-[12%]">Vendedor</th>
+                <th className="text-sm font-semibold text-gray-700 py-3 w-[18%]">Items</th>
+                <th className="text-sm font-semibold text-gray-700 py-3 w-[7%]">Subtotal</th>
+                <th className="text-sm font-semibold text-gray-700 py-3 w-[9%]">Comisión Tarjeta</th>
+                <th className="text-sm font-semibold text-gray-700 py-3 w-[10%]">Total</th>
+                <th className="text-sm font-semibold text-gray-700 py-3 w-[10%]">Ingreso Neto</th>
+                <th className="text-sm font-semibold text-gray-700 py-3 w-[5%]">Método</th>
+                <th className="text-sm font-semibold text-gray-700 py-3 w-[6%]">Estado</th>
+                <th className="text-sm font-semibold text-gray-700 py-3 w-[5%]">Acciones</th>
               </tr>
             </thead>
             <tbody>
               {filteredSales.map((sale, index) => (
-                <tr key={sale._id} className={`table-row-divider ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'} hover:bg-blue-50`}>
-                  <td className="py-4">
+                <tr key={sale._id} className={`table-row-divider ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'} hover:bg-yellow-100`}>
+                  <td className="py-5">
                     {new Date(sale.date).toLocaleDateString('es-MX')}
                   </td>
-                  <td className="py-4">
+                  <td className="py-5">
                     {sale.customer ? sale.customer.name : 'Cliente general'}
                   </td>
-                  <td className="py-4">
+                  <td className="py-5">
                     {sale.user ? sale.user.name : 'Sin vendedor registrado'}
                   </td>
-                  <td className="py-4">
+                  <td className="py-5">
                     <div className="space-y-1">
                       {sale.items.map((item, index) => (
                         <div key={index} className="text-sm">
@@ -795,22 +795,22 @@ const Sales = () => {
                       ))}
                     </div>
                   </td>
-                  <td className="py-4 text-right font-medium">
+                  <td className="py-5 text-right font-medium">
                     {formatCurrency(sale.subtotal || sale.total)}
                   </td>
-                  <td className="py-4 text-right">
+                  <td className="py-5 text-right">
                     {sale.cardCommission > 0 ? formatCurrency(sale.cardCommission) : '-'}
                   </td>
-                  <td className="py-4 text-right font-medium">
+                  <td className="py-5 text-right font-medium">
                     {formatCurrency(sale.total)}
                   </td>
-                  <td className="py-4 text-right font-medium text-success-600">
+                  <td className="py-5 text-right font-medium text-success-600">
                     {formatCurrency(sale.netIncome)}
                   </td>
-                  <td className="py-4">
+                  <td className="py-5">
                     <span className="capitalize">{sale.paymentMethod}</span>
                   </td>
-                  <td className="py-4">
+                  <td className="py-5">
                     <span className={`badge badge-${
                       sale.status === 'completada' ? 'success' :
                       sale.status === 'cancelada' ? 'danger' : 'warning'
@@ -818,7 +818,7 @@ const Sales = () => {
                       {sale.status}
                     </span>
                   </td>
-                  <td className="py-4">
+                  <td className="py-5">
                     <div className="flex gap-2">
                       {userRole === 'admin' && sale.status !== 'cancelada' && (
                         <>
@@ -855,48 +855,50 @@ const Sales = () => {
         
         {/* Pagination Controls */}
         {pagination.pages > 1 && (
-          <div className="flex items-center justify-between px-6 py-4 border-t border-gray-200">
-            <div className="text-sm text-gray-500">
-              Mostrando {((pagination.page - 1) * pagination.limit) + 1} a {Math.min(pagination.page * pagination.limit, pagination.total)} de {pagination.total} ventas
-            </div>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setPagination({ ...pagination, page: pagination.page - 1 })}
-                disabled={pagination.page === 1}
-                className="btn btn-secondary btn-sm disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Anterior
-              </button>
-              <div className="flex items-center gap-1">
-                {Array.from({ length: Math.min(5, pagination.pages) }, (_, i) => {
-                  let pageNum;
-                  if (pagination.pages <= 5) {
-                    pageNum = i + 1;
-                  } else if (pagination.page <= 3) {
-                    pageNum = i + 1;
-                  } else if (pagination.page >= pagination.pages - 2) {
-                    pageNum = pagination.pages - 4 + i;
-                  } else {
-                    pageNum = pagination.page - 2 + i;
-                  }
-                  return (
-                    <button
-                      key={pageNum}
-                      onClick={() => setPagination({ ...pagination, page: pageNum })}
-                      className={`btn btn-sm ${pagination.page === pageNum ? 'btn-primary' : 'btn-secondary'}`}
-                    >
-                      {pageNum}
-                    </button>
-                  );
-                })}
+          <div className="border-t border-gray-200 p-4 bg-gray-50">
+            <div className="flex items-center justify-between">
+              <div className="text-sm text-gray-500">
+                Mostrando {((pagination.page - 1) * pagination.limit) + 1} a {Math.min(pagination.page * pagination.limit, pagination.total)} de {pagination.total} ventas
               </div>
-              <button
-                onClick={() => setPagination({ ...pagination, page: pagination.page + 1 })}
-                disabled={pagination.page === pagination.pages}
-                className="btn btn-secondary btn-sm disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Siguiente
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setPagination({ ...pagination, page: pagination.page - 1 })}
+                  disabled={pagination.page === 1}
+                  className="btn btn-secondary btn-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Anterior
+                </button>
+                <div className="flex items-center gap-1">
+                  {Array.from({ length: Math.min(5, pagination.pages) }, (_, i) => {
+                    let pageNum;
+                    if (pagination.pages <= 5) {
+                      pageNum = i + 1;
+                    } else if (pagination.page <= 3) {
+                      pageNum = i + 1;
+                    } else if (pagination.page >= pagination.pages - 2) {
+                      pageNum = pagination.pages - 4 + i;
+                    } else {
+                      pageNum = pagination.page - 2 + i;
+                    }
+                    return (
+                      <button
+                        key={pageNum}
+                        onClick={() => setPagination({ ...pagination, page: pageNum })}
+                        className={`btn btn-sm ${pagination.page === pageNum ? 'btn-primary' : 'btn-secondary'}`}
+                      >
+                        {pageNum}
+                      </button>
+                    );
+                  })}
+                </div>
+                <button
+                  onClick={() => setPagination({ ...pagination, page: pagination.page + 1 })}
+                  disabled={pagination.page === pagination.pages}
+                  className="btn btn-secondary btn-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Siguiente
+                </button>
+              </div>
             </div>
           </div>
         )}
