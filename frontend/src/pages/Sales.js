@@ -577,7 +577,7 @@ const Sales = () => {
       return 0; // Mercado Libre maneja sus propias comisiones
     }
     const subtotal = calculateSubtotal();
-    return paymentMethod === 'tarjeta' ? subtotal * 0.046 : 0;
+    return paymentMethod === 'tarjeta' ? subtotal * 0.0406 : 0;
   };
 
   const calculateCommission = () => {
@@ -600,10 +600,10 @@ const Sales = () => {
     if (useManualFinancials && saleChannel === 'mercado_libre' && manualNetIncome !== '') {
       return parseFloat(manualNetIncome);
     }
-    const subtotal = calculateSubtotal();
+    const total = calculateTotal();
     const cardCommission = calculateCardCommission();
     const commission = calculateCommission();
-    return subtotal - commission - cardCommission;
+    return total - commission - cardCommission;
   };
 
   const handleSubmitSale = async () => {
@@ -1274,7 +1274,7 @@ const Sales = () => {
                       </div>
                       {paymentMethod === 'tarjeta' && (
                         <div className="flex justify-between text-brand-burgundy">
-                          <span>Comisión por pago con tarjeta (4.6%):</span>
+                          <span>Comisión por pago con tarjeta (4.06%):</span>
                           <span className="font-medium">{formatCurrency(calculateCardCommission())}</span>
                         </div>
                       )}
@@ -1774,15 +1774,15 @@ const Sales = () => {
                       </div>
                       {editPaymentMethod === 'tarjeta' && (
                         <div className="flex justify-between text-gray-600">
-                          <span>Comisión tarjeta (4.6%):</span>
-                          <span>{formatCurrency(editCart.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0) * 0.046)}</span>
+                          <span>Comisión tarjeta (4.06%):</span>
+                          <span>{formatCurrency(editCart.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0) * 0.0406)}</span>
                         </div>
                       )}
                       <div className="flex justify-between font-bold text-lg text-gray-900 pt-2 border-t border-gray-200">
                         <span>Total:</span>
                         <span>
                           {editPaymentMethod === 'tarjeta' 
-                            ? formatCurrency(editCart.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0) * 1.046)
+                            ? formatCurrency(editCart.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0) * 1.0406)
                             : formatCurrency(editCart.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0))
                           }
                         </span>
@@ -1823,12 +1823,12 @@ const Sales = () => {
                             placeholder="Monto recibido..."
                           />
                         </div>
-                        {editAmountReceived && parseFloat(editAmountReceived) >= (editPaymentMethod === 'tarjeta' ? editCart.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0) * 1.046 : editCart.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0)) && (
+                        {editAmountReceived && parseFloat(editAmountReceived) >= (editPaymentMethod === 'tarjeta' ? editCart.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0) * 1.0406 : editCart.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0)) && (
                           <div className="bg-success-50 border border-success-200 rounded-xl p-3">
                             <div className="flex justify-between items-center">
                               <span className="font-medium text-success-900">Cambio:</span>
                               <span className="text-lg font-bold text-success-600">
-                                {formatCurrency(parseFloat(editAmountReceived) - (editPaymentMethod === 'tarjeta' ? editCart.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0) * 1.046 : editCart.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0)))}
+                                {formatCurrency(parseFloat(editAmountReceived) - (editPaymentMethod === 'tarjeta' ? editCart.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0) * 1.0406 : editCart.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0)))}
                               </span>
                             </div>
                           </div>

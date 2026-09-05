@@ -148,9 +148,9 @@ ventaSchema.pre('save', function(next) {
     // Calcular subtotal total
     this.subtotal = Math.round(this.items.reduce((sum, item) => sum + item.subtotal, 0) * 100) / 100;
     
-    // Calcular comisión de tarjeta (4.6%) solo si paymentMethod es tarjeta
+    // Calcular comisión de tarjeta (4.06%) solo si paymentMethod es tarjeta
     if (this.paymentMethod === 'tarjeta') {
-      this.cardCommission = Math.round((this.subtotal * 0.046) * 100) / 100;
+      this.cardCommission = Math.round((this.subtotal * 0.0406) * 100) / 100;
     } else {
       this.cardCommission = 0;
     }

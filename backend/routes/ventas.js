@@ -867,9 +867,9 @@ router.put('/:id', authenticateToken, async (req, res) => {
         // Calcular subtotal total
         venta.subtotal = Math.round(venta.items.reduce((sum, item) => sum + item.subtotal, 0) * 100) / 100;
         
-        // Calcular comisión de tarjeta (4.6%) solo si paymentMethod es tarjeta
+        // Calcular comisión de tarjeta (4.06%) solo si paymentMethod es tarjeta
         if (venta.paymentMethod === 'tarjeta') {
-          venta.cardCommission = Math.round((venta.subtotal * 0.046) * 100) / 100;
+          venta.cardCommission = Math.round((venta.subtotal * 0.0406) * 100) / 100;
         } else {
           venta.cardCommission = 0;
         }
