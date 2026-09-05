@@ -51,6 +51,12 @@ const Sales = () => {
   const [editCustomer, setEditCustomer] = useState('');
   const [selectedPet, setSelectedPet] = useState('');
   const [editPet, setEditPet] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
+  const [selectedSearchIndex, setSelectedSearchIndex] = useState(-1);
+  const [editSearchQuery, setEditSearchQuery] = useState('');
+  const [editSearchResults, setEditSearchResults] = useState([]);
+  const [editSelectedSearchIndex, setEditSelectedSearchIndex] = useState(-1);
   const [paymentMethod, setPaymentMethod] = useState('efectivo');
   const [editPaymentMethod, setEditPaymentMethod] = useState('efectivo');
   const [saleChannel, setSaleChannel] = useState('local');
@@ -62,9 +68,6 @@ const Sales = () => {
   const [amountReceived, setAmountReceived] = useState('');
   const [editAmountReceived, setEditAmountReceived] = useState('');
   const [saleDate, setSaleDate] = useState('');
-  const [productSearchQuery, setProductSearchQuery] = useState('');
-  const [searchResults, setSearchResults] = useState([]);
-  const [selectedSearchIndex, setSelectedSearchIndex] = useState(-1);
   const searchInputRef = useRef(null);
   const formRef = useRef(null);
   const userRole = user?.role || 'user';
@@ -165,7 +168,7 @@ const Sales = () => {
 
   const fetchServices = async () => {
     try {
-      const response = await servicesAPI.getAll({ active: true });
+      const response = await servicesAPI.getAll({ active: true, limit: 1000 });
       setServices(response.data.data);
     } catch (error) {
       console.error('Error fetching services:', error);
@@ -256,16 +259,25 @@ const Sales = () => {
     }
   }, [selectedCustomer, fetchPetsByCustomer]);
 
-  // Búsqueda de productos con debounce
+  // Búsqueda unificada de productos y servicios con debounce
   useEffect(() => {
     const timer = setTimeout(async () => {
-      if (productSearchQuery.trim()) {
+      if (searchQuery.trim()) {
         try {
-          const response = await productsAPI.search(productSearchQuery);
-          setSearchResults(response.data.data);
-          setSelectedSearchIndex(-1); // Resetear selección cuando cambian los resultados
+          // Buscar productos
+          const productsResponse = await productsAPI.search(searchQuery);
+          const products = productsResponse.data.data.map(p => ({ ...p, type: 'producto' }));
+          
+          // Buscar servicios
+          const servicesResponse = await servicesAPI.getAll({ search: searchQuery, active: true, limit: 1000 });
+          const services = servicesResponse.data.data.map(s => ({ ...s, type: 'servicio' }));
+          
+          // Combinar resultados
+          const combinedResults = [...products, ...services];
+          setSearchResults(combinedResults);
+          setSelectedSearchIndex(-1);
         } catch (error) {
-          console.error('Error searching products:', error);
+          console.error('Error searching:', error);
           setSearchResults([]);
           setSelectedSearchIndex(-1);
         }
@@ -276,7 +288,38 @@ const Sales = () => {
     }, 300);
 
     return () => clearTimeout(timer);
-  }, [productSearchQuery]);
+  }, [searchQuery]);
+
+  // Búsqueda unificada de productos y servicios en edición con debounce
+  useEffect(() => {
+    const timer = setTimeout(async () => {
+      if (editSearchQuery.trim()) {
+        try {
+          // Buscar productos
+          const productsResponse = await productsAPI.search(editSearchQuery);
+          const products = productsResponse.data.data.map(p => ({ ...p, type: 'producto' }));
+          
+          // Buscar servicios
+          const servicesResponse = await servicesAPI.getAll({ search: editSearchQuery, active: true, limit: 1000 });
+          const services = servicesResponse.data.data.map(s => ({ ...s, type: 'servicio' }));
+          
+          // Combinar resultados
+          const combinedResults = [...products, ...services];
+          setEditSearchResults(combinedResults);
+          setEditSelectedSearchIndex(-1);
+        } catch (error) {
+          console.error('Error searching in edit:', error);
+          setEditSearchResults([]);
+          setEditSelectedSearchIndex(-1);
+        }
+      } else {
+        setEditSearchResults([]);
+        setEditSelectedSearchIndex(-1);
+      }
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [editSearchQuery]);
 
   // Manejo de teclas para navegación por teclado en buscador
   const handleSearchKeyDown = async (e) => {
@@ -296,35 +339,35 @@ const Sales = () => {
       e.preventDefault();
       setSearchResults([]);
       setSelectedSearchIndex(-1);
-      setProductSearchQuery('');
+      setSearchQuery('');
       searchInputRef.current?.focus();
     } else if (e.key === 'Enter') {
       e.preventDefault();
       
       if (selectedSearchIndex >= 0 && searchResults[selectedSearchIndex]) {
         // Hay un resultado seleccionado - agregarlo al carrito
-        const product = searchResults[selectedSearchIndex];
-        addToCart(product, 'producto');
-        setProductSearchQuery('');
+        const item = searchResults[selectedSearchIndex];
+        addToCart(item, item.type);
+        setSearchQuery('');
         setSearchResults([]);
         setSelectedSearchIndex(-1);
-        toast.success(`${product.name} agregado al carrito`);
+        toast.success(`${item.name} agregado al carrito`);
         
         // Mantener foco en el campo para escaneo continuo
         setTimeout(() => {
           searchInputRef.current?.focus();
         }, 100);
-      } else if (productSearchQuery.trim()) {
+      } else if (searchQuery.trim()) {
         // No hay selección - comportamiento original de lector de código de barras
         try {
-          const response = await productsAPI.search(productSearchQuery);
+          const response = await productsAPI.search(searchQuery);
           const results = response.data.data;
 
           if (results.length === 1) {
             // Producto único encontrado - agregar automáticamente
             const product = results[0];
             addToCart(product, 'producto');
-            setProductSearchQuery('');
+            setSearchQuery('');
             setSearchResults([]);
             setSelectedSearchIndex(-1);
             toast.success(`${product.name} agregado al carrito`);
@@ -465,6 +508,9 @@ const Sales = () => {
     setEditSaleChannel('local');
     setEditNotes('');
     setEditAmountReceived('');
+    setEditSearchQuery('');
+    setEditSearchResults([]);
+    setEditSelectedSearchIndex(-1);
   };
 
   const addToEditCart = (item, type) => {
@@ -626,7 +672,7 @@ const Sales = () => {
       setNotes('');
       setAmountReceived('');
       setSaleDate('');
-      setProductSearchQuery('');
+      setSearchQuery('');
       setSearchResults([]);
       setManualSubtotal('');
       setManualTotal('');
@@ -955,14 +1001,14 @@ const Sales = () => {
                       />
                     </div>
 
-                    {/* Product Search */}
+                    {/* Unified Search */}
                     <div>
-                      <label className="form-label">Buscar producto por nombre o SKU...</label>
+                      <label className="form-label">Buscar producto o servicio por nombre...</label>
                       <input
                         ref={searchInputRef}
                         type="text"
-                        value={productSearchQuery}
-                        onChange={(e) => setProductSearchQuery(e.target.value)}
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
                         onKeyDown={handleSearchKeyDown}
                         className="form-input"
                         placeholder="Escribe o escanea código de barras..."
@@ -970,12 +1016,12 @@ const Sales = () => {
                       />
                       {searchResults.length > 0 && (
                         <div className="mt-2 border border-gray-200 rounded-xl max-h-48 overflow-y-auto bg-white">
-                          {searchResults.map((product, index) => (
+                          {searchResults.map((item, index) => (
                             <div
-                              key={product._id}
+                              key={item._id}
                               onClick={() => {
-                                addToCart(product, 'producto');
-                                setProductSearchQuery('');
+                                addToCart(item, item.type);
+                                setSearchQuery('');
                                 setSearchResults([]);
                                 setSelectedSearchIndex(-1);
                               }}
@@ -985,10 +1031,24 @@ const Sales = () => {
                                   : 'hover:bg-gray-50'
                               }`}
                             >
-                              <p className="font-medium text-gray-900">{product.name}</p>
-                              <p className="text-sm text-gray-500">SKU: {product.sku}</p>
+                              <div className="flex items-center gap-2">
+                                <span className={`text-xs px-2 py-1 rounded ${
+                                  item.type === 'producto' 
+                                    ? 'bg-blue-100 text-blue-800' 
+                                    : 'bg-green-100 text-green-800'
+                                }`}>
+                                  {item.type === 'producto' ? 'Producto' : 'Servicio'}
+                                </span>
+                                <p className="font-medium text-gray-900">{item.name}</p>
+                              </div>
+                              {item.type === 'producto' && (
+                                <p className="text-sm text-gray-500">SKU: {item.sku} - Stock: {item.stock}</p>
+                              )}
+                              {item.type === 'servicio' && (
+                                <p className="text-sm text-gray-500">{item.duration} min</p>
+                              )}
                               <p className="text-sm font-medium text-brand-burgundy">
-                                {formatCurrency(product.price)} - Stock: {product.stock}
+                                {formatCurrency(item.price)}
                               </p>
                             </div>
                           ))}
@@ -1459,6 +1519,54 @@ const Sales = () => {
                         </select>
                       </div>
                     )}
+
+                    {/* Unified Search for Edit */}
+                    <div>
+                      <label className="form-label">Buscar producto o servicio por nombre...</label>
+                      <input
+                        type="text"
+                        value={editSearchQuery}
+                        onChange={(e) => setEditSearchQuery(e.target.value)}
+                        className="form-input"
+                        placeholder="Escribe o escanea código de barras..."
+                      />
+                      {editSearchResults.length > 0 && (
+                        <div className="mt-2 border border-gray-200 rounded-xl max-h-48 overflow-y-auto bg-white">
+                          {editSearchResults.map((item, index) => (
+                            <div
+                              key={item._id}
+                              onClick={() => {
+                                addToEditCart(item, item.type);
+                                setEditSearchQuery('');
+                                setEditSearchResults([]);
+                                setEditSelectedSearchIndex(-1);
+                              }}
+                              className="p-3 cursor-pointer border-b border-gray-100 last:border-0 hover:bg-gray-50 transition-colors"
+                            >
+                              <div className="flex items-center gap-2">
+                                <span className={`text-xs px-2 py-1 rounded ${
+                                  item.type === 'producto' 
+                                    ? 'bg-blue-100 text-blue-800' 
+                                    : 'bg-green-100 text-green-800'
+                                }`}>
+                                  {item.type === 'producto' ? 'Producto' : 'Servicio'}
+                                </span>
+                                <p className="font-medium text-gray-900">{item.name}</p>
+                              </div>
+                              {item.type === 'producto' && (
+                                <p className="text-sm text-gray-500">SKU: {item.sku} - Stock: {item.stock}</p>
+                              )}
+                              {item.type === 'servicio' && (
+                                <p className="text-sm text-gray-500">{item.duration} min</p>
+                              )}
+                              <p className="text-sm font-medium text-brand-burgundy">
+                                {formatCurrency(item.price)}
+                              </p>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
 
                     {/* Products */}
                     <div>
