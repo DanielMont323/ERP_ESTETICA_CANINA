@@ -125,7 +125,7 @@ export const petsAPI = {
   addMedicalHistory: (id, data) => api.post(`/mascotas/${id}/medical-history`, data),
   addVaccination: (id, data) => api.post(`/mascotas/${id}/vaccinations`, data),
   getVaccinationsDue: () => api.get('/mascotas/vaccinations/due'),
-  getByOwner: (ownerId) => api.get('/mascotas', { params: { owner: ownerId, active: true } }),
+  getByOwner: (ownerId, additionalParams = {}) => api.get('/mascotas', { params: { owner: ownerId, active: true, ...additionalParams } }),
 };
 
 // Services services

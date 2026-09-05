@@ -162,7 +162,7 @@ const Products = () => {
   // Fetch categories for autocomplete
   const fetchCategoriesForAutocomplete = async (searchQuery) => {
     try {
-      const response = await productCategoriesAPI.getAll({ search: searchQuery });
+      const response = await productCategoriesAPI.getAll({ search: searchQuery, limit: 1000 });
       return response.data.data;
     } catch (error) {
       console.error('Error al buscar categorías:', error);

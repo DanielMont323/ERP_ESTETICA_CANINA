@@ -47,8 +47,8 @@ const Sales = () => {
   
   const [cart, setCart] = useState([]);
   const [editCart, setEditCart] = useState([]);
-  const [selectedCustomer, setSelectedCustomer] = useState('');
-  const [editCustomer, setEditCustomer] = useState('');
+  const [selectedCustomer, setSelectedCustomer] = useState(null);
+  const [editCustomer, setEditCustomer] = useState(null);
   const [selectedPet, setSelectedPet] = useState('');
   const [editPet, setEditPet] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
@@ -217,7 +217,7 @@ const Sales = () => {
 
   const fetchPetsForAutocomplete = async (searchQuery) => {
     try {
-      const response = await petsAPI.getAll({ search: searchQuery, owner: selectedCustomer, active: true, limit: 1000 });
+      const response = await petsAPI.getAll({ search: searchQuery, owner: selectedCustomer?._id, active: true, limit: 1000 });
       return response.data.data;
     } catch (error) {
       console.error('Error al buscar mascotas:', error);
@@ -237,7 +237,7 @@ const Sales = () => {
       return;
     }
     try {
-      const response = await petsAPI.getByOwner(customerId);
+      const response = await petsAPI.getByOwner(customerId, { limit: 1000 });
       setPets(response.data.data);
       setSelectedPet('');
     } catch (error) {
@@ -248,7 +248,7 @@ const Sales = () => {
 
   // Cargar mascotas cuando cambia el cliente seleccionado
   useEffect(() => {
-    fetchPetsByCustomer(selectedCustomer);
+    fetchPetsByCustomer(selectedCustomer?._id);
     
     // Limpiar mascotas seleccionadas en el carrito cuando cambia el cliente
     if (cart.length > 0) {
@@ -394,6 +394,12 @@ const Sales = () => {
       cartItem.item === item._id && cartItem.type === type
     );
 
+    // Calcular precio con descuento si existe
+    const discountPercentage = Number(item.discountPercentage) || 0;
+    const finalPrice = discountPercentage > 0
+      ? Math.round((Number(item.price) * (1 - discountPercentage / 100)) * 100) / 100
+      : Number(item.price);
+
     if (existingItem) {
       setCart(cart.map(cartItem =>
         cartItem.item === item._id && cartItem.type === type
@@ -405,7 +411,7 @@ const Sales = () => {
         item: item._id,
         type,
         quantity: 1,
-        unitPrice: item.price,
+        unitPrice: finalPrice,
         name: item.name,
         category: item.category,
         nextDoseDate: '',
@@ -433,7 +439,7 @@ const Sales = () => {
         name: item.item?.name || 'Producto'
       })));
       
-      setEditCustomer(sale.customer?._id || sale.customer || '');
+      setEditCustomer(sale.customer || null);
       setEditPet(sale.mascota?._id || sale.mascota || '');
       setEditPaymentMethod(sale.paymentMethod || 'efectivo');
       setEditSaleChannel(sale.saleChannel || 'local');
@@ -475,7 +481,7 @@ const Sales = () => {
     try {
       const updateData = {
         items: editCart,
-        customer: editCustomer || null,
+        customer: editCustomer?._id || null,
         mascota: editPet || null,
         paymentMethod: editPaymentMethod,
         saleChannel: editSaleChannel,
@@ -502,7 +508,7 @@ const Sales = () => {
     setShowEditModal(false);
     setEditingSale(null);
     setEditCart([]);
-    setEditCustomer('');
+    setEditCustomer(null);
     setEditPet('');
     setEditPaymentMethod('efectivo');
     setEditSaleChannel('local');
@@ -630,7 +636,7 @@ const Sales = () => {
         })),
         paymentMethod,
         saleChannel,
-        customer: selectedCustomer || null,
+        customer: selectedCustomer?._id || null,
         notes,
         user: user?._id || null
       };
@@ -652,6 +658,7 @@ const Sales = () => {
 
       // Mercado Libre: enviar valores financieros manuales si están activos
       if (saleChannel === 'mercado_libre' && useManualFinancials && userRole === 'admin') {
+        saleData.manualFinancials = true;
         if (manualSubtotal !== '') saleData.subtotal = parseFloat(manualSubtotal);
         if (manualTotal !== '') saleData.total = parseFloat(manualTotal);
         if (manualNetIncome !== '') saleData.netIncome = parseFloat(manualNetIncome);
@@ -662,7 +669,7 @@ const Sales = () => {
       
       // Reset form
       setCart([]);
-      setSelectedCustomer('');
+      setSelectedCustomer(null);
       setSelectedPet('');
       setPets([]);
       setPaymentMethod('efectivo');
@@ -993,10 +1000,22 @@ const Sales = () => {
                       <Autocomplete
                         placeholder="Cliente general"
                         fetchOptions={fetchCustomersForAutocomplete}
-                        displayValue={(item) => `${item.name} - ${item.phone}`}
+                        displayValue={(item) => item ? `${item.name || ''} - ${item.phone || ''}` : ''}
                         getOptionValue={(item) => item._id}
-                        value={customers.find(c => c._id === selectedCustomer) || null}
-                        onChange={(value) => setSelectedCustomer(value)}
+                        value={selectedCustomer}
+                        onChange={async (value) => {
+                          if (!value) {
+                            setSelectedCustomer(null);
+                            return;
+                          }
+                          try {
+                            const response = await customersAPI.getById(value);
+                            setSelectedCustomer(response.data.data);
+                          } catch (error) {
+                            console.error('Error fetching customer:', error);
+                            setSelectedCustomer(null);
+                          }
+                        }}
                         minLength={1}
                       />
                     </div>
@@ -1482,9 +1501,10 @@ const Sales = () => {
                     <div>
                       <label className="form-label">Cliente</label>
                       <select
-                        value={editCustomer}
+                        value={editCustomer?._id || ''}
                         onChange={async (e) => {
-                          setEditCustomer(e.target.value);
+                          const selectedCustomerObj = customers.find(c => c._id === e.target.value);
+                          setEditCustomer(selectedCustomerObj || null);
                           setEditPet('');
                           if (e.target.value) {
                             await fetchPetsByCustomer(e.target.value);

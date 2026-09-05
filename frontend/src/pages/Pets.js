@@ -55,6 +55,12 @@ const Pets = () => {
     fetchCustomers();
   }, [pagination.page, pagination.limit]);
 
+  // Recargar datos cuando cambia el término de búsqueda
+  useEffect(() => {
+    setPagination(prev => ({ ...prev, page: 1 }));
+    fetchData();
+  }, [searchTerm]);
+
   // Listener para evento personalizado de F7 contextual (nueva mascota)
   useEffect(() => {
     const handleOpenNewPet = () => {
@@ -88,9 +94,12 @@ const Pets = () => {
   const fetchData = async () => {
     try {
       const params = {
-        page: pagination.page,
-        limit: pagination.limit
+        page: searchTerm ? 1 : pagination.page,
+        limit: searchTerm ? 1000 : pagination.limit
       };
+      if (searchTerm) {
+        params.search = searchTerm;
+      }
       const petsRes = await petsAPI.getAll(params);
       console.log('Mascotas cargadas:', petsRes.data.data);
       setPets(petsRes.data.data);
@@ -329,11 +338,7 @@ const Pets = () => {
 
       {/* Pets Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {pets.filter(pet =>
-          pet.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          pet.breed?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          pet.customer?.name?.toLowerCase().includes(searchTerm.toLowerCase())
-        ).map((pet) => (
+        {pets.map((pet) => (
           <div key={pet._id} className="card">
             <div className="card-body">
               <div className="flex items-start justify-between">

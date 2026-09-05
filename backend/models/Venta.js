@@ -77,6 +77,10 @@ const ventaSchema = new mongoose.Schema({
     required: true,
     default: 'local'
   },
+  manualFinancials: {
+    type: Boolean,
+    default: false
+  },
   commission: {
     type: Number,
     required: false,
@@ -132,23 +136,28 @@ const ventaSchema = new mongoose.Schema({
 
 // Calcular totales antes de guardar
 ventaSchema.pre('save', function(next) {
-  // Calcular subtotal de cada item
+  // Calcular subtotal de cada item (siempre necesario)
   this.items.forEach(item => {
     item.subtotal = Math.round((item.quantity * item.unitPrice) * 100) / 100;
   });
   
-  // Calcular subtotal total
-  this.subtotal = Math.round(this.items.reduce((sum, item) => sum + item.subtotal, 0) * 100) / 100;
+  // Solo recalcular subtotal y total si NO es Mercado Libre con ajuste manual
+  const isMercadoLibreManual = this.saleChannel === 'mercado_libre' && this.manualFinancials === true;
   
-  // Calcular comisión de tarjeta (4.6%) solo si paymentMethod es tarjeta
-  if (this.paymentMethod === 'tarjeta') {
-    this.cardCommission = Math.round((this.subtotal * 0.046) * 100) / 100;
-  } else {
-    this.cardCommission = 0;
+  if (!isMercadoLibreManual) {
+    // Calcular subtotal total
+    this.subtotal = Math.round(this.items.reduce((sum, item) => sum + item.subtotal, 0) * 100) / 100;
+    
+    // Calcular comisión de tarjeta (4.6%) solo si paymentMethod es tarjeta
+    if (this.paymentMethod === 'tarjeta') {
+      this.cardCommission = Math.round((this.subtotal * 0.046) * 100) / 100;
+    } else {
+      this.cardCommission = 0;
+    }
+    
+    // Calcular total (subtotal + comisión de tarjeta)
+    this.total = Math.round((this.subtotal + this.cardCommission) * 100) / 100;
   }
-  
-  // Calcular total (subtotal + comisión de tarjeta)
-  this.total = Math.round((this.subtotal + this.cardCommission) * 100) / 100;
   
   // Calcular ingreso neto (total - commission - cardCommission)
   // Nota: commission ahora es un campo manual para uso administrativo
