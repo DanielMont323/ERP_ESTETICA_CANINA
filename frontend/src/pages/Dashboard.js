@@ -84,14 +84,14 @@ const Dashboard = () => {
 
   const StatCard = ({ title, value, change, changeType, icon: Icon, color }) => {
     return (
-      <div className="card">
-        <div className="card-body">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">{title}</p>
-              <p className="text-2xl font-semibold text-gray-900">{value}</p>
+      <div className="card hover:shadow-md transition-shadow duration-200">
+        <div className="card-body p-6">
+          <div className="flex items-start justify-between">
+            <div className="flex-1">
+              <p className="text-sm font-medium text-gray-600 mb-1">{title}</p>
+              <p className="text-3xl font-bold text-gray-900 mb-2">{value}</p>
               {change !== undefined && (
-                <div className={`flex items-center mt-1 text-sm ${
+                <div className={`flex items-center text-sm ${
                   changeType === 'positive' ? 'text-success-600' : 'text-danger-600'
                 }`}>
                   {changeType === 'positive' ? (
@@ -103,7 +103,7 @@ const Dashboard = () => {
                 </div>
               )}
             </div>
-            <div className={`p-3 rounded-full ${color}`}>
+            <div className={`p-4 rounded-xl ${color} ml-4 flex-shrink-0`}>
               <Icon className="h-6 w-6 text-white" />
             </div>
           </div>
@@ -160,7 +160,7 @@ const Dashboard = () => {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
           title="Ventas del mes"
           value={formatCurrency(dashboardData?.sales?.currentMonth?.total || 0)}
@@ -193,26 +193,26 @@ const Dashboard = () => {
 
       {/* Attention Required Section */}
       <div>
-        <h2 className="text-xl font-semibold text-gray-900 mb-4">Atención requerida</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+        <h2 className="text-xl font-semibold text-gray-900 mb-6">Atención requerida</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
         {/* Mascotas - Vacunas Próximas */}
-        <div className="card">
+        <div className="card hover:shadow-md transition-shadow duration-200">
           <div 
-            className="card-header cursor-pointer hover:bg-gray-50 transition-colors"
+            className="card-header cursor-pointer hover:bg-gray-50 transition-colors p-5"
             onClick={() => setExpandedSection(expandedSection === 'pets' ? null : 'pets')}
           >
             <div className="flex items-center justify-between">
               <div className="flex items-center">
-                <div className="p-2 rounded-full bg-brand-cream text-brand-burgundy mr-3">
+                <div className="p-3 rounded-xl bg-brand-cream text-brand-burgundy mr-4">
                   <Dog className="h-5 w-5" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-medium text-gray-900">Mascotas</h3>
+                  <h3 className="text-lg font-semibold text-gray-900">Mascotas</h3>
                   <p className="text-sm text-gray-600">Vacunas próximas</p>
                 </div>
               </div>
               <div className="flex items-center">
-                <span className="text-2xl font-semibold text-gray-900 mr-3">
+                <span className="text-3xl font-bold text-gray-900 mr-3">
                   {remindersData?.counts?.vaccines || 0}
                 </span>
                 {expandedSection === 'pets' ? (
@@ -224,22 +224,22 @@ const Dashboard = () => {
             </div>
           </div>
           {expandedSection === 'pets' && (
-            <div className="card-body border-t border-gray-200 p-4">
+            <div className="card-body border-t border-gray-200 p-5">
               {remindersData?.vaccines?.length > 0 ? (
-                <div className="space-y-2">
+                <div className="space-y-3">
                   {remindersData.vaccines.map((vaccine) => (
                     <div 
                       key={vaccine.id} 
-                      className="p-3 bg-brand-cream rounded-lg cursor-pointer hover:bg-brand-cream/80 transition-colors"
+                      className="p-4 bg-brand-cream rounded-lg cursor-pointer hover:bg-brand-cream/90 transition-colors"
                       onClick={() => navigate('/vaccination-cards', { state: { mascotaId: vaccine.mascotaId } })}
                     >
                       <div className="flex items-center justify-between">
-                        <div className="flex-1 min-w-0">
+                        <div className="flex-1 min-w-0 pr-3">
                           <p className="font-medium text-gray-900 truncate" title={vaccine.mascotaNombre}>{vaccine.mascotaNombre}</p>
                           <p className="text-sm text-gray-600 truncate" title={vaccine.title}>{vaccine.title}</p>
                         </div>
-                        <div className="text-right">
-                          <p className="text-sm font-medium text-brand-burgundy">
+                        <div className="text-right flex-shrink-0">
+                          <p className="text-sm font-semibold text-brand-burgundy">
                             {new Date(vaccine.date).toLocaleDateString('es-MX')}
                           </p>
                           <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
@@ -254,7 +254,7 @@ const Dashboard = () => {
                   ))}
                 </div>
               ) : (
-                <p className="text-gray-500 text-center py-4">
+                <p className="text-gray-500 text-center py-6">
                   ✓ No hay vacunas próximas
                 </p>
               )}
@@ -263,23 +263,23 @@ const Dashboard = () => {
         </div>
 
         {/* Cuentas por Pagar */}
-        <div className="card">
+        <div className="card hover:shadow-md transition-shadow duration-200">
           <div 
-            className="card-header cursor-pointer hover:bg-gray-50 transition-colors"
+            className="card-header cursor-pointer hover:bg-gray-50 transition-colors p-5"
             onClick={() => setExpandedSection(expandedSection === 'accounts' ? null : 'accounts')}
           >
             <div className="flex items-center justify-between">
               <div className="flex items-center">
-                <div className="p-2 rounded-full bg-success-100 text-success-600 mr-3">
+                <div className="p-3 rounded-xl bg-success-100 text-success-600 mr-4">
                   <DollarSign className="h-5 w-5" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-medium text-gray-900">Cuentas por Pagar</h3>
+                  <h3 className="text-lg font-semibold text-gray-900">Cuentas por Pagar</h3>
                   <p className="text-sm text-gray-600">Pagos pendientes</p>
                 </div>
               </div>
               <div className="flex items-center">
-                <span className="text-2xl font-semibold text-gray-900 mr-3">
+                <span className="text-3xl font-bold text-gray-900 mr-3">
                   {remindersData?.counts?.accounts || 0}
                 </span>
                 {expandedSection === 'accounts' ? (
@@ -291,22 +291,22 @@ const Dashboard = () => {
             </div>
           </div>
           {expandedSection === 'accounts' && (
-            <div className="card-body border-t border-gray-200 p-4">
+            <div className="card-body border-t border-gray-200 p-5">
               {remindersData?.accounts?.length > 0 ? (
-                <div className="space-y-2">
+                <div className="space-y-3">
                   {remindersData.accounts.map((account) => (
                     <div 
                       key={account.id} 
-                      className="p-3 bg-success-50 rounded-lg cursor-pointer hover:bg-success-100/80 transition-colors"
+                      className="p-4 bg-success-50 rounded-lg cursor-pointer hover:bg-success-100/90 transition-colors"
                       onClick={() => navigate('/accounts-payable')}
                     >
                       <div className="flex items-center justify-between">
-                        <div className="flex-1 min-w-0">
+                        <div className="flex-1 min-w-0 pr-3">
                           <p className="font-medium text-gray-900 truncate" title={account.title}>{account.title}</p>
                           <p className="text-sm text-gray-600 truncate" title={account.description}>{account.description}</p>
                         </div>
-                        <div className="text-right">
-                          <p className="text-sm font-medium text-success-600">
+                        <div className="text-right flex-shrink-0">
+                          <p className="text-sm font-semibold text-success-600">
                             {formatCurrency(account.amount)}
                           </p>
                           <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
@@ -322,7 +322,7 @@ const Dashboard = () => {
                   ))}
                 </div>
               ) : (
-                <p className="text-gray-500 text-center py-4">
+                <p className="text-gray-500 text-center py-6">
                   ✓ No hay pagos pendientes próximos
                 </p>
               )}
@@ -331,23 +331,23 @@ const Dashboard = () => {
         </div>
 
         {/* Productos - Stock Bajo */}
-        <div className="card">
+        <div className="card hover:shadow-md transition-shadow duration-200">
           <div 
-            className="card-header cursor-pointer hover:bg-gray-50 transition-colors"
+            className="card-header cursor-pointer hover:bg-gray-50 transition-colors p-5"
             onClick={() => setExpandedSection(expandedSection === 'products' ? null : 'products')}
           >
             <div className="flex items-center justify-between">
               <div className="flex items-center">
-                <div className="p-2 rounded-full bg-warning-100 text-warning-600 mr-3">
+                <div className="p-3 rounded-xl bg-warning-100 text-warning-600 mr-4">
                   <Package className="h-5 w-5" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-medium text-gray-900">Productos</h3>
+                  <h3 className="text-lg font-semibold text-gray-900">Productos</h3>
                   <p className="text-sm text-gray-600">Stock bajo</p>
                 </div>
               </div>
               <div className="flex items-center">
-                <span className="text-2xl font-semibold text-gray-900 mr-3">
+                <span className="text-3xl font-bold text-gray-900 mr-3">
                   {remindersData?.counts?.lowStockProducts || 0}
                 </span>
                 {expandedSection === 'products' ? (
@@ -359,22 +359,22 @@ const Dashboard = () => {
             </div>
           </div>
           {expandedSection === 'products' && (
-            <div className="card-body border-t border-gray-200 p-4">
+            <div className="card-body border-t border-gray-200 p-5">
               {remindersData?.lowStockProducts?.length > 0 ? (
-                <div className="space-y-2">
+                <div className="space-y-3">
                   {remindersData.lowStockProducts.map((product) => (
                     <div 
                       key={product.id} 
-                      className="p-3 bg-warning-50 rounded-lg cursor-pointer hover:bg-warning-100/80 transition-colors"
+                      className="p-4 bg-warning-50 rounded-lg cursor-pointer hover:bg-warning-100/90 transition-colors"
                       onClick={() => navigate('/products')}
                     >
                       <div className="flex items-center justify-between">
-                        <div className="flex-1 min-w-0">
+                        <div className="flex-1 min-w-0 pr-3">
                           <p className="font-medium text-gray-900 truncate" title={product.title}>{product.title}</p>
                           <p className="text-sm text-gray-600 truncate" title={`SKU: ${product.sku}`}>SKU: {product.sku}</p>
                         </div>
-                        <div className="text-right">
-                          <p className="text-sm font-medium text-warning-600">
+                        <div className="text-right flex-shrink-0">
+                          <p className="text-sm font-semibold text-warning-600">
                             Stock: {product.stock}
                           </p>
                           <p className="text-xs text-gray-600">Mínimo: {product.minStock}</p>
@@ -384,7 +384,7 @@ const Dashboard = () => {
                   ))}
                 </div>
               ) : (
-                <p className="text-gray-500 text-center py-4">
+                <p className="text-gray-500 text-center py-6">
                   ✓ No hay productos con stock bajo
                 </p>
               )}
@@ -393,23 +393,23 @@ const Dashboard = () => {
         </div>
 
         {/* Productos - Por Caducar */}
-        <div className="card">
+        <div className="card hover:shadow-md transition-shadow duration-200">
           <div 
-            className="card-header cursor-pointer hover:bg-gray-50 transition-colors"
+            className="card-header cursor-pointer hover:bg-gray-50 transition-colors p-5"
             onClick={() => setExpandedSection(expandedSection === 'expiring' ? null : 'expiring')}
           >
             <div className="flex items-center justify-between">
               <div className="flex items-center">
-                <div className="p-2 rounded-full bg-orange-100 text-orange-600 mr-3">
+                <div className="p-3 rounded-xl bg-orange-100 text-orange-600 mr-4">
                   <Package className="h-5 w-5" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-medium text-gray-900">Productos</h3>
+                  <h3 className="text-lg font-semibold text-gray-900">Productos</h3>
                   <p className="text-sm text-gray-600">Por caducar</p>
                 </div>
               </div>
               <div className="flex items-center">
-                <span className="text-2xl font-semibold text-gray-900 mr-3">
+                <span className="text-3xl font-bold text-gray-900 mr-3">
                   {remindersData?.expiringProducts?.length || 0}
                 </span>
                 {expandedSection === 'expiring' ? (
@@ -421,9 +421,9 @@ const Dashboard = () => {
             </div>
           </div>
           {expandedSection === 'expiring' && (
-            <div className="card-body border-t border-gray-200 p-4">
+            <div className="card-body border-t border-gray-200 p-5">
               {remindersData?.expiringProducts?.length > 0 ? (
-                <div className="space-y-2">
+                <div className="space-y-3">
                   {remindersData.expiringProducts
                     .sort((a, b) => {
                       const daysA = Math.ceil((new Date(a.expirationDate) - new Date()) / (1000 * 60 * 60 * 24));
@@ -451,19 +451,19 @@ const Dashboard = () => {
                     return (
                       <div 
                         key={product._id} 
-                        className={`p-3 ${bgColor} rounded-lg cursor-pointer hover:opacity-80 transition-colors`}
+                        className={`p-4 ${bgColor} rounded-lg cursor-pointer hover:opacity-90 transition-colors`}
                         onClick={() => navigate('/products')}
                       >
                         <div className="flex items-center justify-between">
-                          <div className="flex-1 min-w-0">
+                          <div className="flex-1 min-w-0 pr-3">
                             <p className="font-medium text-gray-900 truncate" title={product.name}>{product.name}</p>
                             <p className="text-sm text-gray-600 truncate" title={`SKU: ${product.sku}`}>SKU: {product.sku}</p>
                             {product.lotNumber && (
                               <p className="text-xs text-gray-500 truncate" title={`Lote: ${product.lotNumber}`}>Lote: {product.lotNumber}</p>
                             )}
                           </div>
-                          <div className="text-right">
-                            <p className={`text-sm font-medium ${textColor}`}>
+                          <div className="text-right flex-shrink-0">
+                            <p className={`text-sm font-semibold ${textColor}`}>
                               {status}
                             </p>
                             <p className="text-xs text-gray-600">
@@ -482,7 +482,7 @@ const Dashboard = () => {
                   })}
                 </div>
               ) : (
-                <p className="text-gray-500 text-center py-4">
+                <p className="text-gray-500 text-center py-6">
                   ✓ No hay productos perecederos próximos a caducar
                 </p>
               )}
@@ -491,23 +491,23 @@ const Dashboard = () => {
         </div>
 
         {/* Recordatorios Manuales */}
-        <div className="card">
+        <div className="card hover:shadow-md transition-shadow duration-200">
           <div 
-            className="card-header cursor-pointer hover:bg-gray-50 transition-colors"
+            className="card-header cursor-pointer hover:bg-gray-50 transition-colors p-5"
             onClick={() => setExpandedSection(expandedSection === 'reminders' ? null : 'reminders')}
           >
             <div className="flex items-center justify-between">
               <div className="flex items-center">
-                <div className="p-2 rounded-full bg-purple-100 text-purple-600 mr-3">
+                <div className="p-3 rounded-xl bg-purple-100 text-purple-600 mr-4">
                   <Bell className="h-5 w-5" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-medium text-gray-900">Recordatorios</h3>
+                  <h3 className="text-lg font-semibold text-gray-900">Recordatorios</h3>
                   <p className="text-sm text-gray-600">Tareas pendientes</p>
                 </div>
               </div>
               <div className="flex items-center">
-                <span className="text-2xl font-semibold text-gray-900 mr-3">
+                <span className="text-3xl font-bold text-gray-900 mr-3">
                   {manualReminders?.length || 0}
                 </span>
                 {expandedSection === 'reminders' ? (
@@ -519,27 +519,27 @@ const Dashboard = () => {
             </div>
           </div>
           {expandedSection === 'reminders' && (
-            <div className="card-body border-t border-gray-200 p-4">
+            <div className="card-body border-t border-gray-200 p-5">
               {manualReminders?.length > 0 ? (
-                <div className="space-y-2">
+                <div className="space-y-3">
                   {manualReminders.slice(0, 7).map((reminder) => (
                     <div 
                       key={reminder._id} 
-                      className="p-3 bg-purple-50 rounded-lg cursor-pointer hover:bg-purple-100/80 transition-colors"
+                      className="p-4 bg-purple-50 rounded-lg cursor-pointer hover:bg-purple-100/90 transition-colors"
                       onClick={() => navigate('/reminders')}
                     >
                       <div className="flex items-center justify-between">
-                        <div className="flex-1 min-w-0">
+                        <div className="flex-1 min-w-0 pr-3">
                           <p className="font-medium text-gray-900 truncate" title={reminder.title}>{reminder.title}</p>
                           {reminder.description && (
                             <p className="text-sm text-gray-600 line-clamp-2" title={reminder.description}>{reminder.description}</p>
                           )}
-                          <div className="flex items-center text-sm text-gray-600 mt-1">
+                          <div className="flex items-center text-sm text-gray-600 mt-2">
                             <Calendar className="h-4 w-4 mr-2 flex-shrink-0" />
                             {new Date(reminder.date).toLocaleDateString('es-MX')}
                           </div>
                         </div>
-                        <div className="text-right ml-3">
+                        <div className="text-right flex-shrink-0">
                           <span className={`capitalize badge badge-${
                             reminder.priority === 'alta' ? 'danger' :
                             reminder.priority === 'media' ? 'warning' : 'success'
@@ -553,14 +553,14 @@ const Dashboard = () => {
                   {manualReminders.length > 7 && (
                     <button 
                       onClick={() => navigate('/reminders')}
-                      className="w-full text-center text-sm text-purple-600 hover:text-purple-800 font-medium"
+                      className="w-full text-center text-sm text-purple-600 hover:text-purple-800 font-medium py-2"
                     >
                       Ver todos ({manualReminders.length})
                     </button>
                   )}
                 </div>
               ) : (
-                <p className="text-gray-500 text-center py-4">
+                <p className="text-gray-500 text-center py-6">
                   ✓ No hay recordatorios pendientes
                 </p>
               )}
@@ -570,39 +570,39 @@ const Dashboard = () => {
       </div>
 
       {/* Quick Actions */}
-      <div className="card">
-        <div className="card-header">
+      <div className="card hover:shadow-md transition-shadow duration-200">
+        <div className="card-header p-5">
           <h3 className="text-lg font-semibold text-gray-900">Acciones rápidas</h3>
         </div>
-        <div className="card-body">
+        <div className="card-body p-5">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <button 
               onClick={() => navigate('/sales')}
-              className="p-4 border-2 border-dashed border-gray-300 rounded-xl hover:border-brand-burgundy hover:bg-brand-cream hover:shadow-sm transition-all duration-200 cursor-pointer group"
+              className="p-5 border-2 border-dashed border-gray-300 rounded-xl hover:border-brand-burgundy hover:bg-brand-cream hover:shadow-sm transition-all duration-200 cursor-pointer group"
             >
-              <ShoppingCart className="h-8 w-8 text-brand-burgundy mx-auto mb-2 group-hover:scale-110 transition-transform" />
-              <p className="text-sm font-medium text-gray-900">Nueva venta</p>
+              <ShoppingCart className="h-7 w-7 text-brand-burgundy mx-auto mb-3 group-hover:scale-110 transition-transform" />
+              <p className="text-sm font-semibold text-gray-900">Nueva venta</p>
             </button>
             <button 
               onClick={() => navigate('/products')}
-              className="p-4 border-2 border-dashed border-gray-300 rounded-xl hover:border-brand-burgundy hover:bg-brand-cream hover:shadow-sm transition-all duration-200 cursor-pointer group"
+              className="p-5 border-2 border-dashed border-gray-300 rounded-xl hover:border-brand-burgundy hover:bg-brand-cream hover:shadow-sm transition-all duration-200 cursor-pointer group"
             >
-              <Package className="h-8 w-8 text-brand-burgundy mx-auto mb-2 group-hover:scale-110 transition-transform" />
-              <p className="text-sm font-medium text-gray-900">Agregar producto</p>
+              <Package className="h-7 w-7 text-brand-burgundy mx-auto mb-3 group-hover:scale-110 transition-transform" />
+              <p className="text-sm font-semibold text-gray-900">Agregar producto</p>
             </button>
             <button 
               onClick={() => navigate('/customers')}
-              className="p-4 border-2 border-dashed border-gray-300 rounded-xl hover:border-brand-burgundy hover:bg-brand-cream hover:shadow-sm transition-all duration-200 cursor-pointer group"
+              className="p-5 border-2 border-dashed border-gray-300 rounded-xl hover:border-brand-burgundy hover:bg-brand-cream hover:shadow-sm transition-all duration-200 cursor-pointer group"
             >
-              <Users className="h-8 w-8 text-brand-burgundy mx-auto mb-2 group-hover:scale-110 transition-transform" />
-              <p className="text-sm font-medium text-gray-900">Nuevo cliente</p>
+              <Users className="h-7 w-7 text-brand-burgundy mx-auto mb-3 group-hover:scale-110 transition-transform" />
+              <p className="text-sm font-semibold text-gray-900">Nuevo cliente</p>
             </button>
             <button 
               onClick={() => navigate('/reports')}
-              className="p-4 border-2 border-dashed border-gray-300 rounded-xl hover:border-brand-burgundy hover:bg-brand-cream hover:shadow-sm transition-all duration-200 cursor-pointer group"
+              className="p-5 border-2 border-dashed border-gray-300 rounded-xl hover:border-brand-burgundy hover:bg-brand-cream hover:shadow-sm transition-all duration-200 cursor-pointer group"
             >
-              <FileText className="h-8 w-8 text-brand-burgundy mx-auto mb-2 group-hover:scale-110 transition-transform" />
-              <p className="text-sm font-medium text-gray-900">Generar reporte</p>
+              <FileText className="h-7 w-7 text-brand-burgundy mx-auto mb-3 group-hover:scale-110 transition-transform" />
+              <p className="text-sm font-semibold text-gray-900">Generar reporte</p>
             </button>
           </div>
         </div>

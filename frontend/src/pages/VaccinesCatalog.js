@@ -128,7 +128,7 @@ const VaccinesCatalog = () => {
             </thead>
             <tbody>
               {filteredVaccines.map((vaccine, index) => (
-                <tr key={vaccine._id} className={`table-row-divider ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'} hover:bg-blue-50`}>
+                <tr key={vaccine._id} className={`table-row-divider ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'} hover:bg-yellow-100`}>
                   <td className="py-4 font-medium">{vaccine.name}</td>
                   <td className="py-4 text-gray-600">{vaccine.categoryName || '-'}</td>
                   <td className="py-4">

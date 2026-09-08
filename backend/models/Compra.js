@@ -55,6 +55,11 @@ const itemCompraSchema = new mongoose.Schema({
     type: Number,
     default: 0.16,
     min: 0
+  },
+  costIncludesTax: {
+    type: Boolean,
+    default: false,
+    description: 'Indica si unitCost incluye IVA'
   }
 });
 

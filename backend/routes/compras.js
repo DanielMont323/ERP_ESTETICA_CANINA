@@ -153,20 +153,34 @@ router.post('/', authenticateToken, async (req, res) => {
         isActive: true
       });
 
-      // Usar costo del item o el costo base de SupplierProduct
-      const baseUnitCost = item.unitCost || (supplierProduct?.baseCost || producto.cost);
+      // Calcular baseUnitCost y unitCost según si el costo incluye IVA
+      let baseUnitCost;
+      let unitCostToSave;
+
+      if (item.costIncludesTax === true) {
+        // IVA incluido: desglosar
+        const totalWithTax = Number(item.unitCost) || 0;
+        const taxRate = Number(item.taxRate) || 0.16;
+        baseUnitCost = totalWithTax / (1 + taxRate);
+        unitCostToSave = totalWithTax;
+      } else {
+        // IVA no incluido: comportamiento actual
+        baseUnitCost = item.unitCost || (supplierProduct?.baseCost || producto.cost);
+        unitCostToSave = baseUnitCost;
+      }
       
       // Autocompletar condiciones de descuento
       const processedItem = {
         product: item.product,
         quantity: item.quantity,
         baseUnitCost: baseUnitCost,
-        unitCost: baseUnitCost, // Inicialmente igual al base
+        unitCost: unitCostToSave,
         discountPercentage: supplierProduct?.discountPercentage || 0,
         discountDays: supplierProduct?.discountDays || 0,
         discountApplied: false,
         hasTax: item.hasTax !== undefined ? item.hasTax : true,
-        taxRate: item.taxRate !== undefined ? item.taxRate : 0.16
+        taxRate: item.taxRate !== undefined ? item.taxRate : 0.16,
+        costIncludesTax: item.costIncludesTax || false
       };
 
       processedItems.push(processedItem);
@@ -358,15 +372,24 @@ router.put('/:id', authenticateToken, requireAdmin, async (req, res) => {
 
     // Si se modifican items, ajustar inventario
     if (items) {
+      // Helper para obtener valor con fallback explícito (evita tratar 0 como ausente)
+      const getValue = (...values) => {
+        for (const val of values) {
+          if (val !== undefined && val !== null) return val;
+        }
+        return 0;
+      };
+
       // Validar y normalizar items
       const normalizedItems = items.map(item => ({
         ...item,
-        baseUnitCost: item.baseUnitCost || item.cost || item.unitCost || 0,
-        unitCost: item.unitCost || item.cost || item.baseUnitCost || 0,
+        baseUnitCost: getValue(item.baseUnitCost, item.cost, item.unitCost),
+        unitCost: getValue(item.unitCost, item.cost, item.baseUnitCost),
         quantity: item.quantity || 1,
         discountPercentage: item.discountPercentage || 0,
         hasTax: item.hasTax !== undefined ? item.hasTax : true,
-        taxRate: item.taxRate !== undefined ? item.taxRate : 0.16
+        taxRate: item.taxRate !== undefined ? item.taxRate : 0.16,
+        costIncludesTax: item.costIncludesTax || false
       }));
 
       // Devolver stock de items originales
@@ -418,13 +441,13 @@ router.put('/:id', authenticateToken, requireAdmin, async (req, res) => {
 
     // Recalcular totales
     compra.baseTotal = Math.round((compra.items.reduce((sum, item) => {
-      const cost = item.baseUnitCost || item.cost || item.unitCost || 0;
+      const cost = getValue(item.baseUnitCost, item.cost, item.unitCost);
       const qty = item.quantity || 1;
       return sum + (qty * cost);
     }, 0)) * 100) / 100;
     
     compra.totalDiscount = Math.round((compra.items.reduce((sum, item) => {
-      const cost = item.baseUnitCost || item.cost || item.unitCost || 0;
+      const cost = getValue(item.baseUnitCost, item.cost, item.unitCost);
       const qty = item.quantity || 1;
       const discountPct = item.discountPercentage || 0;
       return sum + (qty * cost * (discountPct / 100));
@@ -432,7 +455,7 @@ router.put('/:id', authenticateToken, requireAdmin, async (req, res) => {
     
     // Calcular IVA total por item
     const totalIVA = Math.round((compra.items.reduce((sum, item) => {
-      const cost = item.baseUnitCost || item.cost || item.unitCost || 0;
+      const cost = getValue(item.baseUnitCost, item.cost, item.unitCost);
       const qty = item.quantity || 1;
       const discountPct = item.discountPercentage || 0;
       const subtotal = (qty * cost) - (qty * cost * (discountPct / 100));

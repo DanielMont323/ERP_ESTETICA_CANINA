@@ -173,7 +173,7 @@ const Costs = () => {
                 cost.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 cost.category?.toLowerCase().includes(searchTerm.toLowerCase())
               ).map((cost, index) => (
-                <tr key={cost._id} className={`table-row-divider ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'} hover:bg-blue-50`}>
+                <tr key={cost._id} className={`table-row-divider ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'} hover:bg-yellow-100`}>
                   <td className="py-4 font-medium">{cost.description}</td>
                   <td className="py-4">
                     <span className="capitalize badge badge-info">

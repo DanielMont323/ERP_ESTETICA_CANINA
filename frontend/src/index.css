@@ -125,7 +125,7 @@
     height: 2px;
     background-color: #1f2937;
   }
-  
+
   .badge {
     @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
   }

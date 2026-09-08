@@ -50,17 +50,18 @@ const Purchases = () => {
     productName: '',
     quantity: 1,
     unitCost: 0,
-    hasTax: true,
-    taxRate: 0.16
+    hasTax: false,
+    taxRate: 0.16,
+    costIncludesTax: false
   });
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [discountInfo, setDiscountInfo] = useState(null);
   const [selectedSupplierInfo, setSelectedSupplierInfo] = useState(null);
   const [productSearchQuery, setProductSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
+  const [editingItemIndex, setEditingItemIndex] = useState(null);
   const productSearchInputRef = useRef(null);
   const formRef = useRef(null);
-  const selectAllTaxRef = useRef(null);
 
   // Función para reiniciar el formulario a valores iniciales
   const resetForm = () => {
@@ -82,14 +83,16 @@ const Purchases = () => {
       productName: '',
       quantity: 1,
       unitCost: 0,
-      hasTax: true,
-      taxRate: 0.16
+      hasTax: false,
+      taxRate: 0.16,
+      costIncludesTax: false
     });
     setSelectedProduct(null);
     setDiscountInfo(null);
     setSelectedSupplierInfo(null);
     setProductSearchQuery('');
     setSearchResults([]);
+    setEditingItemIndex(null);
   };
 
   // Listener para evento personalizado de F4 contextual (nueva compra)
@@ -138,15 +141,6 @@ const Purchases = () => {
     fetchSuppliers();
     fetchProducts();
   }, []);
-
-  // Actualizar estado indeterminate del checkbox "Seleccionar todos" IVA
-  useEffect(() => {
-    if (selectAllTaxRef.current) {
-      const { checked, indeterminate } = getSelectAllTaxState();
-      selectAllTaxRef.current.checked = checked;
-      selectAllTaxRef.current.indeterminate = indeterminate;
-    }
-  }, [formData.items]);
 
   // Atajo ESC para cerrar modal
   useEffect(() => {
@@ -234,32 +228,9 @@ const Purchases = () => {
         const results = response.data.data;
 
         if (results.length === 1) {
-          // Producto único encontrado - agregar automáticamente
+          // Producto único encontrado - cargar en currentItem
           const product = results[0];
           await handleProductChange(product._id);
-          
-          // Verificar si ya existe en items para incrementar cantidad
-          const existingItemIndex = formData.items.findIndex(
-            item => item.product === product._id
-          );
-
-          if (existingItemIndex >= 0) {
-            // Incrementar cantidad
-            const updatedItems = [...formData.items];
-            updatedItems[existingItemIndex].quantity += 1;
-            setFormData({ ...formData, items: updatedItems });
-            toast.success(`${product.name} cantidad incrementada a ${updatedItems[existingItemIndex].quantity}`);
-          } else {
-            // Agregar nuevo item
-            const newItem = {
-              product: product._id,
-              productName: product.name,
-              quantity: 1,
-              unitCost: product.cost || 0
-            };
-            setFormData({ ...formData, items: [...formData.items, newItem] });
-            toast.success(`${product.name} agregado a la compra`);
-          }
 
           setProductSearchQuery('');
           setSearchResults([]);
@@ -268,16 +239,17 @@ const Purchases = () => {
           setTimeout(() => {
             productSearchInputRef.current?.focus();
           }, 100);
-        } else if (results.length === 0) {
+        } else if (results.length > 1) {
+          // Múltiples resultados - mostrar en lista dropdown
+          setSearchResults(results);
+        } else {
           toast.error('Producto no encontrado');
           setProductSearchQuery('');
           setSearchResults([]);
-        } else {
-          // Múltiples resultados - mostrar en lista dropdown
-          setSearchResults(results);
         }
       } catch (error) {
         toast.error('Error al buscar producto');
+        console.error('Error searching product:', error);
       }
     }
   };
@@ -288,12 +260,24 @@ const Purchases = () => {
       return;
     }
 
-    const newItem = { ...currentItem };
-    setFormData({
-      ...formData,
-      items: [...formData.items, newItem]
-    });
-    setCurrentItem({ product: '', productName: '', quantity: 1, unitCost: 0, hasTax: true, taxRate: 0.16 });
+    if (editingItemIndex !== null) {
+      // Actualizar item existente
+      const updatedItems = [...formData.items];
+      updatedItems[editingItemIndex] = { ...currentItem };
+      setFormData({ ...formData, items: updatedItems });
+      setEditingItemIndex(null);
+      toast.success('Producto actualizado');
+    } else {
+      // Agregar nuevo item
+      const newItem = { ...currentItem };
+      setFormData({
+        ...formData,
+        items: [...formData.items, newItem]
+      });
+      toast.success('Producto agregado');
+    }
+    
+    setCurrentItem({ product: '', productName: '', quantity: 1, unitCost: 0, hasTax: false, taxRate: 0.16, costIncludesTax: false });
     setSelectedProduct(null);
     setDiscountInfo(null);
   };
@@ -303,6 +287,12 @@ const Purchases = () => {
       ...formData,
       items: formData.items.filter((_, i) => i !== index)
     });
+    // Si eliminamos el item que se está editando, limpiar editingItemIndex
+    if (editingItemIndex === index) {
+      setEditingItemIndex(null);
+      setCurrentItem({ product: '', productName: '', quantity: 1, unitCost: 0, hasTax: false, taxRate: 0.16, costIncludesTax: false });
+      setSelectedProduct(null);
+    }
   };
 
   const handleItemQuantityChange = (index, newQuantity) => {
@@ -319,29 +309,16 @@ const Purchases = () => {
     setFormData({ ...formData, items: updatedItems });
   };
 
-  const handleItemTaxChange = (index, hasTax) => {
-    const updatedItems = [...formData.items];
-    updatedItems[index].hasTax = hasTax;
-    setFormData({ ...formData, items: updatedItems });
-  };
-
-  const handleSelectAllTax = (selectAll) => {
-    const updatedItems = formData.items.map(item => ({
-      ...item,
-      hasTax: selectAll
-    }));
-    setFormData({ ...formData, items: updatedItems });
-  };
-
-  const getSelectAllTaxState = () => {
-    if (formData.items.length === 0) return { checked: false, indeterminate: false };
-    
-    const allHaveTax = formData.items.every(item => item.hasTax !== false);
-    const noneHaveTax = formData.items.every(item => item.hasTax === false);
-    
-    if (allHaveTax) return { checked: true, indeterminate: false };
-    if (noneHaveTax) return { checked: false, indeterminate: false };
-    return { checked: false, indeterminate: true };
+  // Helper para actualizar el item actualmente seleccionado en formData.items
+  const updateCurrentItemInList = (updates) => {
+    if (editingItemIndex !== null) {
+      const updatedItems = [...formData.items];
+      updatedItems[editingItemIndex] = {
+        ...updatedItems[editingItemIndex],
+        ...updates
+      };
+      setFormData({ ...formData, items: updatedItems });
+    }
   };
 
   const handleProductChange = async (productId) => {
@@ -363,6 +340,28 @@ const Purchases = () => {
     setSelectedProduct(product);
     
     let unitCost = product?.cost || 0;
+    
+    // Buscar si este producto ya existe en formData.items
+    const existingItemIndex = formData.items.findIndex(item => item.product === productId);
+    
+    if (existingItemIndex !== -1) {
+      // Si ya existe, cargar sus valores en currentItem y establecer editingItemIndex
+      const existingItem = formData.items[existingItemIndex];
+      setEditingItemIndex(existingItemIndex);
+      setCurrentItem({
+        product: productId,
+        productName: product?.name || '',
+        quantity: existingItem.quantity,
+        unitCost: existingItem.unitCost,
+        hasTax: existingItem.hasTax,
+        taxRate: existingItem.taxRate,
+        costIncludesTax: existingItem.costIncludesTax
+      });
+      return;
+    } else {
+      // Si no existe, limpiar editingItemIndex
+      setEditingItemIndex(null);
+    }
     
     // Buscar condiciones de descuento si hay proveedor seleccionado
     if (formData.proveedor && productId) {
@@ -394,10 +393,13 @@ const Purchases = () => {
     
     // Actualizar currentItem en una sola operación
     setCurrentItem({
-      ...currentItem,
       product: productId,
       productName: product?.name || '',
-      unitCost: unitCost
+      quantity: currentItem.quantity || 1,
+      unitCost: unitCost,
+      hasTax: currentItem.hasTax !== undefined ? currentItem.hasTax : false,
+      taxRate: currentItem.taxRate || 0.16,
+      costIncludesTax: currentItem.costIncludesTax || false
     });
   };
 
@@ -525,13 +527,30 @@ const Purchases = () => {
   };
 
   const calculateBaseTotal = () => {
-    return formData.items.reduce((sum, item) => sum + (item.quantity * item.unitCost), 0);
+    return formData.items.reduce((sum, item) => {
+      let base;
+      if (item.costIncludesTax && item.hasTax) {
+        base = item.unitCost / (1 + (item.taxRate || 0.16));
+      } else {
+        base = item.unitCost;
+      }
+      return sum + (item.quantity * base);
+    }, 0);
   };
 
   const calculateTotalIVA = () => {
     return formData.items.reduce((sum, item) => {
-      const subtotal = item.quantity * item.unitCost;
-      const itemTax = (item.hasTax !== false) ? (subtotal * (item.taxRate || 0.16)) : 0;
+      if (!item.hasTax) return sum;
+      
+      let base;
+      if (item.costIncludesTax) {
+        base = item.unitCost / (1 + (item.taxRate || 0.16));
+      } else {
+        base = item.unitCost;
+      }
+      
+      const subtotal = item.quantity * base;
+      const itemTax = subtotal * (item.taxRate || 0.16);
       return sum + itemTax;
     }, 0);
   };
@@ -865,16 +884,8 @@ const Purchases = () => {
                             key={product._id}
                             onClick={async () => {
                               await handleProductChange(product._id);
-                              const newItem = {
-                                product: product._id,
-                                productName: product.name,
-                                quantity: 1,
-                                unitCost: product.cost || 0
-                              };
-                              setFormData({ ...formData, items: [...formData.items, newItem] });
                               setProductSearchQuery('');
                               setSearchResults([]);
-                              toast.success(`${product.name} agregado a la compra`);
                             }}
                             className="p-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-0"
                           >
@@ -909,7 +920,11 @@ const Purchases = () => {
                         type="number"
                         min="1"
                         value={currentItem.quantity}
-                        onChange={(e) => setCurrentItem({...currentItem, quantity: parseInt(e.target.value)})}
+                        onChange={(e) => {
+                          const newQuantity = parseInt(e.target.value) || 1;
+                          setCurrentItem({...currentItem, quantity: newQuantity});
+                          updateCurrentItemInList({ quantity: newQuantity });
+                        }}
                         className="form-input"
                       />
                     </div>
@@ -920,9 +935,44 @@ const Purchases = () => {
                         min="0"
                         step="0.01"
                         value={currentItem.unitCost}
-                        onChange={(e) => setCurrentItem({...currentItem, unitCost: parseFloat(e.target.value)})}
+                        onChange={(e) => {
+                          const newCost = parseFloat(e.target.value) || 0;
+                          setCurrentItem({...currentItem, unitCost: newCost});
+                          updateCurrentItemInList({ unitCost: newCost });
+                        }}
                         className="form-input"
                       />
+                    </div>
+                    <div>
+                      <label className="form-label">IVA</label>
+                      <div className="flex items-center space-x-2 mt-2">
+                        <input
+                          type="checkbox"
+                          checked={currentItem.hasTax}
+                          onChange={(e) => {
+                            const newHasTax = e.target.checked;
+                            setCurrentItem({...currentItem, hasTax: newHasTax, costIncludesTax: newHasTax ? currentItem.costIncludesTax : false});
+                            updateCurrentItemInList({ hasTax: newHasTax, costIncludesTax: newHasTax ? currentItem.costIncludesTax : false });
+                          }}
+                          className="h-4 w-4 text-brand-burgundy focus:ring-primary-500 border-gray-300 rounded"
+                        />
+                        <span className="text-sm">Lleva IVA</span>
+                      </div>
+                      {currentItem.hasTax && (
+                        <div className="flex items-center space-x-2 mt-1">
+                          <input
+                            type="checkbox"
+                            checked={currentItem.costIncludesTax}
+                            onChange={(e) => {
+                              const newCostIncludesTax = e.target.checked;
+                              setCurrentItem({...currentItem, costIncludesTax: newCostIncludesTax});
+                              updateCurrentItemInList({ costIncludesTax: newCostIncludesTax });
+                            }}
+                            className="h-4 w-4 text-brand-burgundy focus:ring-primary-500 border-gray-300 rounded"
+                          />
+                          <span className="text-sm">IVA incluido</span>
+                        </div>
+                      )}
                     </div>
                     <div className="flex items-end">
                       <button
@@ -961,19 +1011,7 @@ const Purchases = () => {
                             <th className="text-left py-2">Producto</th>
                             <th className="text-left py-2">Cantidad</th>
                             <th className="text-left py-2">Costo Unitario</th>
-                            <th className="text-left py-2">
-                              <div className="flex items-center gap-2">
-                                <input
-                                  ref={selectAllTaxRef}
-                                  type="checkbox"
-                                  checked={getSelectAllTaxState().checked}
-                                  onChange={(e) => handleSelectAllTax(e.target.checked)}
-                                  disabled={formData.items.length === 0}
-                                  className="h-4 w-4 text-brand-burgundy focus:ring-primary-500 border-gray-300 rounded"
-                                />
-                                <span>IVA</span>
-                              </div>
-                            </th>
+                            <th className="text-left py-2">IVA</th>
                             <th className="text-left py-2">Subtotal</th>
                             <th className="py-2"></th>
                           </tr>
@@ -1002,12 +1040,17 @@ const Purchases = () => {
                                 />
                               </td>
                               <td>
-                                <input
-                                  type="checkbox"
-                                  checked={item.hasTax !== false}
-                                  onChange={(e) => handleItemTaxChange(index, e.target.checked)}
-                                  className="h-4 w-4 text-brand-burgundy focus:ring-primary-500 border-gray-300 rounded"
-                                />
+                                {!item.hasTax ? (
+                                  <span className="text-gray-500 text-sm">Sin IVA</span>
+                                ) : item.costIncludesTax ? (
+                                  <span className="text-brand-burgundy text-sm font-medium">
+                                    {((item.taxRate || 0.16) * 100).toFixed(0)}% incluido
+                                  </span>
+                                ) : (
+                                  <span className="text-gray-700 text-sm">
+                                    {((item.taxRate || 0.16) * 100).toFixed(0)}%
+                                  </span>
+                                )}
                               </td>
                               <td>{formatCurrency(item.quantity * item.unitCost)}</td>
                               <td>
