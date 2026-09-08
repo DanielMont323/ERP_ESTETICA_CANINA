@@ -49,7 +49,7 @@ const Customers = () => {
 
   useEffect(() => {
     fetchCustomers();
-  }, [pagination.page, pagination.limit]);
+  }, [pagination.page, pagination.limit, searchTerm]);
 
   // Listener para evento personalizado de F6 contextual (nuevo cliente)
   useEffect(() => {
@@ -181,14 +181,6 @@ const Customers = () => {
     }
   };
 
-  const filteredCustomers = customers.filter(customer => 
-    customer.isActive && (
-      customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      customer.phone.includes(searchTerm) ||
-      customer.email?.toLowerCase().includes(searchTerm.toLowerCase())
-    )
-  );
-
   if (loading) {
     return (
       <div className="space-y-6">
@@ -245,7 +237,7 @@ const Customers = () => {
 
       {/* Customers Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredCustomers.map((customer) => (
+        {customers.map((customer) => (
           <div key={customer._id} className="card">
             <div className="card-body">
               <div className="flex items-start justify-between">
@@ -358,7 +350,7 @@ const Customers = () => {
         ))}
       </div>
 
-      {filteredCustomers.length === 0 && (
+      {customers.length === 0 && (
         <div className="text-center py-8">
           <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
           <p className="text-gray-500">No se encontraron clientes</p>
