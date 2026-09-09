@@ -8,7 +8,7 @@ const router = express.Router();
 // @desc    Obtener todas las cuentas por pagar
 router.get('/', authenticateToken, async (req, res) => {
   try {
-    const { proveedor, status, dueDate, page = 1, limit = 10 } = req.query;
+    const { proveedor, status, dueDate, search, page = 1, limit = 10 } = req.query;
     let query = {};
 
     if (proveedor) query.proveedor = proveedor;
@@ -20,6 +20,17 @@ router.get('/', authenticateToken, async (req, res) => {
       const endDate = new Date(date);
       endDate.setHours(23, 59, 59, 999);
       query.dueDate = { $gte: startDate, $lte: endDate };
+    }
+
+    // Búsqueda por proveedor, factura o folio
+    if (search) {
+      const proveedores = await Proveedor.find({ name: { $regex: search, $options: 'i' } }).select('_id');
+      const proveedorIds = proveedores.map(p => p._id);
+      
+      query.$or = [
+        { proveedor: { $in: proveedorIds } },
+        { receiptNumber: { $regex: search, $options: 'i' } }
+      ];
     }
 
     const cuentas = await CuentaPorPagar.find(query)

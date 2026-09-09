@@ -35,7 +35,7 @@ const AccountsPayable = () => {
 
   useEffect(() => {
     fetchAccounts();
-  }, [pagination.page, pagination.limit]);
+  }, [pagination.page, pagination.limit, searchTerm]);
 
   // Manejo de ESC para cerrar modal de pago individual
   useEscapeKey(() => setShowPaymentModal(false), showPaymentModal);
@@ -49,6 +49,9 @@ const AccountsPayable = () => {
         page: pagination.page,
         limit: pagination.limit
       };
+      if (searchTerm) {
+        params.search = searchTerm;
+      }
       const response = await accountsPayableAPI.getAll(params);
       setAccounts(response.data.data);
       setPagination(response.data.pagination || pagination);
@@ -320,11 +323,7 @@ const AccountsPayable = () => {
               </tr>
             </thead>
             <tbody>
-              {accounts.filter(account => 
-                account.proveedor?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                account.compra?.invoice?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                account.receiptNumber?.toLowerCase().includes(searchTerm.toLowerCase())
-              ).map((account, index) => {
+              {accounts.map((account, index) => {
                 const discountStatus = getDiscountStatus(account.discountInfo);
                 const dueDateText = getDueDateText(account.dueDate);
                 return (
@@ -429,11 +428,7 @@ const AccountsPayable = () => {
 
       {/* Mobile Card View */}
       <div className="md:hidden space-y-4">
-        {accounts.filter(account => 
-          account.proveedor?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          account.compra?.invoice?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          account.receiptNumber?.toLowerCase().includes(searchTerm.toLowerCase())
-        ).map((account) => {
+        {accounts.map((account) => {
           const discountStatus = getDiscountStatus(account.discountInfo);
           const dueDateText = getDueDateText(account.dueDate);
           return (

@@ -588,6 +588,7 @@ const Purchases = () => {
     const matchesSearch = searchTerm === '' || 
       purchase.proveedor?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       purchase.invoice?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      purchase.receiptNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       purchase.notes?.toLowerCase().includes(searchTerm.toLowerCase());
     return matchesSupplier && matchesSearch;
   });
@@ -634,7 +635,7 @@ const Purchases = () => {
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                 <input
                   type="text"
-                  placeholder="Proveedor, factura, notas..."
+                  placeholder="Proveedor, factura, folio, notas..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="form-input pl-10"
