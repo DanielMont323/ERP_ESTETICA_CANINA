@@ -286,7 +286,34 @@ router.post('/', authenticateToken, async (req, res) => {
         proveedorDoc.currentDebt += totalConIVA;
         await proveedorDoc.save();
       } catch (accountError) {
-        console.error('Error al crear cuenta por pagar:', accountError);
+        console.error('=== ERROR DETALLADO AL CREAR CUENTA POR PAGAR ===');
+        console.error('Error name:', accountError.name);
+        console.error('Error message:', accountError.message);
+        
+        if (accountError.errors) {
+          console.error('Campos con error de validación:');
+          Object.keys(accountError.errors).forEach(field => {
+            console.error(`  Campo ${field}:`, accountError.errors[field].message);
+            console.error(`    Valor recibido:`, accountError.errors[field].value);
+          });
+        }
+        
+        console.error('Valores enviados a CuentaPorPagar.create():');
+        console.error('  proveedor:', proveedor);
+        console.error('  compra:', compra._id);
+        console.error('  receiptNumber:', receiptNumber);
+        console.error('  hasIVA:', totalIVA > 0);
+        console.error('  ivaRate:', 0.16);
+        console.error('  subtotal:', compra.baseTotal);
+        console.error('  ivaAmount:', totalIVA);
+        console.error('  monto:', totalConIVA);
+        console.error('  montoBase:', compra.baseTotal);
+        console.error('  descuentoDisponible:', compra.totalDiscount);
+        console.error('  discountDeadline:', compra.discountDeadline);
+        console.error('  saldo:', saldoInicial);
+        console.error('  dueDate:', dueDate);
+        console.error('=====================================================');
+        
         // Si falla la creación de cuenta por pagar, revertir la compra
         await Compra.findByIdAndDelete(compra._id);
         return res.status(500).json({

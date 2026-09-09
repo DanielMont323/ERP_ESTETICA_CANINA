@@ -114,7 +114,6 @@ const cuentaPorPagarSchema = new mongoose.Schema({
 
 // Pre-save hook para calcular IVA automáticamente
 cuentaPorPagarSchema.pre('save', function(next) {
-  // Solo recalcular si el monto no está establecido o si es una nueva cuenta sin IVA explícito
   const isNew = this.isNew;
   
   // Si es una actualización y ya tiene monto establecido, no recalcular
@@ -122,20 +121,32 @@ cuentaPorPagarSchema.pre('save', function(next) {
     return next();
   }
   
-  // Calcular IVA si aplica
+  // Si el monto ya está establecido (no es 0 ni undefined), respetarlo
+  // Esto permite que el backend establezca el monto con descuento aplicado
+  if (this.monto && this.monto > 0) {
+    // Solo asegurar que montoBase esté establecido
+    if (!this.montoBase || this.montoBase === 0) {
+      this.montoBase = this.subtotal || this.monto;
+    }
+    return next();
+  }
+  
+  // Calcular IVA si aplica (solo si monto no está establecido)
   if (this.hasIVA) {
     // Usar subtotal o montoBase como fallback para cuentas antiguas
-    const baseAmount = this.subtotal || this.montoBase || this.monto;
+    const baseAmount = this.subtotal || this.montoBase;
     if (baseAmount) {
       this.ivaAmount = Math.round((baseAmount * this.ivaRate) * 100) / 100;
       this.monto = Math.round((baseAmount + this.ivaAmount) * 100) / 100;
     }
   } else {
     this.ivaAmount = 0;
-    // Usar subtotal o montoBase como fallback
-    const baseAmount = this.subtotal || this.montoBase;
-    if (baseAmount) {
-      this.monto = baseAmount;
+    // Usar subtotal o montoBase como fallback, PERO SOLO si monto no está establecido
+    if (!this.monto || this.monto === 0) {
+      const baseAmount = this.subtotal || this.montoBase;
+      if (baseAmount) {
+        this.monto = baseAmount;
+      }
     }
   }
   
