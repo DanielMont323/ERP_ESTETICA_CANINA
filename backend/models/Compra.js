@@ -187,7 +187,11 @@ compraSchema.pre('save', async function(next) {
   // No recalcular aquí porque ya se establece en el endpoint
   
   // Establecer fecha de vencimiento para compras a crédito usando creditDays del proveedor
+  // SOLO si dueDate no está establecido por el endpoint
+  console.log(`Compra pre-save: type=${this.type}, dueDate=${this.dueDate ? this.dueDate.toISOString() : 'undefined'}, proveedor=${this.proveedor}`);
+  
   if (this.type === 'credito' && !this.dueDate && this.proveedor) {
+    console.log('Compra: Calculando dueDate en pre-save hook');
     try {
       const Proveedor = require('./Proveedor');
       const proveedor = await Proveedor.findById(this.proveedor);
@@ -196,12 +200,14 @@ compraSchema.pre('save', async function(next) {
         const purchaseDate = getCurrentDateGMT7();
         this.dueDate = new Date(purchaseDate);
         this.dueDate.setDate(this.dueDate.getDate() + proveedor.creditDays);
+        console.log(`Compra: dueDate calculado: ${this.dueDate.toISOString()}`);
       } else {
         // Fallback a 30 días si no tiene creditDays configurado
         const { getCurrentDateGMT7 } = require('../helpers/timezone');
         const purchaseDate = getCurrentDateGMT7();
         this.dueDate = new Date(purchaseDate);
         this.dueDate.setDate(this.dueDate.getDate() + 30);
+        console.log(`Compra: dueDate calculado (fallback 30 días): ${this.dueDate.toISOString()}`);
       }
     } catch (error) {
       // Si hay error al obtener proveedor, usar 30 días por defecto
@@ -209,7 +215,11 @@ compraSchema.pre('save', async function(next) {
       const purchaseDate = getCurrentDateGMT7();
       this.dueDate = new Date(purchaseDate);
       this.dueDate.setDate(this.dueDate.getDate() + 30);
+      console.log(`Compra: dueDate calculado (error fallback): ${this.dueDate.toISOString()}`);
     }
+  } else if (this.type === 'credito' && this.dueDate) {
+    // dueDate ya fue establecido por el endpoint, NO recalcular
+    console.log(`Compra: dueDate ya establecido por el endpoint: ${this.dueDate.toISOString()}, NO se recalcula`);
   }
   
   next();

@@ -12,6 +12,7 @@ const AccountsPayable = () => {
   const [accounts, setAccounts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
   const [pagination, setPagination] = useState({
     page: 1,
     limit: 10,
@@ -35,7 +36,7 @@ const AccountsPayable = () => {
 
   useEffect(() => {
     fetchAccounts();
-  }, [pagination.page, pagination.limit, searchTerm]);
+  }, [pagination.page, pagination.limit, searchTerm, statusFilter]);
 
   // Manejo de ESC para cerrar modal de pago individual
   useEscapeKey(() => setShowPaymentModal(false), showPaymentModal);
@@ -51,6 +52,9 @@ const AccountsPayable = () => {
       };
       if (searchTerm) {
         params.search = searchTerm;
+      }
+      if (statusFilter) {
+        params.status = statusFilter;
       }
       const response = await accountsPayableAPI.getAll(params);
       setAccounts(response.data.data);
@@ -253,16 +257,31 @@ const AccountsPayable = () => {
             Gestiona los pagos a tus proveedores con descuentos por pronto pago
           </p>
         </div>
-        <div className="w-full sm:w-64">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Buscar cuentas..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="form-input pl-10"
-            />
+        <div className="flex gap-3 w-full sm:w-auto">
+          <div className="w-full sm:w-48">
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="form-input"
+            >
+              <option value="">Todos los estados</option>
+              <option value="pendiente">Pendiente</option>
+              <option value="pagado">Pagado</option>
+              <option value="vencido">Vencido</option>
+              <option value="cancelada">Cancelada</option>
+            </select>
+          </div>
+          <div className="w-full sm:w-64">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Buscar cuentas..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="form-input pl-10"
+              />
+            </div>
           </div>
         </div>
       </div>
