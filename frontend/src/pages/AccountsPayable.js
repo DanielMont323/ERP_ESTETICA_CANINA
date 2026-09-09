@@ -98,7 +98,12 @@ const AccountsPayable = () => {
     return diffDays;
   };
 
-  const getDueDateText = (dueDate) => {
+  const getDueDateText = (dueDate, status) => {
+    // Si la cuenta está pagada o cancelada, no mostrar días vencidos
+    if (status === 'pagado' || status === 'cancelada') {
+      return { text: status === 'pagado' ? 'Pagada' : 'Cancelada', color: status === 'pagado' ? 'green' : 'gray' };
+    }
+    
     const days = getDaysUntilDueGMT7(dueDate);
     if (days < 0) {
       return { text: `${Math.abs(days)} días vencida`, color: 'red' };
@@ -344,7 +349,7 @@ const AccountsPayable = () => {
             <tbody>
               {accounts.map((account, index) => {
                 const discountStatus = getDiscountStatus(account.discountInfo);
-                const dueDateText = getDueDateText(account.dueDate);
+                const dueDateText = getDueDateText(account.dueDate, account.status);
                 return (
                   <tr key={account._id} className={`table-row-divider ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'} hover:bg-yellow-100`}>
                     <td className="py-4">
@@ -449,7 +454,7 @@ const AccountsPayable = () => {
       <div className="md:hidden space-y-4">
         {accounts.map((account) => {
           const discountStatus = getDiscountStatus(account.discountInfo);
-          const dueDateText = getDueDateText(account.dueDate);
+          const dueDateText = getDueDateText(account.dueDate, account.status);
           return (
             <div key={account._id} className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
               <div className="flex justify-between items-start mb-3">
