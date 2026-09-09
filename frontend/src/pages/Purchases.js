@@ -680,7 +680,7 @@ const Purchases = () => {
             <tbody>
               {filteredPurchases.map((purchase, index) => (
                 <tr key={purchase._id} className={`table-row-divider ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'} hover:bg-yellow-100`}>
-                  <td className="py-5">{new Date(purchase.date).toLocaleDateString()}</td>
+                  <td className="py-5">{new Date(purchase.date).toLocaleDateString('es-MX', { timeZone: 'America/Mazatlan' })}</td>
                   <td className="py-5">
                     <span className="truncate block" title={purchase.proveedor?.name}>{purchase.proveedor?.name}</span>
                   </td>

@@ -126,6 +126,7 @@ export const petsAPI = {
   addVaccination: (id, data) => api.post(`/mascotas/${id}/vaccinations`, data),
   getVaccinationsDue: () => api.get('/mascotas/vaccinations/due'),
   getByOwner: (ownerId, additionalParams = {}) => api.get('/mascotas', { params: { owner: ownerId, active: true, ...additionalParams } }),
+  getBirthdays: (month) => api.get('/mascotas/birthdays', { params: { month } }),
 };
 
 // Services services
@@ -214,6 +215,7 @@ export const remindersAPI = {
   getAutomaticVaccines: () => api.get('/recordatorios/automatic/vaccines'),
   getAutomaticAll: () => api.get('/recordatorios/automatic/all'),
   getUpcoming: () => api.get('/recordatorios/upcoming'),
+  getPending: () => api.get('/recordatorios/pending'),
   getOverdue: () => api.get('/recordatorios/overdue'),
   getCalendar: (year, month) => api.get(`/recordatorios/calendar/${year}/${month}`),
   getDashboard: () => api.get('/recordatorios/dashboard'),

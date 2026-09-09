@@ -197,9 +197,9 @@ router.post('/', authenticateToken, async (req, res) => {
     let discountDeadline;
     
     if (type === 'credito') {
-      // Usar getCurrentDateGMT7 para fecha de compra en zona horaria correcta
+      // Usar la fecha de compra proporcionada por el usuario, o la fecha actual si no se especifica
       const { getCurrentDateGMT7 } = require('../helpers/timezone');
-      const purchaseDate = getCurrentDateGMT7();
+      const purchaseDate = date ? parseLocalDate(date) : getCurrentDateGMT7();
       
       dueDate = new Date(purchaseDate);
       dueDate.setDate(dueDate.getDate() + proveedorDoc.creditDays);

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { reportsAPI, productsAPI, remindersAPI, accountsPayableAPI } from '../services/api';
+import { reportsAPI, productsAPI, remindersAPI, accountsPayableAPI, petsAPI } from '../services/api';
 import { SkeletonStats } from '../components/Skeleton';
 import {
   DollarSign,
@@ -16,7 +16,8 @@ import {
   Dog,
   ChevronDown,
   ChevronUp,
-  Bell
+  Bell,
+  Cake
 } from 'lucide-react';
 
 const Dashboard = () => {
@@ -25,24 +26,28 @@ const Dashboard = () => {
   const [dashboardData, setDashboardData] = useState(null);
   const [remindersData, setRemindersData] = useState(null);
   const [manualReminders, setManualReminders] = useState(null);
+  const [birthdayData, setBirthdayData] = useState(null);
   const [expandedSection, setExpandedSection] = useState(null);
   const [showAlert, setShowAlert] = useState(false);
 
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
-        const [reportsRes, remindersRes, expiringRes, upcomingRes] = await Promise.all([
+        const currentMonth = new Date().getMonth() + 1;
+        const [reportsRes, remindersRes, expiringRes, pendingRes, birthdaysRes] = await Promise.all([
           reportsAPI.getDashboard(),
           remindersAPI.getDashboard(),
           productsAPI.getExpiring(120),
-          remindersAPI.getUpcoming()
+          remindersAPI.getPending(),
+          petsAPI.getBirthdays(currentMonth)
         ]);
         setDashboardData(reportsRes.data.data);
         setRemindersData({
           ...remindersRes.data.data,
           expiringProducts: expiringRes.data.data
         });
-        setManualReminders(upcomingRes.data.data || []);
+        setManualReminders(pendingRes.data.data || []);
+        setBirthdayData(birthdaysRes.data.data || []);
         
         // Mostrar alerta si hay cuentas vencidas o que vencen mañana
         const urgentAccounts = remindersRes.data.data.accounts.filter(
@@ -67,6 +72,7 @@ const Dashboard = () => {
           counts: { accounts: 0, vaccines: 0, lowStockProducts: 0 }
         });
         setManualReminders([]);
+        setBirthdayData([]);
       } finally {
         setLoading(false);
       }
@@ -80,6 +86,14 @@ const Dashboard = () => {
       style: 'currency',
       currency: 'MXN'
     }).format(amount);
+  };
+
+  const getMonthName = (month) => {
+    const months = [
+      'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+      'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+    ];
+    return months[month - 1];
   };
 
   const StatCard = ({ title, value, change, changeType, icon: Icon, color }) => {
@@ -426,12 +440,16 @@ const Dashboard = () => {
                 <div className="space-y-3">
                   {remindersData.expiringProducts
                     .sort((a, b) => {
-                      const daysA = Math.ceil((new Date(a.expirationDate) - new Date()) / (1000 * 60 * 60 * 24));
-                      const daysB = Math.ceil((new Date(b.expirationDate) - new Date()) / (1000 * 60 * 60 * 24));
+                      const today = new Date();
+                      const todayGMT7 = new Date(today.toLocaleString('en-US', { timeZone: 'America/Mazatlan' }));
+                      const daysA = Math.ceil((new Date(a.expirationDate) - todayGMT7) / (1000 * 60 * 60 * 24));
+                      const daysB = Math.ceil((new Date(b.expirationDate) - todayGMT7) / (1000 * 60 * 60 * 24));
                       return daysA - daysB;
                     })
                     .map((product) => {
-                    const daysUntilExpiration = Math.ceil((new Date(product.expirationDate) - new Date()) / (1000 * 60 * 60 * 24));
+                    const today = new Date();
+                    const todayGMT7 = new Date(today.toLocaleString('en-US', { timeZone: 'America/Mazatlan' }));
+                    const daysUntilExpiration = Math.ceil((new Date(product.expirationDate) - todayGMT7) / (1000 * 60 * 60 * 24));
                     let status, bgColor, textColor;
                     
                     if (daysUntilExpiration < 0) {
@@ -490,6 +508,81 @@ const Dashboard = () => {
           )}
         </div>
 
+        {/* Cumpleaños de Mascotas */}
+        <div className="card hover:shadow-md transition-shadow duration-200">
+          <div 
+            className="card-header cursor-pointer hover:bg-gray-50 transition-colors p-5"
+            onClick={() => setExpandedSection(expandedSection === 'birthdays' ? null : 'birthdays')}
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center">
+                <div className="p-3 rounded-xl bg-pink-100 text-pink-600 mr-4">
+                  <Cake className="h-5 w-5" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900">Cumpleaños de mascotas</h3>
+                  <p className="text-sm text-gray-600">{getMonthName(new Date().getMonth() + 1)}</p>
+                </div>
+              </div>
+              <div className="flex items-center">
+                <span className="text-3xl font-bold text-gray-900 mr-3">
+                  {birthdayData?.length || 0}
+                </span>
+                {expandedSection === 'birthdays' ? (
+                  <ChevronUp className="h-5 w-5 text-gray-400" />
+                ) : (
+                  <ChevronDown className="h-5 w-5 text-gray-400" />
+                )}
+              </div>
+            </div>
+          </div>
+          {expandedSection === 'birthdays' && (
+            <div className="card-body border-t border-gray-200 p-5">
+              {birthdayData?.length > 0 ? (
+                <div className="space-y-3">
+                  {birthdayData.slice(0, 7).map((pet) => (
+                    <div 
+                      key={pet._id} 
+                      className="p-4 bg-pink-50 rounded-lg cursor-pointer hover:bg-pink-100/90 transition-colors"
+                      onClick={() => navigate('/pets')}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1 min-w-0 pr-3">
+                          <p className="font-medium text-gray-900 truncate" title={pet.name}>{pet.name}</p>
+                          <p className="text-sm text-gray-600 truncate">
+                            {new Date(pet.birthDate).getDate()} de {getMonthName(new Date(pet.birthDate).getMonth() + 1)}
+                          </p>
+                          {pet.owner && (
+                            <p className="text-xs text-gray-500 truncate">Dueño: {pet.owner.name}</p>
+                          )}
+                        </div>
+                        <div className="text-right flex-shrink-0">
+                          <Dog className="h-5 w-5 text-pink-600" />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                  {birthdayData.length > 7 && (
+                    <button 
+                      onClick={() => navigate('/pets')}
+                      className="w-full text-center text-sm text-pink-600 hover:text-pink-800 font-medium py-2"
+                    >
+                      Ver todos ({birthdayData.length})
+                    </button>
+                  )}
+                </div>
+              ) : (
+                <div className="text-center py-6">
+                  <Cake className="h-8 w-8 text-gray-300 mx-auto mb-2" />
+                  <p className="text-sm text-gray-500">
+                    No hay mascotas que cumplan años este mes
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
         {/* Recordatorios Manuales */}
         <div className="card hover:shadow-md transition-shadow duration-200">
           <div 
@@ -536,7 +629,7 @@ const Dashboard = () => {
                           )}
                           <div className="flex items-center text-sm text-gray-600 mt-2">
                             <Calendar className="h-4 w-4 mr-2 flex-shrink-0" />
-                            {new Date(reminder.date).toLocaleDateString('es-MX')}
+                            {new Date(reminder.date).toLocaleDateString('es-MX', { timeZone: 'America/Mazatlan' })}
                           </div>
                         </div>
                         <div className="text-right flex-shrink-0">

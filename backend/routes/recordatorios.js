@@ -55,9 +55,10 @@ router.get('/', async (req, res) => {
 // @desc    Obtener recordatorios próximos (próximos 7 días)
 router.get('/upcoming', async (req, res) => {
   try {
-    const today = new Date();
-    const next7Days = new Date();
-    next7Days.setDate(today.getDate() + 7);
+    const { getCurrentDateGMT7 } = require('../helpers/timezone');
+    const today = getCurrentDateGMT7();
+    const next7Days = new Date(today);
+    next7Days.setDate(next7Days.getDate() + 7);
     
     const recordatorios = await Recordatorio.find({
       status: 'pendiente',
@@ -83,7 +84,8 @@ router.get('/upcoming', async (req, res) => {
 // @desc    Obtener recordatorios vencidos
 router.get('/overdue', async (req, res) => {
   try {
-    const today = new Date();
+    const { getCurrentDateGMT7 } = require('../helpers/timezone');
+    const today = getCurrentDateGMT7();
     
     const recordatorios = await Recordatorio.find({
       status: 'pendiente',
@@ -101,6 +103,29 @@ router.get('/overdue', async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Error al obtener recordatorios vencidos'
+    });
+  }
+});
+
+// @route   GET /api/recordatorios/pending
+// @desc    Obtener todos los recordatorios pendientes (incluyendo vencidos)
+router.get('/pending', async (req, res) => {
+  try {
+    const recordatorios = await Recordatorio.find({
+      status: 'pendiente'
+    })
+      .populate('user', 'name')
+      .sort({ date: 1, priority: -1 });
+
+    res.json({
+      success: true,
+      data: recordatorios
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      success: false,
+      message: 'Error al obtener recordatorios pendientes'
     });
   }
 });
@@ -482,7 +507,8 @@ router.get('/calendar/:year/:month', async (req, res) => {
 // @desc    Obtener recordatorios automáticos de cuentas por pagar
 router.get('/automatic/accounts', async (req, res) => {
   try {
-    const today = new Date();
+    const { getCurrentDateGMT7 } = require('../helpers/timezone');
+    const today = getCurrentDateGMT7();
     today.setHours(0, 0, 0, 0);
     
     const tomorrow = new Date(today);
@@ -565,7 +591,8 @@ router.get('/automatic/accounts', async (req, res) => {
 // @desc    Obtener recordatorios automáticos de vacunas
 router.get('/automatic/vaccines', async (req, res) => {
   try {
-    const today = new Date();
+    const { getCurrentDateGMT7 } = require('../helpers/timezone');
+    const today = getCurrentDateGMT7();
     today.setHours(0, 0, 0, 0);
     
     const tomorrow = new Date(today);

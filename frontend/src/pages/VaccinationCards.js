@@ -179,7 +179,7 @@ const VaccinationCards = () => {
 
   const formatDate = (dateString) => {
     if (!dateString) return '-';
-    return new Date(dateString).toLocaleDateString('es-MX');
+    return new Date(dateString).toLocaleDateString('es-MX', { timeZone: 'America/Mazatlan' });
   };
 
   const calculateNextDoseDate = (days) => {

@@ -89,7 +89,7 @@ const Reminders = () => {
       description: '',
       type: 'pago',
       priority: 'media',
-      date: new Date().toISOString().split('T')[0],
+      date: new Date().toLocaleDateString('en-CA', { timeZone: 'America/Mazatlan' }),
       status: 'pendiente'
     });
     setShowModal(true);
@@ -102,7 +102,7 @@ const Reminders = () => {
       description: reminder.description || '',
       type: reminder.type,
       priority: reminder.priority,
-      date: new Date(reminder.date).toISOString().split('T')[0],
+      date: new Date(reminder.date).toLocaleDateString('en-CA', { timeZone: 'America/Mazatlan' }),
       status: reminder.status
     });
     setShowModal(true);
@@ -285,7 +285,7 @@ const Reminders = () => {
                       <div className="mt-3 space-y-2">
                         <div className="flex items-center text-sm text-gray-600">
                         <Calendar className="h-4 w-4 mr-2" />
-                        {new Date(reminder.date).toLocaleDateString('es-MX')}
+                        {new Date(reminder.date).toLocaleDateString('es-MX', { timeZone: 'America/Mazatlan' })}
                         {isOverdue(reminder.date) && (
                           <AlertTriangle className="h-4 w-4 ml-2 text-danger-600" />
                         )}

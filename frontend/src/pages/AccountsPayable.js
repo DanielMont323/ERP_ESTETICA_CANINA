@@ -80,8 +80,19 @@ const AccountsPayable = () => {
     return diffDays;
   };
 
+  const getDaysUntilDueGMT7 = (dueDate) => {
+    const today = new Date();
+    const todayGMT7 = new Date(today.toLocaleString('en-US', { timeZone: 'America/Mazatlan' }));
+    todayGMT7.setHours(0, 0, 0, 0);
+    const due = new Date(dueDate);
+    due.setHours(0, 0, 0, 0);
+    const diffTime = due - todayGMT7;
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays;
+  };
+
   const getDueDateText = (dueDate) => {
-    const days = getDaysUntilDue(dueDate);
+    const days = getDaysUntilDueGMT7(dueDate);
     if (days < 0) {
       return { text: `${Math.abs(days)} días vencida`, color: 'red' };
     } else if (days === 0) {
@@ -341,7 +352,7 @@ const AccountsPayable = () => {
                     <td className="py-4">
                       {account.discountDeadline ? (
                         <div>
-                          <div className="text-sm">{new Date(account.discountDeadline).toLocaleDateString()}</div>
+                          <div className="text-sm">{new Date(account.discountDeadline).toLocaleDateString('es-MX', { timeZone: 'America/Mazatlan' })}</div>
                           <span className={`text-xs px-2 py-1 rounded ${
                             discountStatus.color === 'green' ? 'bg-green-100 text-green-800' :
                             discountStatus.color === 'red' ? 'bg-red-100 text-red-800' :
@@ -353,7 +364,7 @@ const AccountsPayable = () => {
                       ) : '-'}
                     </td>
                     <td className="py-4">
-                      <div className="text-sm">{new Date(account.dueDate).toLocaleDateString()}</div>
+                      <div className="text-sm">{new Date(account.dueDate).toLocaleDateString('es-MX', { timeZone: 'America/Mazatlan' })}</div>
                       <span className={`text-xs px-2 py-1 rounded ${
                         dueDateText.color === 'green' ? 'bg-green-100 text-green-800' :
                         dueDateText.color === 'orange' ? 'bg-orange-100 text-orange-800' :
@@ -469,7 +480,7 @@ const AccountsPayable = () => {
                     <div className="flex justify-between items-center">
                       <span className="text-gray-600">Límite Descuento:</span>
                       <div className="text-right">
-                        <div className="text-sm">{new Date(account.discountDeadline).toLocaleDateString()}</div>
+                        <div className="text-sm">{new Date(account.discountDeadline).toLocaleDateString('es-MX', { timeZone: 'America/Mazatlan' })}</div>
                         <span className={`text-xs px-2 py-1 rounded ${
                           discountStatus.color === 'green' ? 'bg-green-100 text-green-800' :
                           discountStatus.color === 'red' ? 'bg-red-100 text-red-800' :
@@ -485,7 +496,7 @@ const AccountsPayable = () => {
                 <div className="flex justify-between items-center pt-2 border-t border-gray-200">
                   <span className="text-gray-600">Vencimiento:</span>
                   <div className="text-right">
-                    <div className="text-sm">{new Date(account.dueDate).toLocaleDateString()}</div>
+                    <div className="text-sm">{new Date(account.dueDate).toLocaleDateString('es-MX', { timeZone: 'America/Mazatlan' })}</div>
                     <span className={`text-xs px-2 py-1 rounded ${
                       dueDateText.color === 'green' ? 'bg-green-100 text-green-800' :
                       dueDateText.color === 'orange' ? 'bg-orange-100 text-orange-800' :

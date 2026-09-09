@@ -332,8 +332,9 @@ const Products = () => {
     if (!product.expirationDate) return { color: 'gray', text: 'Sin fecha' };
     
     const today = new Date();
+    const todayGMT7 = new Date(today.toLocaleString('en-US', { timeZone: 'America/Mazatlan' }));
     const expirationDate = new Date(product.expirationDate);
-    const daysUntilExpiration = Math.ceil((expirationDate - today) / (1000 * 60 * 60 * 24));
+    const daysUntilExpiration = Math.ceil((expirationDate - todayGMT7) / (1000 * 60 * 60 * 24));
     
     if (daysUntilExpiration < 0) return { color: 'danger', text: 'Caducado' };
     if (daysUntilExpiration <= 30) return { color: 'warning', text: `Próximo (${daysUntilExpiration}d)` };

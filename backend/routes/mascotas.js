@@ -48,6 +48,84 @@ router.get('/', async (req, res) => {
   }
 });
 
+// @route   GET /api/mascotas/birthdays
+// @desc    Obtener mascotas con cumpleaños en el mes especificado
+router.get('/birthdays', async (req, res) => {
+  try {
+    const { month } = req.query;
+
+    // Validar month
+    if (!month || isNaN(month) || month < 1 || month > 12) {
+      return res.status(400).json({
+        success: false,
+        message: 'El parámetro month debe ser un número entre 1 y 12'
+      });
+    }
+
+    const monthNum = parseInt(month);
+
+    // Usar aggregation para filtrar por mes de birthDate
+    const mascotas = await Mascota.aggregate([
+      {
+        $match: {
+          isActive: true,
+          birthDate: { $ne: null },
+          $expr: { $eq: [{ $month: '$birthDate' }, monthNum] }
+        }
+      },
+      {
+        $addFields: {
+          birthDay: { $dayOfMonth: '$birthDate' }
+        }
+      },
+      {
+        $sort: { birthDay: 1 }
+      },
+      {
+        $lookup: {
+          from: 'clientes',
+          localField: 'owner',
+          foreignField: '_id',
+          as: 'owner'
+        }
+      },
+      {
+        $unwind: {
+          path: '$owner',
+          preserveNullAndEmptyArrays: true
+        }
+      },
+      {
+        $project: {
+          _id: 1,
+          name: 1,
+          type: 1,
+          breed: 1,
+          birthDate: 1,
+          birthDay: 1,
+          owner: {
+            _id: 1,
+            name: 1,
+            phone: 1,
+            email: 1
+          }
+        }
+      }
+    ]);
+
+    res.json({
+      success: true,
+      data: mascotas
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      success: false,
+      message: 'Error al obtener cumpleaños de mascotas'
+    });
+  }
+});
+
 // @route   GET /api/mascotas/:id
 // @desc    Obtener mascota por ID
 router.get('/:id', async (req, res) => {
