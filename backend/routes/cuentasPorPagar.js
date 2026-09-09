@@ -22,15 +22,26 @@ router.get('/', authenticateToken, async (req, res) => {
       query.dueDate = { $gte: startDate, $lte: endDate };
     }
 
-    // Búsqueda por proveedor, factura o folio
+    // Búsqueda por proveedor, factura o folio con prioridad de coincidencia exacta
     if (search) {
       const proveedores = await Proveedor.find({ name: { $regex: search, $options: 'i' } }).select('_id');
       const proveedorIds = proveedores.map(p => p._id);
       
-      query.$or = [
-        { proveedor: { $in: proveedorIds } },
-        { receiptNumber: { $regex: search, $options: 'i' } }
-      ];
+      // Prioridad: coincidencia exacta en receiptNumber
+      const exactMatch = await CuentaPorPagar.find({
+        receiptNumber: search
+      }).select('_id');
+      
+      if (exactMatch.length > 0) {
+        // Si hay coincidencia exacta, buscar solo esas cuentas
+        query._id = { $in: exactMatch.map(c => c._id) };
+      } else {
+        // Si no hay coincidencia exacta, buscar parcial
+        query.$or = [
+          { proveedor: { $in: proveedorIds } },
+          { receiptNumber: { $regex: search, $options: 'i' } }
+        ];
+      }
     }
 
     const cuentas = await CuentaPorPagar.find(query)

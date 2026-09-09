@@ -123,6 +123,7 @@ const Purchases = () => {
       };
       if (selectedSupplier) params.proveedor = selectedSupplier;
       if (skuSearch) params.sku = skuSearch;
+      if (searchTerm) params.search = searchTerm;
       const purchasesRes = await purchasesAPI.getAll(params);
       setPurchases(purchasesRes.data.data);
       setPagination(purchasesRes.data.pagination || pagination);
@@ -131,7 +132,7 @@ const Purchases = () => {
     } finally {
       setLoading(false);
     }
-  }, [selectedSupplier, skuSearch, pagination.page, pagination.limit]);
+  }, [selectedSupplier, skuSearch, searchTerm, pagination.page, pagination.limit]);
 
   useEffect(() => {
     fetchData();
@@ -583,15 +584,7 @@ const Purchases = () => {
     }
   };
 
-  const filteredPurchases = purchases.filter(purchase => {
-    const matchesSupplier = selectedSupplier ? purchase.proveedor?._id === selectedSupplier : true;
-    const matchesSearch = searchTerm === '' || 
-      purchase.proveedor?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      purchase.invoice?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      purchase.receiptNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      purchase.notes?.toLowerCase().includes(searchTerm.toLowerCase());
-    return matchesSupplier && matchesSearch;
-  });
+  const filteredPurchases = purchases;
 
   if (loading) {
     return <SkeletonTable rows={5} columns={8} />;

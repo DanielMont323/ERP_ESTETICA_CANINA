@@ -19,12 +19,35 @@ const parseLocalDate = (dateStr) => {
 // @desc    Obtener todas las compras
 router.get('/', authenticateToken, async (req, res) => {
   try {
-    const { proveedor, status, sku, type, page = 1, limit = 10 } = req.query;
+    const { proveedor, status, sku, type, search, page = 1, limit = 10 } = req.query;
     let query = {};
 
     if (proveedor) query.proveedor = proveedor;
     if (status) query.status = status;
     if (type) query.type = type;
+
+    // Búsqueda por folio, proveedor o factura con prioridad de coincidencia exacta
+    if (search) {
+      const proveedores = await Proveedor.find({ name: { $regex: search, $options: 'i' } }).select('_id');
+      const proveedorIds = proveedores.map(p => p._id);
+      
+      // Prioridad: coincidencia exacta en receiptNumber
+      const exactMatch = await Compra.find({
+        receiptNumber: search
+      }).select('_id');
+      
+      if (exactMatch.length > 0) {
+        // Si hay coincidencia exacta, buscar solo esas compras
+        query._id = { $in: exactMatch.map(c => c._id) };
+      } else {
+        // Si no hay coincidencia exacta, buscar parcial
+        query.$or = [
+          { receiptNumber: { $regex: search, $options: 'i' } },
+          { invoice: { $regex: search, $options: 'i' } },
+          { proveedor: { $in: proveedorIds } }
+        ];
+      }
+    }
 
     // Filtro por SKU (busca en items de la compra)
     if (sku) {
