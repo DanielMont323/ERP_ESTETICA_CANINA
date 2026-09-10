@@ -12,6 +12,105 @@ const { startOfDayGMT7, endOfDayGMT7, toGMT7 } = require('../helpers/timezone');
 const ExcelJS = require('exceljs');
 const router = express.Router();
 
+// @route   GET /api/reports/audit-info
+// @desc    Endpoint temporal de auditoría - devuelve info NO sensible del backend
+// @access  Temporal - eliminar después de auditoría
+router.get('/audit-info', async (req, res) => {
+  try {
+    const mongoose = require('mongoose');
+    
+    // Obtener información NO sensible de la conexión MongoDB
+    const dbInfo = {
+      dbName: mongoose.connection.name,
+      host: mongoose.connection.host,
+      port: mongoose.connection.port,
+      readyState: mongoose.connection.readyState,
+      collections: Object.keys(mongoose.connection.collections)
+    };
+
+    // Información del entorno
+    const envInfo = {
+      nodeEnv: process.env.NODE_ENV,
+      platform: process.platform,
+      nodeVersion: process.version,
+      port: process.env.PORT || '5000'
+    };
+
+    // Información del servicio (si está disponible)
+    const serviceInfo = {
+      serviceName: 'ERP Backend',
+      timestamp: new Date().toISOString()
+    };
+
+    res.json({
+      success: true,
+      data: {
+        database: dbInfo,
+        environment: envInfo,
+        service: serviceInfo
+      }
+    });
+  } catch (error) {
+    console.error('Error en endpoint de auditoría:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error al obtener información de auditoría'
+    });
+  }
+});
+
+// @route   GET /api/reports/audit-sales
+// @desc    Endpoint temporal de auditoría - devuelve ventas detalladas por periodo
+// @access  Temporal - eliminar después de auditoría
+router.get('/audit-sales', async (req, res) => {
+  try {
+    const { startDate, endDate } = req.query;
+    
+    if (!startDate || !endDate) {
+      return res.status(400).json({
+        success: false,
+        message: 'Se requieren startDate y endDate'
+      });
+    }
+
+    const startGMT7 = startOfDayGMT7(new Date(startDate));
+    const endGMT7 = endOfDayGMT7(new Date(endDate));
+
+    const ventas = await Venta.find({
+      date: { $gte: startGMT7, $lte: endGMT7 },
+      status: 'completada'
+    }).sort({ date: 1 });
+
+    const ventasDetalle = ventas.map(venta => ({
+      id: venta._id.toString(),
+      date: venta.date.toISOString(),
+      total: venta.total,
+      paymentMethod: venta.paymentMethod,
+      status: venta.status,
+      unidades: venta.items.reduce((sum, item) => sum + item.quantity, 0),
+      itemCount: venta.items.length
+    }));
+
+    res.json({
+      success: true,
+      data: {
+        filter: {
+          startDate: startGMT7.toISOString(),
+          endDate: endGMT7.toISOString()
+        },
+        total: ventas.length,
+        ventas: ventasDetalle
+      }
+    });
+  } catch (error) {
+    console.error('Error en endpoint de auditoría de ventas:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error al obtener ventas de auditoría'
+    });
+  }
+});
+
 // @route   GET /api/reports/income-statement
 // @desc    Estado de resultados
 router.get('/income-statement', async (req, res) => {
