@@ -33,7 +33,10 @@ router.get('/audit-info', async (req, res) => {
       nodeEnv: process.env.NODE_ENV,
       platform: process.platform,
       nodeVersion: process.version,
-      port: process.env.PORT || '5000'
+      port: process.env.PORT || '5000',
+      timezone: process.env.TZ || 'default',
+      localTimezoneOffset: new Date().getTimezoneOffset(),
+      localTimezoneOffsetHours: new Date().getTimezoneOffset() / 60
     };
 
     // Información del servicio (si está disponible)
