@@ -67,10 +67,58 @@ const endOfDayGMT7 = (date) => {
   return gmt7;
 };
 
+/**
+ * ============================================================
+ * FUNCIONES PARA FECHAS DE CALENDARIO (NO DEPENDEN DE TIMEZONE)
+ * ============================================================
+ */
+
+/**
+ * Crea una fecha de calendario a partir de un string YYYY-MM-DD
+ * Usa hora 12:00 UTC para evitar problemas de cambio de día con timezone
+ * @param {String} dateStr - Fecha en formato YYYY-MM-DD
+ * @returns {Date} Fecha en UTC con hora 12:00:00
+ */
+const createCalendarDate = (dateStr) => {
+  if (!dateStr) return null;
+  const [year, month, day] = dateStr.split('-').map(Number);
+  // Crear fecha a las 12:00 UTC (mediodía) para evitar cambio de día con timezone
+  return new Date(Date.UTC(year, month - 1, day, 12, 0, 0));
+};
+
+/**
+ * Formatea una fecha de calendario sin depender de timezone
+ * Usa componentes UTC para evitar desfase
+ * @param {Date} date - Fecha a formatear
+ * @returns {String} Fecha en formato DD/MM/YYYY
+ */
+const formatCalendarDate = (date) => {
+  if (!date) return '';
+  const d = new Date(date);
+  const day = String(d.getUTCDate()).padStart(2, '0');
+  const month = String(d.getUTCMonth() + 1).padStart(2, '0');
+  const year = d.getUTCFullYear();
+  return `${day}/${month}/${year}`;
+};
+
+/**
+ * Parsea una fecha de calendario desde un string YYYY-MM-DD
+ * Alias de createCalendarDate para consistencia
+ * @param {String} dateStr - Fecha en formato YYYY-MM-DD
+ * @returns {Date} Fecha en UTC con hora 12:00:00
+ */
+const parseCalendarDate = (dateStr) => {
+  return createCalendarDate(dateStr);
+};
+
 module.exports = {
   getCurrentDateGMT7,
   toGMT7,
   formatGMT7,
   startOfDayGMT7,
-  endOfDayGMT7
+  endOfDayGMT7,
+  // Funciones para fechas de calendario
+  createCalendarDate,
+  formatCalendarDate,
+  parseCalendarDate
 };

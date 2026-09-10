@@ -8,12 +8,9 @@ const { authenticateToken, requireAdmin } = require('../middleware/auth');
 const { getCurrentDateGMT7 } = require('../helpers/timezone');
 const router = express.Router();
 
-// Helper para parsear fecha YYYY-MM-DD como fecha local (no UTC)
-const parseLocalDate = (dateStr) => {
-  if (!dateStr) return null;
-  const [year, month, day] = dateStr.split('-').map(Number);
-  return new Date(year, month - 1, day);
-};
+// Helper para parsear fecha YYYY-MM-DD como fecha de calendario (no UTC con timezone)
+// Usa la función centralizada de timezone.js para evitar desfase
+const { parseCalendarDate } = require('../helpers/timezone');
 
 // @route   GET /api/compras
 // @desc    Obtener todas las compras
@@ -222,7 +219,7 @@ router.post('/', authenticateToken, async (req, res) => {
     if (type === 'credito') {
       // Usar la fecha de compra proporcionada por el usuario, o la fecha actual si no se especifica
       const { getCurrentDateGMT7 } = require('../helpers/timezone');
-      const purchaseDate = date ? parseLocalDate(date) : getCurrentDateGMT7();
+      const purchaseDate = date ? parseCalendarDate(date) : getCurrentDateGMT7();
       
       dueDate = new Date(purchaseDate);
       dueDate.setDate(dueDate.getDate() + proveedorDoc.creditDays);
@@ -250,7 +247,7 @@ router.post('/', authenticateToken, async (req, res) => {
       earlyPaymentDiscount,
       discountDeadline,
       // Usar fecha personalizada si se proporciona, si no usa el default del modelo
-      ...(date && { date: parseLocalDate(date) })
+      ...(date && { date: parseCalendarDate(date) })
     });
 
     // Si es a crédito, crear cuenta por pagar
@@ -487,7 +484,7 @@ router.put('/:id', authenticateToken, requireAdmin, async (req, res) => {
     if (earlyPaymentDiscount !== undefined) compra.earlyPaymentDiscount = earlyPaymentDiscount;
     if (discountDeadline !== undefined) compra.discountDeadline = discountDeadline;
     if (dueDate !== undefined) compra.dueDate = dueDate;
-    if (date !== undefined) compra.date = parseLocalDate(date);
+    if (date !== undefined) compra.date = parseCalendarDate(date);
 
     // Recalcular totales
     compra.baseTotal = Math.round((compra.items.reduce((sum, item) => {

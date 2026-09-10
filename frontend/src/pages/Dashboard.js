@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { reportsAPI, productsAPI, remindersAPI, accountsPayableAPI, petsAPI } from '../services/api';
 import { SkeletonStats } from '../components/Skeleton';
+import { formatCalendarDate, getCalendarDay, getCalendarMonth, getMonthName } from '../helpers/dateUtils';
 import {
   DollarSign,
   Package,
@@ -254,7 +255,7 @@ const Dashboard = () => {
                         </div>
                         <div className="text-right flex-shrink-0">
                           <p className="text-sm font-semibold text-brand-burgundy">
-                            {new Date(vaccine.date).toLocaleDateString('es-MX')}
+                            {formatCalendarDate(vaccine.date)}
                           </p>
                           <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
                             vaccine.urgency === 'hoy' ? 'badge-warning' :
@@ -491,7 +492,7 @@ const Dashboard = () => {
                               }
                             </p>
                             <p className="text-xs text-gray-500">
-                              {new Date(product.expirationDate).toLocaleDateString('es-MX')}
+                              {formatCalendarDate(product.expirationDate)}
                             </p>
                           </div>
                         </div>
@@ -540,7 +541,7 @@ const Dashboard = () => {
             <div className="card-body border-t border-gray-200 p-5">
               {birthdayData?.length > 0 ? (
                 <div className="space-y-3">
-                  {birthdayData.slice(0, 7).map((pet) => (
+                  {birthdayData.map((pet) => (
                     <div 
                       key={pet._id} 
                       className="p-4 bg-pink-50 rounded-lg cursor-pointer hover:bg-pink-100/90 transition-colors"
@@ -550,7 +551,7 @@ const Dashboard = () => {
                         <div className="flex-1 min-w-0 pr-3">
                           <p className="font-medium text-gray-900 truncate" title={pet.name}>{pet.name}</p>
                           <p className="text-sm text-gray-600 truncate">
-                            {new Date(pet.birthDate).getDate()} de {getMonthName(new Date(pet.birthDate).getMonth() + 1)}
+                            {getCalendarDay(pet.birthDate)} de {getMonthName(getCalendarMonth(pet.birthDate))}
                           </p>
                           {pet.owner && (
                             <p className="text-xs text-gray-500 truncate">Dueño: {pet.owner.name}</p>
@@ -615,7 +616,7 @@ const Dashboard = () => {
             <div className="card-body border-t border-gray-200 p-5">
               {manualReminders?.length > 0 ? (
                 <div className="space-y-3">
-                  {manualReminders.slice(0, 7).map((reminder) => (
+                  {manualReminders.map((reminder) => (
                     <div 
                       key={reminder._id} 
                       className="p-4 bg-purple-50 rounded-lg cursor-pointer hover:bg-purple-100/90 transition-colors"
@@ -629,7 +630,7 @@ const Dashboard = () => {
                           )}
                           <div className="flex items-center text-sm text-gray-600 mt-2">
                             <Calendar className="h-4 w-4 mr-2 flex-shrink-0" />
-                            {new Date(reminder.date).toLocaleDateString('es-MX', { timeZone: 'America/Mazatlan' })}
+                            {formatCalendarDate(reminder.date)}
                           </div>
                         </div>
                         <div className="text-right flex-shrink-0">

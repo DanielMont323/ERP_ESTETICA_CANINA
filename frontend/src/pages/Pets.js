@@ -7,6 +7,7 @@ import { Skeleton, SkeletonCard } from '../components/Skeleton';
 import ConfirmModal from '../components/ConfirmModal';
 import Pagination from '../components/Pagination';
 import Autocomplete from '../components/Autocomplete';
+import { formatCalendarDate, getCalendarDay, getMonthName } from '../helpers/dateUtils';
 import {
   Plus,
   Calendar,
@@ -135,10 +136,10 @@ const Pets = () => {
   const calculateAge = (birthDate) => {
     const today = new Date();
     const birth = new Date(birthDate);
-    let age = today.getFullYear() - birth.getFullYear();
-    const monthDiff = today.getMonth() - birth.getMonth();
+    let age = today.getUTCFullYear() - birth.getUTCFullYear();
+    const monthDiff = today.getUTCMonth() - birth.getUTCMonth();
     
-    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
+    if (monthDiff < 0 || (monthDiff === 0 && today.getUTCDate() < birth.getUTCDate())) {
       age--;
     }
     
@@ -197,7 +198,7 @@ const Pets = () => {
       name: pet.name,
       type: pet.type,
       breed: pet.breed,
-      birthDate: new Date(pet.birthDate).toISOString().split('T')[0],
+      birthDate: formatCalendarDate(pet.birthDate).split('/').reverse().join('-'),
       weight: pet.weight,
       gender: pet.gender,
       ownerId: pet.owner?._id || ''
@@ -413,7 +414,7 @@ const Pets = () => {
                           <div className="flex justify-between items-start mb-2">
                             <div>
                               <p className="text-sm font-medium text-gray-900">
-                                {new Date(sale.date).toLocaleDateString('es-MX')}
+                                {formatCalendarDate(sale.date)}
                               </p>
                               <p className="text-xs text-gray-500">
                                 Venta #{sale._id.slice(-6)}
@@ -486,7 +487,7 @@ const Pets = () => {
                               )}
                             </div>
                             <p className="text-xs text-gray-500">
-                              {new Date(entry.date).toLocaleDateString('es-MX')}
+                              {formatCalendarDate(entry.date)}
                               {entry.veterinarian && ` • ${entry.veterinarian}`}
                             </p>
                           </div>
