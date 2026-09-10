@@ -225,13 +225,13 @@ const VaccinationCards = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-xl sm:text-2xl font-semibold text-gray-900">Carnet de Vacunación</h1>
-          <p className="mt-1 text-sm text-gray-600">
+          <h1 className="text-xl sm:text-2xl font-semibold text-gray-900 dark:text-dark-text">Carnet de Vacunación</h1>
+          <p className="mt-1 text-sm text-gray-600 dark:text-dark-textSecondary">
             Gestiona los carnets de vacunación de las mascotas
           </p>
         </div>
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 dark:text-dark-textSecondary" />
           <input
             type="text"
             placeholder="Buscar por mascota o propietario..."
@@ -248,14 +248,14 @@ const VaccinationCards = () => {
           <div key={card._id} className="card hover:shadow-lg transition-shadow">
             <div className="card-body">
               {/* Pet Info */}
-              <div className="flex items-start justify-between mb-4 pb-4 border-b border-gray-200">
+              <div className="flex items-start justify-between mb-4 pb-4 border-b border-gray-200 dark:border-dark-border">
                 <div className="flex items-center">
                   <div className="p-3 rounded-lg bg-primary-100 text-brand-burgundy mr-3">
                     <Dog className="h-6 w-6" />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-gray-900 text-lg">{card.nombreMascota}</h3>
-                    <p className="text-sm text-gray-600">{card.especie} - {card.raza}</p>
+                    <h3 className="font-semibold text-gray-900 dark:text-dark-text text-lg">{card.nombreMascota}</h3>
+                    <p className="text-sm text-gray-600 dark:text-dark-textSecondary">{card.especie} - {card.raza}</p>
                   </div>
                 </div>
                 <div className="flex items-center space-x-2">
@@ -283,16 +283,16 @@ const VaccinationCards = () => {
               </div>
 
               {/* Owner Info */}
-              <div className="flex items-center text-sm text-gray-600 mb-4">
+              <div className="flex items-center text-sm text-gray-600 dark:text-dark-textSecondary mb-4">
                 <User className="h-4 w-4 mr-2" />
                 <span>{card.nombrePropietario}</span>
               </div>
 
               {/* Vaccines List */}
               {selectedCard?._id === card._id && (
-                <div className="mt-4 pt-4 border-t border-gray-200">
+                <div className="mt-4 pt-4 border-t border-gray-200 dark:border-dark-border">
                   <div className="flex items-center justify-between mb-3">
-                    <h4 className="font-medium text-gray-900">Vacunas</h4>
+                    <h4 className="font-medium text-gray-900 dark:text-dark-text">Vacunas</h4>
                     <button
                       onClick={() => setShowVaccineModal(true)}
                       className="btn btn-primary btn-sm"
@@ -303,13 +303,13 @@ const VaccinationCards = () => {
                   </div>
                   
                   {card.vacunas.length === 0 ? (
-                    <p className="text-gray-500 text-sm text-center py-4">
+                    <p className="text-gray-500 dark:text-dark-textSecondary text-sm text-center py-4">
                       No hay vacunas/desparasitantes registrados
                     </p>
                   ) : (
                     <div className="space-y-3">
                       {card.vacunas.map((vaccine) => (
-                        <div key={vaccine._id} className="bg-gray-50 rounded-lg p-3">
+                        <div key={vaccine._id} className="bg-gray-50 dark:bg-dark-surface rounded-lg p-3">
                           <div className="flex items-start justify-between">
                             <div className="flex-1">
                               <div className="flex items-center">
@@ -318,7 +318,7 @@ const VaccinationCards = () => {
                                 ) : (
                                   <Syringe className="h-4 w-4 text-brand-burgundy mr-2" />
                                 )}
-                                <p className="font-medium text-gray-900">{vaccine.nombre}</p>
+                                <p className="font-medium text-gray-900 dark:text-dark-text">{vaccine.nombre}</p>
                                 <span className={`ml-2 text-xs px-2 py-1 rounded ${
                                   vaccine.tipo === 'desparasitante' 
                                     ? 'bg-purple-100 text-purple-800' 
@@ -327,7 +327,7 @@ const VaccinationCards = () => {
                                   {vaccine.tipo === 'desparasitante' ? 'Desparasitante' : 'Vacuna'}
                                 </span>
                               </div>
-                              <div className="mt-2 space-y-1 text-sm text-gray-600">
+                              <div className="mt-2 space-y-1 text-sm text-gray-600 dark:text-dark-textSecondary">
                                 <div className="flex items-center">
                                   <Calendar className="h-3 w-3 mr-1" />
                                   <span>Fecha: {formatDate(vaccine.fecha)}</span>
@@ -339,7 +339,7 @@ const VaccinationCards = () => {
                                   </div>
                                 )}
                                 {vaccine.observaciones && (
-                                  <p className="text-gray-500 italic">{vaccine.observaciones}</p>
+                                  <p className="text-gray-500 dark:text-dark-textSecondary italic">{vaccine.observaciones}</p>
                                 )}
                               </div>
                             </div>
@@ -368,7 +368,7 @@ const VaccinationCards = () => {
             <div className="modal-overlay" onClick={() => setShowVaccineModal(false)} />
             
             <div className="relative modal-content max-w-md w-full sm:max-w-md p-6 animate-slide-up">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-dark-text mb-4">
                 Agregar Vacuna - {selectedCard.nombreMascota}
               </h3>
               
@@ -390,7 +390,7 @@ const VaccinationCards = () => {
                     ))}
                   </select>
                   {loadingVaccines && (
-                    <p className="text-sm text-gray-500 mt-1">Cargando catálogo de vacunas...</p>
+                    <p className="text-sm text-gray-500 dark:text-dark-textSecondary mt-1">Cargando catálogo de vacunas...</p>
                   )}
                 </div>
                 
@@ -402,7 +402,7 @@ const VaccinationCards = () => {
                     disabled
                     className="form-input bg-gray-100"
                   />
-                  <p className="text-xs text-gray-500 mt-1">Fecha automática (GMT-7 Tepic)</p>
+                  <p className="text-xs text-gray-500 dark:text-dark-textSecondary mt-1">Fecha automática (GMT-7 Tepic)</p>
                 </div>
                 
                 <div>
@@ -416,7 +416,7 @@ const VaccinationCards = () => {
                     placeholder="Ej: 30"
                   />
                   {vaccineForm.diasProximaDosis && vaccineForm.diasProximaDosis > 0 && (
-                    <p className="text-sm text-gray-600 mt-1">
+                    <p className="text-sm text-gray-600 dark:text-dark-textSecondary mt-1">
                       Próxima dosis: <span className="font-medium">{calculateNextDoseDate(vaccineForm.diasProximaDosis)}</span>
                     </p>
                   )}
@@ -493,7 +493,7 @@ const VaccinationCards = () => {
             <div className="modal-overlay" onClick={() => setShowEditCardModal(false)} />
             
             <div className="relative modal-content max-w-md w-full sm:max-w-md p-6 animate-slide-up">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-dark-text mb-4">
                 Editar Carnet - {editingCard.nombreMascota}
               </h3>
               

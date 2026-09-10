@@ -62,7 +62,7 @@ const VaccinesCatalog = () => {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
-          <p className="text-gray-600">No tienes permiso para acceder a esta página</p>
+          <p className="text-gray-500 dark:text-dark-textSecondary">No tienes permiso para acceder a esta página</p>
         </div>
       </div>
     );
@@ -77,8 +77,8 @@ const VaccinesCatalog = () => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-gray-900">Catálogo de Vacunas y Desparasitantes</h1>
-          <p className="mt-1 text-sm text-gray-600">
+          <h1 className="text-2xl font-semibold text-gray-900 dark:text-dark-text">Catálogo de Vacunas y Desparasitantes</h1>
+          <p className="mt-1 text-sm text-gray-500 dark:text-dark-textSecondary">
             Gestiona el catálogo de vacunas y desparasitantes del sistema
           </p>
         </div>
@@ -89,7 +89,7 @@ const VaccinesCatalog = () => {
         <div className="card-body">
           <div className="flex gap-4">
             <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 dark:text-dark-textSecondary" />
               <input
                 type="text"
                 placeholder="Buscar vacunas/desparasitantes..."
@@ -128,9 +128,9 @@ const VaccinesCatalog = () => {
             </thead>
             <tbody>
               {filteredVaccines.map((vaccine, index) => (
-                <tr key={vaccine._id} className={`table-row-divider ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'} hover:bg-yellow-100`}>
+                <tr key={vaccine._id} className={`table-row-divider ${index % 2 === 0 ? 'bg-white dark:bg-dark-card' : 'bg-gray-50 dark:bg-dark-surface'} hover:bg-yellow-100`}>
                   <td className="py-4 font-medium">{vaccine.name}</td>
-                  <td className="py-4 text-gray-600">{vaccine.categoryName || '-'}</td>
+                  <td className="py-4 text-gray-500 dark:text-dark-textSecondary">{vaccine.categoryName || '-'}</td>
                   <td className="py-4">
                     <span
                       className={`px-2 py-1 rounded text-xs ${
@@ -142,9 +142,9 @@ const VaccinesCatalog = () => {
                       {vaccine.type === 'vacuna' ? 'VACUNA' : 'DESPARASITANTE'}
                     </span>
                   </td>
-                  <td className="py-4 text-gray-600">{vaccine.sku || '-'}</td>
-                  <td className="py-4 text-gray-600">${vaccine.price ? vaccine.price.toFixed(2) : '0.00'}</td>
-                  <td className="py-4 text-gray-600">{vaccine.stock}</td>
+                  <td className="py-4 text-gray-500 dark:text-dark-textSecondary">{vaccine.sku || '-'}</td>
+                  <td className="py-4 text-gray-500 dark:text-dark-textSecondary">${vaccine.price ? vaccine.price.toFixed(2) : '0.00'}</td>
+                  <td className="py-4 text-gray-500 dark:text-dark-textSecondary">{vaccine.stock}</td>
                   <td className="py-4">
                     <span
                       className={`px-2 py-1 rounded text-xs ${

@@ -597,7 +597,7 @@ const Purchases = () => {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-semibold text-brand-burgundy">Compras</h1>
-          <p className="mt-1 text-sm text-gray-600">
+          <p className="mt-1 text-sm text-gray-600 dark:text-dark-textSecondary">
             Gestiona las compras a proveedores con descuentos por pronto pago
           </p>
         </div>
@@ -626,7 +626,7 @@ const Purchases = () => {
             <div>
               <label className="form-label">Buscar compras</label>
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 dark:text-dark-textSecondary" />
                 <input
                   type="text"
                   placeholder="Proveedor, factura, folio, notas..."
@@ -639,7 +639,7 @@ const Purchases = () => {
             <div>
               <label className="form-label">Buscar por SKU</label>
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 dark:text-dark-textSecondary" />
                 <input
                   type="text"
                   placeholder="SKU del producto..."
@@ -657,24 +657,24 @@ const Purchases = () => {
       <div className="card hover:shadow-md transition-shadow duration-200 flex flex-col max-h-[calc(100vh-320px)]">
         <div className="table-container flex-1 overflow-auto">
           <table className="table table-fixed w-full">
-            <thead className="sticky top-0 bg-gray-50 z-10">
+            <thead className="sticky top-0 bg-gray-50 dark:bg-dark-surface z-10">
               <tr>
-                <th className="text-sm font-semibold text-gray-700 py-3 w-[8%]">Fecha</th>
-                <th className="text-sm font-semibold text-gray-700 py-3 w-[16%]">Proveedor</th>
-                <th className="text-sm font-semibold text-gray-700 py-3 w-[9%]">Folio</th>
-                <th className="text-sm font-semibold text-gray-700 py-3 w-[20%]">Productos</th>
-                <th className="text-sm font-semibold text-gray-700 py-3 w-[7%]">Subtotal</th>
-                <th className="text-sm font-semibold text-gray-700 py-3 w-[6%]">IVA</th>
-                <th className="text-sm font-semibold text-gray-700 py-3 w-[6%]">Descuento</th>
-                <th className="text-sm font-semibold text-gray-700 py-3 w-[10%]">Total</th>
-                <th className="text-sm font-semibold text-gray-700 py-3 w-[6%]">Tipo</th>
-                <th className="text-sm font-semibold text-gray-700 py-3 w-[6%]">Estado</th>
-                {user?.role === 'admin' && <th className="text-sm font-semibold text-gray-700 py-3 w-[6%]">Acciones</th>}
+                <th className="text-sm font-semibold text-gray-700 dark:text-dark-textSecondary py-3 w-[8%]">Fecha</th>
+                <th className="text-sm font-semibold text-gray-700 dark:text-dark-textSecondary py-3 w-[16%]">Proveedor</th>
+                <th className="text-sm font-semibold text-gray-700 dark:text-dark-textSecondary py-3 w-[9%]">Folio</th>
+                <th className="text-sm font-semibold text-gray-700 dark:text-dark-textSecondary py-3 w-[20%]">Productos</th>
+                <th className="text-sm font-semibold text-gray-700 dark:text-dark-textSecondary py-3 w-[7%]">Subtotal</th>
+                <th className="text-sm font-semibold text-gray-700 dark:text-dark-textSecondary py-3 w-[6%]">IVA</th>
+                <th className="text-sm font-semibold text-gray-700 dark:text-dark-textSecondary py-3 w-[6%]">Descuento</th>
+                <th className="text-sm font-semibold text-gray-700 dark:text-dark-textSecondary py-3 w-[10%]">Total</th>
+                <th className="text-sm font-semibold text-gray-700 dark:text-dark-textSecondary py-3 w-[6%]">Tipo</th>
+                <th className="text-sm font-semibold text-gray-700 dark:text-dark-textSecondary py-3 w-[6%]">Estado</th>
+                {user?.role === 'admin' && <th className="text-sm font-semibold text-gray-700 dark:text-dark-textSecondary py-3 w-[6%]">Acciones</th>}
               </tr>
             </thead>
             <tbody>
               {filteredPurchases.map((purchase, index) => (
-                <tr key={purchase._id} className={`table-row-divider ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'} hover:bg-yellow-100`}>
+                <tr key={purchase._id} className={`table-row-divider ${index % 2 === 0 ? 'bg-white dark:bg-dark-card' : 'bg-gray-50 dark:bg-dark-surface'} hover:bg-yellow-100`}>
                   <td className="py-5">{formatCalendarDate(purchase.date)}</td>
                   <td className="py-5">
                     <span className="truncate block" title={purchase.proveedor?.name}>{purchase.proveedor?.name}</span>
@@ -690,13 +690,13 @@ const Purchases = () => {
                     ))}
                   </td>
                   <td className="py-5">{formatCurrency(purchase.baseTotal || purchase.total)}</td>
-                  <td className={`py-5 ${purchase.totalIVA > 0 ? 'text-blue-600' : 'text-gray-400'}`}>
+                  <td className={`py-5 ${purchase.totalIVA > 0 ? 'text-blue-600' : 'text-gray-400 dark:text-dark-textSecondary'}`}>
                     {formatCurrency(purchase.totalIVA || 0)}
                   </td>
                   <td className="py-5 text-green-600">
                     {purchase.totalDiscount > 0 ? formatCurrency(purchase.totalDiscount) : '-'}
                   </td>
-                  <td className="py-5 font-bold text-gray-900">
+                  <td className="py-5 font-bold text-gray-900 dark:text-dark-text">
                     {formatCurrency(purchase.total)}
                   </td>
                   <td className="py-5">
@@ -720,7 +720,7 @@ const Purchases = () => {
                       <button
                         onClick={() => handleEditClick(purchase)}
                         disabled={purchase.status === 'cancelada'}
-                        className="text-blue-600 hover:text-blue-800 disabled:text-gray-400 disabled:cursor-not-allowed"
+                        className="text-blue-600 hover:text-blue-800 disabled:text-gray-400 dark:text-dark-textSecondary disabled:cursor-not-allowed"
                         title="Editar compra"
                       >
                         <Edit className="h-4 w-4" />
@@ -742,7 +742,7 @@ const Purchases = () => {
           </table>
         </div>
         
-        <div className="border-t border-gray-200 p-4 bg-gray-50">
+        <div className="border-t border-gray-200 dark:border-dark-border p-4 bg-gray-50 dark:bg-dark-surface">
           <Pagination
             pagination={pagination}
             onPageChange={(page) => setPagination({ ...pagination, page })}
@@ -758,9 +758,9 @@ const Purchases = () => {
           
           <div className="relative modal-content max-w-4xl w-full max-h-[90vh] flex flex-col animate-slide-up">
             {/* Header Sticky */}
-            <div className="sticky top-0 bg-white z-10 p-6 border-b border-gray-200 rounded-t-xl">
+            <div className="sticky top-0 bg-white dark:bg-dark-card z-10 p-6 border-b border-gray-200 dark:border-dark-border rounded-t-xl">
               <div className="flex justify-between items-center">
-                <h2 className="text-xl font-semibold text-gray-900">
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-dark-text">
                   {isEditMode ? 'Editar Compra' : 'Nueva Compra'}
                 </h2>
                 <button onClick={() => {
@@ -768,7 +768,7 @@ const Purchases = () => {
                   setIsEditMode(false);
                   setSelectedPurchase(null);
                   resetForm();
-                }} className="text-gray-400 hover:text-gray-600 transition-colors">
+                }} className="text-gray-400 dark:text-dark-textSecondary hover:text-gray-600 dark:text-dark-textSecondary transition-colors">
                   <X className="h-6 w-6" />
                 </button>
               </div>
@@ -792,7 +792,7 @@ const Purchases = () => {
                     />
                     {selectedSupplierInfo && (
                       <div className="mt-2 text-sm space-y-1">
-                        <div className="text-gray-600">
+                        <div className="text-gray-600 dark:text-dark-textSecondary">
                           Crédito: {selectedSupplierInfo.creditDays > 0 ? `${selectedSupplierInfo.creditDays} días` : 'Contado'}
                         </div>
                         {selectedSupplierInfo.earlyPaymentDiscount > 0 && (
@@ -850,14 +850,14 @@ const Purchases = () => {
                     max={new Date().toISOString().split('T')[0]}
                     className="form-input"
                   />
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-xs text-gray-500 dark:text-dark-textSecondary mt-1">
                     Si no seleccionas una fecha, se usará la fecha y hora actual
                   </p>
                 </div>
 
                 {/* Items Section */}
-                <div className="border border-gray-200 rounded-xl p-4 mb-4 bg-gray-50">
-                  <h3 className="font-semibold text-gray-900 mb-3">Agregar Productos</h3>
+                <div className="border border-gray-200 dark:border-dark-border rounded-xl p-4 mb-4 bg-gray-50 dark:bg-dark-surface">
+                  <h3 className="font-semibold text-gray-900 dark:text-dark-text mb-3">Agregar Productos</h3>
                   
                   {/* Campo de búsqueda por nombre o SKU con lector de código de barras */}
                   <div className="mb-4">
@@ -873,7 +873,7 @@ const Purchases = () => {
                       autoFocus
                     />
                     {searchResults.length > 0 && (
-                      <div className="mt-2 border border-gray-200 rounded-xl max-h-48 overflow-y-auto bg-white">
+                      <div className="mt-2 border border-gray-200 dark:border-dark-border rounded-xl max-h-48 overflow-y-auto bg-white dark:bg-dark-card">
                         {searchResults.map(product => (
                           <div
                             key={product._id}
@@ -882,10 +882,10 @@ const Purchases = () => {
                               setProductSearchQuery('');
                               setSearchResults([]);
                             }}
-                            className="p-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-0"
+                            className="p-3 hover:bg-gray-50 dark:bg-dark-surface cursor-pointer border-b border-gray-100 last:border-0"
                           >
-                            <p className="font-medium text-gray-900">{product.name}</p>
-                            <p className="text-sm text-gray-500">SKU: {product.sku}</p>
+                            <p className="font-medium text-gray-900 dark:text-dark-text">{product.name}</p>
+                            <p className="text-sm text-gray-500 dark:text-dark-textSecondary">SKU: {product.sku}</p>
                             <p className="text-sm font-medium text-brand-burgundy">
                               Costo: {formatCurrency(product.cost)}
                             </p>
@@ -999,7 +999,7 @@ const Purchases = () => {
 
                   {/* Items List */}
                   {formData.items.length > 0 && (
-                    <div className="border border-gray-200 rounded-xl p-3 bg-white">
+                    <div className="border border-gray-200 dark:border-dark-border rounded-xl p-3 bg-white dark:bg-dark-card">
                       <table className="w-full text-sm">
                         <thead>
                           <tr>
@@ -1036,13 +1036,13 @@ const Purchases = () => {
                               </td>
                               <td>
                                 {!item.hasTax ? (
-                                  <span className="text-gray-500 text-sm">Sin IVA</span>
+                                  <span className="text-gray-500 dark:text-dark-textSecondary text-sm">Sin IVA</span>
                                 ) : item.costIncludesTax ? (
                                   <span className="text-brand-burgundy text-sm font-medium">
                                     {((item.taxRate || 0.16) * 100).toFixed(0)}% incluido
                                   </span>
                                 ) : (
-                                  <span className="text-gray-700 text-sm">
+                                  <span className="text-gray-700 dark:text-dark-textSecondary text-sm">
                                     {((item.taxRate || 0.16) * 100).toFixed(0)}%
                                   </span>
                                 )}
@@ -1066,24 +1066,24 @@ const Purchases = () => {
 
                   {/* Purchase Summary - Always show when there are items */}
                   {formData.items.length > 0 && (
-                    <div className="border border-gray-200 rounded-xl p-4 bg-gray-50">
-                      <h4 className="font-semibold text-gray-900 mb-3">Resumen de Compra</h4>
+                    <div className="border border-gray-200 dark:border-dark-border rounded-xl p-4 bg-gray-50 dark:bg-dark-surface">
+                      <h4 className="font-semibold text-gray-900 dark:text-dark-text mb-3">Resumen de Compra</h4>
                       <div className="text-sm space-y-2">
                         <div className="flex justify-between">
-                          <span className="text-gray-600">Subtotal:</span>
+                          <span className="text-gray-600 dark:text-dark-textSecondary">Subtotal:</span>
                           <span className="font-medium">{formatCurrency(calculateBaseTotal())}</span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-gray-600">IVA:</span>
+                          <span className="text-gray-600 dark:text-dark-textSecondary">IVA:</span>
                           <span className="font-medium">{formatCurrency(calculateTotalIVA())}</span>
                         </div>
                         {formData.type === 'credito' && calculateEarlyPaymentDiscount() > 0 && (
                           <>
                             <div className="flex justify-between text-green-600">
-                              <span className="text-gray-600">Descuento pronto pago ({selectedSupplierInfo?.earlyPaymentDiscount}%):</span>
+                              <span className="text-gray-600 dark:text-dark-textSecondary">Descuento pronto pago ({selectedSupplierInfo?.earlyPaymentDiscount}%):</span>
                               <span className="font-medium">-{formatCurrency(calculateEarlyPaymentDiscount())}</span>
                             </div>
-                            <div className="flex justify-between border-t border-gray-200 pt-2">
+                            <div className="flex justify-between border-t border-gray-200 dark:border-dark-border pt-2">
                               <span className="font-semibold">Total:</span>
                               <span className="font-semibold text-brand-burgundy">{formatCurrency(calculateBaseTotal() + calculateTotalIVA() - calculateEarlyPaymentDiscount())}</span>
                             </div>
@@ -1095,11 +1095,11 @@ const Purchases = () => {
                         )}
                         {formData.type === 'credito' && calculateEarlyPaymentDiscount() === 0 && (
                           <>
-                            <div className="flex justify-between text-gray-500 text-xs">
+                            <div className="flex justify-between text-gray-500 dark:text-dark-textSecondary text-xs">
                               <span>Descuento pronto pago:</span>
                               <span>No disponible</span>
                             </div>
-                            <div className="flex justify-between border-t border-gray-200 pt-2">
+                            <div className="flex justify-between border-t border-gray-200 dark:border-dark-border pt-2">
                               <span className="font-semibold">Total:</span>
                               <span className="font-semibold text-brand-burgundy">{formatCurrency(calculateBaseTotal() + calculateTotalIVA())}</span>
                             </div>
@@ -1107,11 +1107,11 @@ const Purchases = () => {
                         )}
                         {formData.type === 'contado' && (
                           <>
-                            <div className="flex justify-between text-gray-500 text-xs">
+                            <div className="flex justify-between text-gray-500 dark:text-dark-textSecondary text-xs">
                               <span>Descuento pronto pago:</span>
                               <span>No aplica en contado</span>
                             </div>
-                            <div className="flex justify-between border-t border-gray-200 pt-2">
+                            <div className="flex justify-between border-t border-gray-200 dark:border-dark-border pt-2">
                               <span className="font-semibold">Total:</span>
                               <span className="font-semibold text-brand-burgundy">{formatCurrency(calculateBaseTotal() + calculateTotalIVA())}</span>
                             </div>
@@ -1160,7 +1160,7 @@ const Purchases = () => {
             </div>
             
             {/* Footer Sticky */}
-            <div className="sticky bottom-0 bg-white p-6 border-t border-gray-200 rounded-b-xl">
+            <div className="sticky bottom-0 bg-white dark:bg-dark-card p-6 border-t border-gray-200 dark:border-dark-border rounded-b-xl">
               <div className="flex justify-end space-x-2">
                 <button
                   type="button"

@@ -149,7 +149,7 @@ const Reports = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold text-gray-900">REPORTE DE VENTAS</h1>
+          <h1 className="text-2xl font-semibold text-gray-600 dark:text-dark-textSecondary">REPORTE DE VENTAS</h1>
           <p className="mt-1 text-sm text-brand-burgundy">
             Periodo: {getPeriodDisplay()}
           </p>
@@ -209,13 +209,13 @@ const Reports = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-brand-burgundy">Total Ventas</p>
-                  <p className="text-2xl font-bold text-gray-900 mt-1">{formatCurrency(salesBehavior.totalMonto)}</p>
+                  <p className="text-2xl font-bold text-gray-600 dark:text-dark-textSecondary mt-1">{formatCurrency(salesBehavior.totalMonto)}</p>
                 </div>
-                <div className="p-3 bg-blue-100 rounded-lg">
+                <div className="p-3 bg-white dark:bg-dark-card-100 rounded-lg">
                   <DollarSign className="h-6 w-6 text-blue-600" />
                 </div>
               </div>
-              <p className="text-xs text-gray-500 mt-2">{salesBehavior.totalVentas} ventas</p>
+              <p className="text-xs text-gray-500 dark:text-dark-textSecondary mt-2">{salesBehavior.totalVentas} ventas</p>
             </div>
           </div>
 
@@ -224,13 +224,13 @@ const Reports = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-brand-burgundy">Ticket Promedio</p>
-                  <p className="text-2xl font-bold text-gray-900 mt-1">{formatCurrency(salesBehavior.ticketPromedio)}</p>
+                  <p className="text-2xl font-bold text-gray-600 dark:text-dark-textSecondary mt-1">{formatCurrency(salesBehavior.ticketPromedio)}</p>
                 </div>
                 <div className="p-3 bg-green-100 rounded-lg">
                   <TrendingUp className="h-6 w-6 text-green-600" />
                 </div>
               </div>
-              <p className="text-xs text-gray-500 mt-2">Por venta</p>
+              <p className="text-xs text-gray-500 dark:text-dark-textSecondary mt-2">Por venta</p>
             </div>
           </div>
 
@@ -239,13 +239,13 @@ const Reports = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-brand-burgundy">Unidades Vendidas</p>
-                  <p className="text-2xl font-bold text-gray-900 mt-1">{salesBehavior.totalUnidades}</p>
+                  <p className="text-2xl font-bold text-gray-600 dark:text-dark-textSecondary mt-1">{salesBehavior.totalUnidades}</p>
                 </div>
                 <div className="p-3 bg-purple-100 rounded-lg">
                   <Package className="h-6 w-6 text-purple-600" />
                 </div>
               </div>
-              <p className="text-xs text-gray-500 mt-2">Total productos</p>
+              <p className="text-xs text-gray-500 dark:text-dark-textSecondary mt-2">Total productos</p>
             </div>
           </div>
 
@@ -254,13 +254,13 @@ const Reports = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-brand-burgundy">Canal Principal</p>
-                  <p className="text-lg font-bold text-gray-900 mt-1 truncate">{getChannelName(salesBehavior.canalPrincipal)}</p>
+                  <p className="text-lg font-bold text-gray-600 dark:text-dark-textSecondary mt-1 truncate">{getChannelName(salesBehavior.canalPrincipal)}</p>
                 </div>
                 <div className="p-3 bg-orange-100 rounded-lg">
                   <Store className="h-6 w-6 text-orange-600" />
                 </div>
               </div>
-              <p className="text-xs text-gray-500 mt-2">Más ventas</p>
+              <p className="text-xs text-gray-500 dark:text-dark-textSecondary mt-2">Más ventas</p>
             </div>
           </div>
 
@@ -269,13 +269,13 @@ const Reports = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-brand-burgundy">Método Principal</p>
-                  <p className="text-lg font-bold text-gray-900 mt-1 capitalize">{salesBehavior.metodoPagoPrincipal}</p>
+                  <p className="text-lg font-bold text-gray-600 dark:text-dark-textSecondary mt-1 capitalize">{salesBehavior.metodoPagoPrincipal}</p>
                 </div>
                 <div className="p-3 bg-pink-100 rounded-lg">
                   <CreditCard className="h-6 w-6 text-pink-600" />
                 </div>
               </div>
-              <p className="text-xs text-gray-500 mt-2">Más usado</p>
+              <p className="text-xs text-gray-500 dark:text-dark-textSecondary mt-2">Más usado</p>
             </div>
           </div>
 
@@ -284,13 +284,13 @@ const Reports = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-brand-burgundy">Producto Top</p>
-                  <p className="text-lg font-bold text-gray-900 mt-1 truncate">{salesBehavior.productoMasVendido || 'N/A'}</p>
+                  <p className="text-lg font-bold text-gray-600 dark:text-dark-textSecondary mt-1 truncate">{salesBehavior.productoMasVendido || 'N/A'}</p>
                 </div>
                 <div className="p-3 bg-indigo-100 rounded-lg">
                   <ShoppingCart className="h-6 w-6 text-indigo-600" />
                 </div>
               </div>
-              <p className="text-xs text-gray-500 mt-2">Más vendido</p>
+              <p className="text-xs text-gray-500 dark:text-dark-textSecondary mt-2">Más vendido</p>
             </div>
           </div>
         </div>
@@ -300,13 +300,13 @@ const Reports = () => {
       {incomeStatement && (
         <div className="card">
           <div className="card-header">
-            <h3 className="text-lg font-medium text-gray-900">RESUMEN DE RESULTADOS FINANCIEROS</h3>
+            <h3 className="text-lg font-medium text-gray-600 dark:text-dark-textSecondary">RESUMEN DE RESULTADOS FINANCIEROS</h3>
           </div>
           <div className="card-body">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="border-r border-gray-200 pr-6 md:border-r md:pr-6 border-b md:border-b pb-6 md:pb-0 mb-6 md:mb-0">
-                <h4 className="font-semibold text-gray-900 mb-4 flex items-center">
-                  <span className="w-3 h-3 bg-blue-500 rounded-full mr-2"></span>
+              <div className="border-r border-gray-200 dark:border-dark-border pr-6 md:border-r md:pr-6 border-b md:border-b pb-6 md:pb-0 mb-6 md:mb-0">
+                <h4 className="font-semibold text-gray-600 dark:text-dark-textSecondary mb-4 flex items-center">
+                  <span className="w-3 h-3 bg-white dark:bg-dark-card-500 rounded-full mr-2"></span>
                   INGRESOS
                 </h4>
                 <div className="space-y-3">
@@ -318,15 +318,15 @@ const Reports = () => {
                     <span className="text-brand-burgundy">Comisiones:</span>
                     <span className="font-semibold text-danger-600">-{formatCurrency(incomeStatement.ingresos.totalComision)}</span>
                   </div>
-                  <div className="flex justify-between items-center text-lg font-bold border-t border-gray-200 pt-3 mt-3">
-                    <span className="text-gray-900">Ingreso Neto:</span>
+                  <div className="flex justify-between items-center text-lg font-bold border-t border-gray-200 dark:border-dark-border pt-3 mt-3">
+                    <span className="text-gray-600 dark:text-dark-textSecondary">Ingreso Neto:</span>
                     <span className="text-success-600">{formatCurrency(incomeStatement.ingresos.totalIngresoNeto)}</span>
                   </div>
                 </div>
               </div>
               
-              <div className="border-r border-gray-200 pr-6">
-                <h4 className="font-semibold text-gray-900 mb-4 flex items-center">
+              <div className="border-r border-gray-200 dark:border-dark-border pr-6">
+                <h4 className="font-semibold text-gray-600 dark:text-dark-textSecondary mb-4 flex items-center">
                   <span className="w-3 h-3 bg-red-500 rounded-full mr-2"></span>
                   GASTOS
                 </h4>
@@ -343,8 +343,8 @@ const Reports = () => {
                     <span className="text-brand-burgundy">Costos variables:</span>
                     <span className="font-semibold">{formatCurrency(incomeStatement.costos.costosVariables)}</span>
                   </div>
-                  <div className="flex justify-between items-center text-lg font-bold border-t border-gray-200 pt-3 mt-3">
-                    <span className="text-gray-900">Total Gastos:</span>
+                  <div className="flex justify-between items-center text-lg font-bold border-t border-gray-200 dark:border-dark-border pt-3 mt-3">
+                    <span className="text-gray-600 dark:text-dark-textSecondary">Total Gastos:</span>
                     <span className="text-danger-600">{formatCurrency(
                       incomeStatement.costos.totalCompras + 
                       incomeStatement.costos.costosFijos + 
@@ -355,7 +355,7 @@ const Reports = () => {
               </div>
               
               <div>
-                <h4 className="font-semibold text-gray-900 mb-4 flex items-center">
+                <h4 className="font-semibold text-gray-600 dark:text-dark-textSecondary mb-4 flex items-center">
                   <span className="w-3 h-3 bg-green-500 rounded-full mr-2"></span>
                   RESULTADO NETO
                 </h4>
@@ -368,8 +368,8 @@ const Reports = () => {
                     <span className="text-brand-burgundy">Utilidad operativa:</span>
                     <span className="font-semibold">{formatCurrency(incomeStatement.utilidad.utilidadOperativa)}</span>
                   </div>
-                  <div className="flex justify-between items-center text-lg font-bold border-t border-gray-200 pt-3 mt-3">
-                    <span className="text-gray-900">Resultado Neto:</span>
+                  <div className="flex justify-between items-center text-lg font-bold border-t border-gray-200 dark:border-dark-border pt-3 mt-3">
+                    <span className="text-gray-600 dark:text-dark-textSecondary">Resultado Neto:</span>
                     <span className={`font-bold ${
                       incomeStatement.utilidad.utilidadOperativa >= 0 ? 'text-success-600' : 'text-danger-600'
                     }`}>
@@ -399,7 +399,7 @@ const Reports = () => {
         {incomeStatement && (
           <div className="card">
             <div className="card-header">
-              <h3 className="text-lg font-medium text-gray-900">INGRESOS VS GASTOS</h3>
+              <h3 className="text-lg font-medium text-gray-600 dark:text-dark-textSecondary">INGRESOS VS GASTOS</h3>
             </div>
             <div className="card-body">
               <ResponsiveContainer width="100%" height={300}>
@@ -423,7 +423,7 @@ const Reports = () => {
         {salesSummary && salesSummary.salesByPaymentMethod && (
           <div className="card">
             <div className="card-header">
-              <h3 className="text-lg font-medium text-gray-900">VENTAS POR MÉTODO DE PAGO</h3>
+              <h3 className="text-lg font-medium text-gray-600 dark:text-dark-textSecondary">VENTAS POR MÉTODO DE PAGO</h3>
             </div>
             <div className="card-body">
               <ResponsiveContainer width="100%" height={300}>
@@ -455,7 +455,7 @@ const Reports = () => {
                     <span className="capitalize">{method._id}:</span>
                     <div className="text-right">
                       <span className="font-semibold">{formatCurrency(method.total)}</span>
-                      <span className="text-gray-500 ml-2">({method.count} ventas)</span>
+                      <span className="text-gray-500 dark:text-dark-textSecondary ml-2">({method.count} ventas)</span>
                     </div>
                   </div>
                 ))}
@@ -469,7 +469,7 @@ const Reports = () => {
       {salesSummary && salesSummary.salesByChannel && (
         <div className="card">
           <div className="card-header">
-            <h3 className="text-lg font-medium text-gray-900">VENTAS POR CANAL</h3>
+            <h3 className="text-lg font-medium text-gray-600 dark:text-dark-textSecondary">VENTAS POR CANAL</h3>
           </div>
           <div className="card-body">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -491,12 +491,12 @@ const Reports = () => {
                 </ResponsiveContainer>
               </div>
               <div className="space-y-3 order-1 lg:order-2">
-                <h4 className="font-medium text-gray-900">Resumen por Canal</h4>
+                <h4 className="font-medium text-gray-600 dark:text-dark-textSecondary">Resumen por Canal</h4>
                 {salesSummary.salesByChannel.map((channel, index) => (
-                  <div key={index} className="border border-gray-200 rounded-lg p-4">
+                  <div key={index} className="border border-gray-200 dark:border-dark-border rounded-lg p-4">
                     <div className="flex justify-between items-center mb-2">
-                      <span className="font-semibold text-gray-900">{getChannelName(channel._id)}</span>
-                      <span className="text-sm text-gray-500">{channel.count} ventas</span>
+                      <span className="font-semibold text-gray-600 dark:text-dark-textSecondary">{getChannelName(channel._id)}</span>
+                      <span className="text-sm text-gray-500 dark:text-dark-textSecondary">{channel.count} ventas</span>
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-brand-burgundy">Total:</span>
@@ -518,7 +518,7 @@ const Reports = () => {
       {salesSummary && salesSummary.topProducts && (
         <div className="card">
           <div className="card-header">
-            <h3 className="text-lg font-medium text-gray-900">PRODUCTOS MÁS VENDIDOS</h3>
+            <h3 className="text-lg font-medium text-gray-600 dark:text-dark-textSecondary">PRODUCTOS MÁS VENDIDOS</h3>
           </div>
           <div className="card-body">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -535,18 +535,18 @@ const Reports = () => {
                 </ResponsiveContainer>
               </div>
               <div className="space-y-2">
-                <h4 className="font-medium text-gray-900 mb-3">Top 10 Productos</h4>
+                <h4 className="font-medium text-gray-600 dark:text-dark-textSecondary mb-3">Top 10 Productos</h4>
                 {salesSummary.topProducts.map((product, index) => (
-                  <div key={index} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                  <div key={index} className="flex justify-between items-center p-3 bg-gray-50 dark:bg-dark-surface rounded-lg">
                     <div className="flex items-center">
                       <span className="w-6 h-6 bg-purple-100 text-purple-600 rounded-full flex items-center justify-center text-sm font-semibold mr-3">
                         {index + 1}
                       </span>
-                      <span className="font-medium text-gray-900">{product.name}</span>
+                      <span className="font-medium text-gray-600 dark:text-dark-textSecondary">{product.name}</span>
                     </div>
                     <div className="text-right">
-                      <div className="font-semibold text-gray-900">{formatCurrency(product.totalRevenue)}</div>
-                      <div className="text-sm text-gray-500">{product.totalQuantity} unidades</div>
+                      <div className="font-semibold text-gray-600 dark:text-dark-textSecondary">{formatCurrency(product.totalRevenue)}</div>
+                      <div className="text-sm text-gray-500 dark:text-dark-textSecondary">{product.totalQuantity} unidades</div>
                     </div>
                   </div>
                 ))}
@@ -560,7 +560,7 @@ const Reports = () => {
       {salesSummary && salesSummary.salesByPeriod && salesSummary.salesByPeriod.length > 0 && (
         <div className="card">
           <div className="card-header">
-            <h3 className="text-lg font-medium text-gray-900">TENDENCIA DE VENTAS</h3>
+            <h3 className="text-lg font-medium text-gray-600 dark:text-dark-textSecondary">TENDENCIA DE VENTAS</h3>
           </div>
           <div className="card-body">
             <ResponsiveContainer width="100%" height={300}>

@@ -1,5 +1,6 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
+  darkMode: 'class',
   content: [
     "./src/**/*.{js,jsx,ts,tsx}",
   ],
@@ -11,6 +12,18 @@ module.exports = {
           cream: '#FDF6D9',
           burgundy: '#8B3A3A',
           gold: '#D9A323',
+        },
+        // Dark Mode Colors
+        dark: {
+          bg: '#0F1115',
+          card: '#171A21',
+          surface: '#1E222B',
+          border: '#2A303B',
+          text: '#F3F4F6',
+          textSecondary: '#9CA3AF',
+          input: '#1E222B',
+          inputBorder: '#2A303B',
+          hover: '#252933',
         },
         // Functional colors (maintained for UI states)
         primary: {

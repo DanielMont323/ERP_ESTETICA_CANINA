@@ -228,15 +228,15 @@ const Services = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold text-gray-900">Servicios</h1>
-          <p className="mt-1 text-sm text-gray-600">
+          <h1 className="text-2xl font-semibold text-gray-700 dark:text-dark-textSecondary dark:text-dark-text">Servicios</h1>
+          <p className="mt-1 text-sm text-gray-600 dark:text-dark-textSecondary">
             Gestiona los servicios que ofreces
           </p>
         </div>
         <div className="flex items-center gap-3">
           <div className="w-full sm:w-64">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 dark:text-dark-textSecondary" />
               <input
                 type="text"
                 placeholder="Buscar servicios..."
@@ -263,20 +263,20 @@ const Services = () => {
             <div className="card-body">
               <div className="flex items-start justify-between">
                 <div className="flex-1">
-                  <h3 className="text-lg font-medium text-gray-900">{service.name}</h3>
+                  <h3 className="text-lg font-medium text-gray-700 dark:text-dark-textSecondary dark:text-dark-text">{service.name}</h3>
                   {service.description && (
-                    <p className="mt-1 text-sm text-gray-600">{service.description}</p>
+                    <p className="mt-1 text-sm text-gray-600 dark:text-dark-textSecondary">{service.description}</p>
                   )}
                   <div className="mt-3 space-y-1">
-                    <div className="flex items-center text-sm text-gray-600">
+                    <div className="flex items-center text-sm text-gray-600 dark:text-dark-textSecondary">
                       <Clock className="h-4 w-4 mr-2" />
                       {service.duration} minutos
                     </div>
-                    <div className="flex items-center text-sm text-gray-600">
+                    <div className="flex items-center text-sm text-gray-600 dark:text-dark-textSecondary">
                       <DollarSign className="h-4 w-4 mr-2" />
                       {service.discountPercentage > 0 ? (
                         <div>
-                          <span className="text-gray-400 line-through text-sm">{formatCurrency(service.price)}</span>
+                          <span className="text-gray-400 dark:text-dark-textSecondary line-through text-sm">{formatCurrency(service.price)}</span>
                           <span className="text-success-600 font-semibold ml-2">
                             {formatCurrency(service.price * (1 - service.discountPercentage / 100))}
                           </span>
@@ -330,7 +330,7 @@ const Services = () => {
             <div className="modal-overlay" onClick={() => setShowModal(false)} />
             
             <div className="relative modal-content max-w-md w-full sm:max-w-md p-6 animate-slide-up">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">
+              <h3 className="text-lg font-semibold text-gray-700 dark:text-dark-textSecondary dark:text-dark-text mb-4">
                 {editingService ? 'Editar Servicio' : 'Nuevo Servicio'}
               </h3>
               <form ref={formRef} onSubmit={handleSubmit} className="mt-4 space-y-4">
@@ -405,7 +405,7 @@ const Services = () => {
 
                 {/* Insumos - Solo ADMIN */}
                 {userRole === 'admin' && (
-                  <div className="border border-gray-200 rounded-xl p-4 bg-gray-50">
+                  <div className="border border-gray-200 dark:border-dark-border rounded-xl p-4 bg-gray-50 dark:bg-dark-surface">
                     <div className="flex items-center justify-between mb-3">
                       <label className="form-label mb-0">Insumos requeridos</label>
                       <button
@@ -419,7 +419,7 @@ const Services = () => {
                     </div>
                     
                     {formData.insumos.length === 0 ? (
-                      <p className="text-sm text-gray-500 text-center py-2">
+                      <p className="text-sm text-gray-500 dark:text-dark-textSecondary text-center py-2">
                         No hay insumos configurados
                       </p>
                     ) : (

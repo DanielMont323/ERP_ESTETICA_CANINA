@@ -54,7 +54,7 @@ const Login = () => {
       className="min-h-screen flex items-center justify-center py-8 px-4 sm:px-6 lg:px-8 bg-cover bg-center bg-no-repeat"
       style={{ backgroundImage: `url('/portada.jpg')` }}
     >
-      <div className="max-w-md w-full space-y-8 bg-white/95 backdrop-blur-sm rounded-2xl shadow-2xl p-8">
+      <div className="max-w-md w-full space-y-8 bg-white/95 dark:bg-dark-card/95 backdrop-blur-sm rounded-2xl shadow-2xl p-8">
         <div>
           <div className="flex justify-center">
             <img 
@@ -66,7 +66,7 @@ const Login = () => {
           <h2 className="mt-6 text-center text-3xl font-extrabold text-brand-burgundy">
             {isRegister ? 'Crear cuenta' : 'Iniciar sesión'}
           </h2>
-          <p className="mt-2 text-center text-sm text-gray-600">
+          <p className="mt-2 text-center text-sm text-gray-600 dark:text-dark-textSecondary">
             {isRegister ? 'Regístrate para acceder al sistema' : 'Ingresa tus credenciales para continuar'}
           </p>
         </div>
@@ -126,7 +126,7 @@ const Login = () => {
                 />
                 <button
                   type="button"
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 transition-colors"
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 dark:text-dark-textSecondary dark:hover:text-dark-text transition-colors"
                   onClick={() => setShowPassword(!showPassword)}
                 >
                   {showPassword ? (

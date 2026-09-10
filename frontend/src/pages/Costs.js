@@ -128,15 +128,15 @@ const Costs = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold text-gray-900">Costos</h1>
-          <p className="mt-1 text-sm text-gray-600">
+          <h1 className="text-2xl font-semibold text-gray-500 dark:text-dark-textSecondary dark:text-dark-text">Costos</h1>
+          <p className="mt-1 text-sm text-gray-600 dark:text-dark-textSecondary">
             Gestiona los costos fijos y variables del negocio
           </p>
         </div>
         <div className="flex items-center gap-3">
           <div className="w-full sm:w-64">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 dark:text-dark-textSecondary" />
               <input
                 type="text"
                 placeholder="Buscar costos..."
@@ -173,7 +173,7 @@ const Costs = () => {
                 cost.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 cost.category?.toLowerCase().includes(searchTerm.toLowerCase())
               ).map((cost, index) => (
-                <tr key={cost._id} className={`table-row-divider ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'} hover:bg-yellow-100`}>
+                <tr key={cost._id} className={`table-row-divider ${index % 2 === 0 ? 'bg-white dark:bg-dark-card' : 'bg-gray-50 dark:bg-dark-surface'} hover:bg-yellow-100`}>
                   <td className="py-4 font-medium">{cost.description}</td>
                   <td className="py-4">
                     <span className="capitalize badge badge-info">
@@ -232,7 +232,7 @@ const Costs = () => {
             <div className="modal-overlay" onClick={() => setShowModal(false)} />
             
             <div className="relative modal-content max-w-md w-full sm:max-w-md p-6 animate-slide-up">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">
+              <h3 className="text-lg font-semibold text-gray-500 dark:text-dark-textSecondary dark:text-dark-text mb-4">
                 {editingCost ? 'Editar Costo' : 'Nuevo Costo'}
               </h3>
               <form onSubmit={handleSubmit} className="mt-4 space-y-4">

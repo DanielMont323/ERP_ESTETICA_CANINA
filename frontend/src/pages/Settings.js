@@ -53,8 +53,8 @@ const Settings = () => {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-semibold text-gray-900">Configuración</h1>
-        <p className="mt-1 text-sm text-gray-600">
+        <h1 className="text-2xl font-semibold text-gray-700 dark:text-dark-textSecondary dark:text-dark-text">Configuración</h1>
+        <p className="mt-1 text-sm text-gray-600 dark:text-dark-textSecondary">
           Gestiona la configuración del sistema
         </p>
       </div>
@@ -72,7 +72,7 @@ const Settings = () => {
                   className={`w-full flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors ${
                     activeTab === tab.id
                       ? 'bg-primary-100 text-primary-700 border-r-2 border-primary-700'
-                      : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                      : 'text-gray-600 dark:text-dark-textSecondary hover:bg-gray-50 dark:bg-dark-surface hover:text-gray-700 dark:text-dark-textSecondary dark:text-dark-text'
                   }`}
                 >
                   <Icon className="mr-3 h-5 w-5 flex-shrink-0" />
@@ -90,18 +90,18 @@ const Settings = () => {
               {/* Profile Tab */}
               {activeTab === 'profile' && (
                 <div className="space-y-6">
-                  <h3 className="text-lg font-medium text-gray-900">Información del Perfil</h3>
+                  <h3 className="text-lg font-medium text-gray-700 dark:text-dark-textSecondary dark:text-dark-text">Información del Perfil</h3>
                   
                   <div className="flex items-center space-x-4">
                     <div className="h-16 w-16 rounded-full bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center shadow-lg">
-                      <span className="text-white text-xl font-medium">
+                      <span className="text-white dark:bg-dark-card text-xl font-medium">
                         {user?.name?.charAt(0).toUpperCase()}
                       </span>
                     </div>
                     <div>
-                      <h4 className="text-lg font-medium text-gray-900">{user?.name}</h4>
-                      <p className="text-sm text-gray-500">{user?.email}</p>
-                      <p className="text-sm text-gray-500">Rol: {user?.role}</p>
+                      <h4 className="text-lg font-medium text-gray-700 dark:text-dark-textSecondary dark:text-dark-text">{user?.name}</h4>
+                      <p className="text-sm text-gray-500 dark:text-dark-textSecondary">{user?.email}</p>
+                      <p className="text-sm text-gray-500 dark:text-dark-textSecondary">Rol: {user?.role}</p>
                     </div>
                   </div>
 
@@ -134,37 +134,37 @@ const Settings = () => {
               {/* Notifications Tab */}
               {activeTab === 'notifications' && (
                 <div className="space-y-6">
-                  <h3 className="text-lg font-medium text-gray-900">Preferencias de Notificación</h3>
+                  <h3 className="text-lg font-medium text-gray-700 dark:text-dark-textSecondary dark:text-dark-text">Preferencias de Notificación</h3>
                   
                   <div className="space-y-4">
                     <label className="flex items-center justify-between">
                       <div>
-                        <p className="font-medium text-gray-900">Notificaciones de bajo stock</p>
-                        <p className="text-sm text-gray-500">Recibir alertas cuando el stock esté por debajo del mínimo</p>
+                        <p className="font-medium text-gray-700 dark:text-dark-textSecondary dark:text-dark-text">Notificaciones de bajo stock</p>
+                        <p className="text-sm text-gray-500 dark:text-dark-textSecondary">Recibir alertas cuando el stock esté por debajo del mínimo</p>
                       </div>
                       <input type="checkbox" defaultChecked className="h-4 w-4 text-brand-burgundy" />
                     </label>
 
                     <label className="flex items-center justify-between">
                       <div>
-                        <p className="font-medium text-gray-900">Recordatorios vencidos</p>
-                        <p className="text-sm text-gray-500">Alertas sobre recordatorios que han pasado su fecha</p>
+                        <p className="font-medium text-gray-700 dark:text-dark-textSecondary dark:text-dark-text">Recordatorios vencidos</p>
+                        <p className="text-sm text-gray-500 dark:text-dark-textSecondary">Alertas sobre recordatorios que han pasado su fecha</p>
                       </div>
                       <input type="checkbox" defaultChecked className="h-4 w-4 text-brand-burgundy" />
                     </label>
 
                     <label className="flex items-center justify-between">
                       <div>
-                        <p className="font-medium text-gray-900">Cuentas por pagar vencidas</p>
-                        <p className="text-sm text-gray-500">Notificaciones sobre pagos vencidos</p>
+                        <p className="font-medium text-gray-700 dark:text-dark-textSecondary dark:text-dark-text">Cuentas por pagar vencidas</p>
+                        <p className="text-sm text-gray-500 dark:text-dark-textSecondary">Notificaciones sobre pagos vencidos</p>
                       </div>
                       <input type="checkbox" defaultChecked className="h-4 w-4 text-brand-burgundy" />
                     </label>
 
                     <label className="flex items-center justify-between">
                       <div>
-                        <p className="font-medium text-gray-900">Resumen diario</p>
-                        <p className="text-sm text-gray-500">Resumen de ventas y actividades del día</p>
+                        <p className="font-medium text-gray-700 dark:text-dark-textSecondary dark:text-dark-text">Resumen diario</p>
+                        <p className="text-sm text-gray-500 dark:text-dark-textSecondary">Resumen de ventas y actividades del día</p>
                       </div>
                       <input type="checkbox" className="h-4 w-4 text-brand-burgundy" />
                     </label>
@@ -175,7 +175,7 @@ const Settings = () => {
               {/* Security Tab */}
               {activeTab === 'security' && (
                 <div className="space-y-6">
-                  <h3 className="text-lg font-medium text-gray-900">Cambiar Contraseña</h3>
+                  <h3 className="text-lg font-medium text-gray-700 dark:text-dark-textSecondary dark:text-dark-text">Cambiar Contraseña</h3>
                   
                   <form onSubmit={handlePasswordChange} className="space-y-4">
                     <div>
@@ -205,9 +205,9 @@ const Settings = () => {
                           className="absolute inset-y-0 right-0 pr-3 flex items-center"
                         >
                           {showPassword ? (
-                            <EyeOff className="h-5 w-5 text-gray-400" />
+                            <EyeOff className="h-5 w-5 text-gray-400 dark:text-dark-textSecondary" />
                           ) : (
-                            <Eye className="h-5 w-5 text-gray-400" />
+                            <Eye className="h-5 w-5 text-gray-400 dark:text-dark-textSecondary" />
                           )}
                         </button>
                       </div>
@@ -234,21 +234,21 @@ const Settings = () => {
               {/* Data Tab */}
               {activeTab === 'data' && (
                 <div className="space-y-6">
-                  <h3 className="text-lg font-medium text-gray-900">Gestión de Datos</h3>
+                  <h3 className="text-lg font-medium text-gray-700 dark:text-dark-textSecondary dark:text-dark-text">Gestión de Datos</h3>
                   
                   <div className="space-y-4">
-                    <div className="border border-gray-200 rounded-xl p-4 hover:shadow-md transition-shadow">
-                      <h4 className="font-medium text-gray-900 mb-2">Exportar Datos</h4>
-                      <p className="text-sm text-gray-500 mb-4">Descarga todos tus datos en formato CSV</p>
+                    <div className="border border-gray-200 dark:border-dark-border rounded-xl p-4 hover:shadow-md transition-shadow">
+                      <h4 className="font-medium text-gray-700 dark:text-dark-textSecondary dark:text-dark-text mb-2">Exportar Datos</h4>
+                      <p className="text-sm text-gray-500 dark:text-dark-textSecondary mb-4">Descarga todos tus datos en formato CSV</p>
                       <button className="btn btn-secondary btn-md hover:scale-105 transition-transform">
                         <Database className="h-4 w-4 mr-2" />
                         Exportar Datos
                       </button>
                     </div>
 
-                    <div className="border border-gray-200 rounded-xl p-4 hover:shadow-md transition-shadow">
-                      <h4 className="font-medium text-gray-900 mb-2">Respaldo de Base de Datos</h4>
-                      <p className="text-sm text-gray-500 mb-4">Crea un respaldo completo de la base de datos</p>
+                    <div className="border border-gray-200 dark:border-dark-border rounded-xl p-4 hover:shadow-md transition-shadow">
+                      <h4 className="font-medium text-gray-700 dark:text-dark-textSecondary dark:text-dark-text mb-2">Respaldo de Base de Datos</h4>
+                      <p className="text-sm text-gray-500 dark:text-dark-textSecondary mb-4">Crea un respaldo completo de la base de datos</p>
                       <button className="btn btn-secondary btn-md hover:scale-105 transition-transform">
                         <Database className="h-4 w-4 mr-2" />
                         Crear Respaldo

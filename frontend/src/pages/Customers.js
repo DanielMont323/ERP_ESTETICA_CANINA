@@ -205,8 +205,8 @@ const Customers = () => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-gray-900">Clientes</h1>
-          <p className="mt-1 text-sm text-gray-600">
+          <h1 className="text-2xl font-semibold text-gray-900 dark:text-dark-text">Clientes</h1>
+          <p className="mt-1 text-sm text-gray-600 dark:text-dark-textSecondary">
             Gestiona la información de tus clientes
           </p>
         </div>
@@ -223,7 +223,7 @@ const Customers = () => {
       <div className="card">
         <div className="card-body">
           <div className="relative max-w-md">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 dark:text-dark-textSecondary" />
             <input
               type="text"
               placeholder="Buscar clientes..."
@@ -242,37 +242,37 @@ const Customers = () => {
             <div className="card-body">
               <div className="flex items-start justify-between">
                 <div className="flex-1">
-                  <h3 className="text-lg font-medium text-gray-900">{customer.name}</h3>
+                  <h3 className="text-lg font-medium text-gray-900 dark:text-dark-text">{customer.name}</h3>
                   <div className="mt-2 space-y-1">
-                    <div className="flex items-center text-sm text-gray-600">
+                    <div className="flex items-center text-sm text-gray-600 dark:text-dark-textSecondary">
                       <Phone className="h-4 w-4 mr-2" />
                       {customer.phone}
                     </div>
                     {customer.email && (
-                      <div className="flex items-center text-sm text-gray-600">
+                      <div className="flex items-center text-sm text-gray-600 dark:text-dark-textSecondary">
                         <Mail className="h-4 w-4 mr-2" />
                         {customer.email}
                       </div>
                     )}
                     {customer.address && (
-                      <div className="flex items-center text-sm text-gray-600">
+                      <div className="flex items-center text-sm text-gray-600 dark:text-dark-textSecondary">
                         <MapPin className="h-4 w-4 mr-2" />
                         {customer.address}
                       </div>
                     )}
                   </div>
                   {customer.notes && (
-                    <p className="mt-2 text-sm text-gray-500">{customer.notes}</p>
+                    <p className="mt-2 text-sm text-gray-500 dark:text-dark-textSecondary">{customer.notes}</p>
                   )}
                   {customer.mascotas && customer.mascotas.length > 0 && (
-                    <div className="mt-3 pt-3 border-t border-gray-200">
-                      <div className="flex items-center text-sm font-medium text-gray-700 mb-2">
+                    <div className="mt-3 pt-3 border-t border-gray-200 dark:border-dark-border">
+                      <div className="flex items-center text-sm font-medium text-gray-700 dark:text-dark-textSecondary mb-2">
                         <Users className="h-4 w-4 mr-2" />
                         Mascotas ({customer.mascotas.length})
                       </div>
                       <div className="space-y-1">
                         {customer.mascotas.map((mascota) => (
-                          <div key={mascota._id} className="text-xs text-gray-600 flex items-center">
+                          <div key={mascota._id} className="text-xs text-gray-600 dark:text-dark-textSecondary flex items-center">
                             <span className="mr-2">•</span>
                             {mascota.name} ({mascota.type} - {mascota.breed})
                           </div>
@@ -310,26 +310,26 @@ const Customers = () => {
 
               {/* Sales History */}
               {expandedCustomerId === customer._id && (
-                <div className="mt-4 pt-4 border-t border-gray-200">
-                  <h4 className="font-medium text-gray-900 mb-3 flex items-center">
+                <div className="mt-4 pt-4 border-t border-gray-200 dark:border-dark-border">
+                  <h4 className="font-medium text-gray-900 dark:text-dark-text mb-3 flex items-center">
                     <ShoppingCart className="h-4 w-4 mr-2" />
                     Historial de Ventas
                   </h4>
                   {loadingSales[customer._id] ? (
-                    <div className="text-sm text-gray-500">Cargando ventas...</div>
+                    <div className="text-sm text-gray-500 dark:text-dark-textSecondary">Cargando ventas...</div>
                   ) : customerSales[customer._id]?.length > 0 ? (
                     <div className="space-y-2">
                       {customerSales[customer._id].map((sale) => (
-                        <div key={sale._id} className="text-sm bg-gray-50 p-2 rounded">
+                        <div key={sale._id} className="text-sm bg-gray-50 dark:bg-dark-surface p-2 rounded">
                           <div className="flex justify-between">
                             <span className="font-medium">
                               {new Date(sale.date).toLocaleDateString('es-MX')}
                             </span>
-                            <span className="text-gray-600">
+                            <span className="text-gray-600 dark:text-dark-textSecondary">
                               ${sale.total?.toFixed(2) || '0.00'}
                             </span>
                           </div>
-                          <div className="text-gray-500 text-xs">
+                          <div className="text-gray-500 dark:text-dark-textSecondary text-xs">
                             {sale.items?.map((item, idx) => (
                               <span key={idx}>
                                 {item.quantity}x {item.item?.name || 'Producto'}
@@ -341,7 +341,7 @@ const Customers = () => {
                       ))}
                     </div>
                   ) : (
-                    <div className="text-sm text-gray-500">No hay ventas registradas</div>
+                    <div className="text-sm text-gray-500 dark:text-dark-textSecondary">No hay ventas registradas</div>
                   )}
                 </div>
               )}
@@ -352,8 +352,8 @@ const Customers = () => {
 
       {customers.length === 0 && (
         <div className="text-center py-8">
-          <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-          <p className="text-gray-500">No se encontraron clientes</p>
+          <Users className="h-12 w-12 text-gray-400 dark:text-dark-textSecondary mx-auto mb-4" />
+          <p className="text-gray-500 dark:text-dark-textSecondary">No se encontraron clientes</p>
         </div>
       )}
 
@@ -370,8 +370,8 @@ const Customers = () => {
           
           <div className="relative modal-content max-w-lg w-full max-h-[90vh] flex flex-col animate-slide-up">
             {/* Header Sticky */}
-            <div className="sticky top-0 bg-white z-10 p-6 border-b border-gray-200 rounded-t-xl">
-              <h3 className="text-lg font-semibold text-gray-900">
+            <div className="sticky top-0 bg-white dark:bg-dark-card z-10 p-6 border-b border-gray-200 dark:border-dark-border rounded-t-xl">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-dark-text">
                 {editingCustomer ? 'Editar Cliente' : 'Nuevo Cliente'}
               </h3>
             </div>
@@ -441,7 +441,7 @@ const Customers = () => {
             </div>
             
             {/* Footer Sticky */}
-            <div className="sticky bottom-0 bg-white p-6 border-t border-gray-200 rounded-b-xl">
+            <div className="sticky bottom-0 bg-white dark:bg-dark-card p-6 border-t border-gray-200 dark:border-dark-border rounded-b-xl">
               <div className="flex justify-end space-x-3">
                 <button
                   type="button"

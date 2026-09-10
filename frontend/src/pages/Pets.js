@@ -312,15 +312,15 @@ const Pets = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold text-gray-900">Mascotas</h1>
-          <p className="mt-1 text-sm text-gray-600">
+          <h1 className="text-2xl font-semibold text-gray-900 dark:text-dark-text">Mascotas</h1>
+          <p className="mt-1 text-sm text-gray-600 dark:text-dark-textSecondary">
             Gestiona la información de las mascotas
           </p>
         </div>
         <div className="flex items-center gap-3">
           <div className="w-full sm:w-64">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 dark:text-dark-textSecondary" />
               <input
                 type="text"
                 placeholder="Buscar mascotas..."
@@ -344,20 +344,20 @@ const Pets = () => {
             <div className="card-body">
               <div className="flex items-start justify-between">
                 <div className="flex-1">
-                  <h3 className="text-lg font-medium text-gray-900">{pet.name}</h3>
+                  <h3 className="text-lg font-medium text-gray-900 dark:text-dark-text">{pet.name}</h3>
                   <div className="mt-2 space-y-1">
-                    <div className="flex items-center text-sm text-gray-600">
+                    <div className="flex items-center text-sm text-gray-600 dark:text-dark-textSecondary">
                       <span className="capitalize">{pet.type}</span> • {pet.breed}
                     </div>
-                    <div className="flex items-center text-sm text-gray-600">
+                    <div className="flex items-center text-sm text-gray-600 dark:text-dark-textSecondary">
                       <Calendar className="h-4 w-4 mr-2" />
                       {calculateAge(pet.birthDate)} años
                     </div>
-                    <div className="flex items-center text-sm text-gray-600">
+                    <div className="flex items-center text-sm text-gray-600 dark:text-dark-textSecondary">
                       <Scale className="h-4 w-4 mr-2" />
                       {pet.weight} kg
                     </div>
-                    <div className="text-sm text-gray-600">
+                    <div className="text-sm text-gray-600 dark:text-dark-textSecondary">
                       Dueño: {pet.owner?.name}
                     </div>
                   </div>
@@ -398,25 +398,25 @@ const Pets = () => {
 
               {/* Sales History */}
               {expandedPetId === pet._id && (
-                <div className="mt-4 pt-4 border-t border-gray-200">
-                  <h4 className="font-medium text-gray-900 mb-3 flex items-center">
+                <div className="mt-4 pt-4 border-t border-gray-200 dark:border-dark-border">
+                  <h4 className="font-medium text-gray-900 dark:text-dark-text mb-3 flex items-center">
                     <ShoppingCart className="h-4 w-4 mr-2" />
                     Historial de compras y servicios
                   </h4>
                   {loadingSales[pet._id] ? (
-                    <div className="text-center py-4 text-gray-500">
+                    <div className="text-center py-4 text-gray-500 dark:text-dark-textSecondary">
                       Cargando historial...
                     </div>
                   ) : petSales[pet._id] && petSales[pet._id].length > 0 ? (
                     <div className="space-y-3 max-h-64 overflow-y-auto">
                       {petSales[pet._id].map((sale) => (
-                        <div key={sale._id} className="bg-gray-50 rounded-lg p-3">
+                        <div key={sale._id} className="bg-gray-50 dark:bg-dark-surface rounded-lg p-3">
                           <div className="flex justify-between items-start mb-2">
                             <div>
-                              <p className="text-sm font-medium text-gray-900">
+                              <p className="text-sm font-medium text-gray-900 dark:text-dark-text">
                                 {formatCalendarDate(sale.date)}
                               </p>
-                              <p className="text-xs text-gray-500">
+                              <p className="text-xs text-gray-500 dark:text-dark-textSecondary">
                                 Venta #{sale._id.slice(-6)}
                               </p>
                             </div>
@@ -427,9 +427,9 @@ const Pets = () => {
                           <div className="space-y-1">
                             {sale.items.filter(item => item.type === 'producto').length > 0 && (
                               <div>
-                                <p className="text-xs font-medium text-gray-700">Productos:</p>
+                                <p className="text-xs font-medium text-gray-700 dark:text-dark-textSecondary">Productos:</p>
                                 {sale.items.filter(item => item.type === 'producto').map((item, idx) => (
-                                  <p key={idx} className="text-xs text-gray-600">
+                                  <p key={idx} className="text-xs text-gray-600 dark:text-dark-textSecondary">
                                     • {item.quantity}x {item.item?.name || 'Producto'}
                                   </p>
                                 ))}
@@ -437,21 +437,21 @@ const Pets = () => {
                             )}
                             {sale.items.filter(item => item.type === 'servicio').length > 0 && (
                               <div>
-                                <p className="text-xs font-medium text-gray-700">Servicios:</p>
+                                <p className="text-xs font-medium text-gray-700 dark:text-dark-textSecondary">Servicios:</p>
                                 {sale.items.filter(item => item.type === 'servicio').map((item, idx) => (
-                                  <p key={idx} className="text-xs text-gray-600">
+                                  <p key={idx} className="text-xs text-gray-600 dark:text-dark-textSecondary">
                                     • {item.quantity}x {item.item?.name || 'Servicio'}
                                   </p>
                                 ))}
                               </div>
                             )}
                           </div>
-                          <div className="mt-2 pt-2 border-t border-gray-200">
-                            <p className="text-xs text-gray-500">
+                          <div className="mt-2 pt-2 border-t border-gray-200 dark:border-dark-border">
+                            <p className="text-xs text-gray-500 dark:text-dark-textSecondary">
                               Método: <span className="capitalize">{sale.paymentMethod}</span>
                             </p>
                             {sale.customer && (
-                              <p className="text-xs text-gray-500">
+                              <p className="text-xs text-gray-500 dark:text-dark-textSecondary">
                                 Cliente: {sale.customer.name}
                               </p>
                             )}
@@ -460,7 +460,7 @@ const Pets = () => {
                       ))}
                     </div>
                   ) : (
-                    <div className="text-center py-4 text-gray-500">
+                    <div className="text-center py-4 text-gray-500 dark:text-dark-textSecondary">
                       <ShoppingCart className="h-8 w-8 text-gray-300 mx-auto mb-2" />
                       <p className="text-sm">No hay historial de compras</p>
                     </div>
@@ -468,8 +468,8 @@ const Pets = () => {
 
                   {/* Medical History */}
                   {pet.medicalHistory && pet.medicalHistory.length > 0 && (
-                    <div className="mt-4 pt-4 border-t border-gray-200">
-                      <h4 className="font-medium text-gray-900 mb-3 flex items-center">
+                    <div className="mt-4 pt-4 border-t border-gray-200 dark:border-dark-border">
+                      <h4 className="font-medium text-gray-900 dark:text-dark-text mb-3 flex items-center">
                         <FileText className="h-4 w-4 mr-2" />
                         Historial médico
                       </h4>
@@ -477,7 +477,7 @@ const Pets = () => {
                         {pet.medicalHistory.map((entry, idx) => (
                           <div key={idx} className="bg-blue-50 rounded-lg p-3">
                             <div className="flex justify-between items-start mb-1">
-                              <p className="text-sm font-medium text-gray-900">
+                              <p className="text-sm font-medium text-gray-900 dark:text-dark-text">
                                 {entry.description}
                               </p>
                               {entry.cost && (
@@ -486,7 +486,7 @@ const Pets = () => {
                                 </p>
                               )}
                             </div>
-                            <p className="text-xs text-gray-500">
+                            <p className="text-xs text-gray-500 dark:text-dark-textSecondary">
                               {formatCalendarDate(entry.date)}
                               {entry.veterinarian && ` • ${entry.veterinarian}`}
                             </p>
@@ -515,8 +515,8 @@ const Pets = () => {
           
           <div className="relative modal-content max-w-lg w-full max-h-[90vh] flex flex-col animate-slide-up">
             {/* Header Sticky */}
-            <div className="sticky top-0 bg-white z-10 p-6 border-b border-gray-200 rounded-t-xl">
-              <h3 className="text-lg font-semibold text-gray-900">
+            <div className="sticky top-0 bg-white dark:bg-dark-card z-10 p-6 border-b border-gray-200 dark:border-dark-border rounded-t-xl">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-dark-text">
                 {editingPet ? 'Editar Mascota' : 'Nueva Mascota'}
               </h3>
             </div>
@@ -612,7 +612,7 @@ const Pets = () => {
             </div>
             
             {/* Footer Sticky */}
-            <div className="sticky bottom-0 bg-white p-6 border-t border-gray-200 rounded-b-xl">
+            <div className="sticky bottom-0 bg-white dark:bg-dark-card p-6 border-t border-gray-200 dark:border-dark-border rounded-b-xl">
               <div className="flex justify-end space-x-2">
                 <button
                   type="button"

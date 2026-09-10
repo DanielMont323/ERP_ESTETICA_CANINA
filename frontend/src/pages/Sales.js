@@ -713,8 +713,8 @@ const Sales = () => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-gray-900">Ventas</h1>
-          <p className="mt-1 text-sm text-gray-600">
+          <h1 className="text-2xl font-semibold text-gray-900 dark:text-dark-text">Ventas</h1>
+          <p className="mt-1 text-sm text-gray-600 dark:text-dark-textSecondary">
             Registra y gestiona tus ventas
           </p>
         </div>
@@ -739,7 +739,7 @@ const Sales = () => {
                 onChange={(e) => setDateRange({ ...dateRange, useRange: e.target.checked })}
                 className="h-4 w-4 text-brand-burgundy focus:ring-primary-500 border-gray-300 rounded"
               />
-              <label htmlFor="useRange" className="text-sm font-medium text-gray-900">
+              <label htmlFor="useRange" className="text-sm font-medium text-gray-900 dark:text-dark-text">
                 Usar rango de fechas
               </label>
             </div>
@@ -793,7 +793,7 @@ const Sales = () => {
               <div className="flex-1">
                 <label className="form-label">Buscar</label>
                 <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 dark:text-dark-textSecondary" />
                   <input
                     type="text"
                     placeholder="Buscar ventas..."
@@ -812,24 +812,24 @@ const Sales = () => {
       <div className="card hover:shadow-md transition-shadow duration-200 flex flex-col max-h-[calc(100vh-320px)]">
         <div className="table-container flex-1 overflow-auto">
           <table className="table table-fixed w-full">
-            <thead className="sticky top-0 bg-gray-50 z-10">
+            <thead className="sticky top-0 bg-gray-50 dark:bg-dark-surface z-10">
               <tr>
-                <th className="text-sm font-semibold text-gray-700 py-3 w-[8%]">Fecha</th>
-                <th className="text-sm font-semibold text-gray-700 py-3 w-[15%]">Cliente</th>
-                <th className="text-sm font-semibold text-gray-700 py-3 w-[12%]">Vendedor</th>
-                <th className="text-sm font-semibold text-gray-700 py-3 w-[18%]">Items</th>
-                <th className="text-sm font-semibold text-gray-700 py-3 w-[7%]">Subtotal</th>
-                <th className="text-sm font-semibold text-gray-700 py-3 w-[9%]">Comisión Tarjeta</th>
-                <th className="text-sm font-semibold text-gray-700 py-3 w-[10%]">Total</th>
-                <th className="text-sm font-semibold text-gray-700 py-3 w-[10%]">Ingreso Neto</th>
-                <th className="text-sm font-semibold text-gray-700 py-3 w-[5%]">Método</th>
-                <th className="text-sm font-semibold text-gray-700 py-3 w-[6%]">Estado</th>
-                <th className="text-sm font-semibold text-gray-700 py-3 w-[5%]">Acciones</th>
+                <th className="text-sm font-semibold text-gray-700 dark:text-dark-textSecondary py-3 w-[8%]">Fecha</th>
+                <th className="text-sm font-semibold text-gray-700 dark:text-dark-textSecondary py-3 w-[15%]">Cliente</th>
+                <th className="text-sm font-semibold text-gray-700 dark:text-dark-textSecondary py-3 w-[12%]">Vendedor</th>
+                <th className="text-sm font-semibold text-gray-700 dark:text-dark-textSecondary py-3 w-[18%]">Items</th>
+                <th className="text-sm font-semibold text-gray-700 dark:text-dark-textSecondary py-3 w-[7%]">Subtotal</th>
+                <th className="text-sm font-semibold text-gray-700 dark:text-dark-textSecondary py-3 w-[9%]">Comisión Tarjeta</th>
+                <th className="text-sm font-semibold text-gray-700 dark:text-dark-textSecondary py-3 w-[10%]">Total</th>
+                <th className="text-sm font-semibold text-gray-700 dark:text-dark-textSecondary py-3 w-[10%]">Ingreso Neto</th>
+                <th className="text-sm font-semibold text-gray-700 dark:text-dark-textSecondary py-3 w-[5%]">Método</th>
+                <th className="text-sm font-semibold text-gray-700 dark:text-dark-textSecondary py-3 w-[6%]">Estado</th>
+                <th className="text-sm font-semibold text-gray-700 dark:text-dark-textSecondary py-3 w-[5%]">Acciones</th>
               </tr>
             </thead>
             <tbody>
               {filteredSales.map((sale, index) => (
-                <tr key={sale._id} className={`table-row-divider ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'} hover:bg-yellow-100`}>
+                <tr key={sale._id} className={`table-row-divider ${index % 2 === 0 ? 'bg-white dark:bg-dark-card' : 'bg-gray-50 dark:bg-dark-surface'} hover:bg-yellow-100`}>
                   <td className="py-5">
                     {new Date(sale.date).toLocaleDateString('es-MX')}
                   </td>
@@ -900,17 +900,17 @@ const Sales = () => {
           
           {filteredSales.length === 0 && (
             <div className="text-center py-8">
-              <ShoppingCart className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-500">No se encontraron ventas</p>
+              <ShoppingCart className="h-12 w-12 text-gray-400 dark:text-dark-textSecondary mx-auto mb-4" />
+              <p className="text-gray-500 dark:text-dark-textSecondary">No se encontraron ventas</p>
             </div>
           )}
         </div>
         
         {/* Pagination Controls */}
         {pagination.pages > 1 && (
-          <div className="border-t border-gray-200 p-4 bg-gray-50">
+          <div className="border-t border-gray-200 dark:border-dark-border p-4 bg-gray-50 dark:bg-dark-surface">
             <div className="flex items-center justify-between">
-              <div className="text-sm text-gray-500">
+              <div className="text-sm text-gray-500 dark:text-dark-textSecondary">
                 Mostrando {((pagination.page - 1) * pagination.limit) + 1} a {Math.min(pagination.page * pagination.limit, pagination.total)} de {pagination.total} ventas
               </div>
               <div className="flex items-center gap-2">
@@ -964,10 +964,10 @@ const Sales = () => {
           
           <div className="relative modal-content max-w-4xl w-full max-h-[90vh] flex flex-col animate-slide-up">
             {/* Header Sticky */}
-            <div className="sticky top-0 bg-white z-10 p-6 border-b border-gray-200 rounded-t-xl">
+            <div className="sticky top-0 bg-white dark:bg-dark-card z-10 p-6 border-b border-gray-200 dark:border-dark-border rounded-t-xl">
               <div className="flex justify-between items-center">
-                <h3 className="text-lg font-semibold text-gray-900">Nueva Venta</h3>
-                <button onClick={() => setShowModal(false)} className="text-gray-400 hover:text-gray-600 transition-colors">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-dark-text">Nueva Venta</h3>
+                <button onClick={() => setShowModal(false)} className="text-gray-400 dark:text-dark-textSecondary hover:text-gray-600 dark:text-dark-textSecondary transition-colors">
                   <X className="h-6 w-6" />
                 </button>
               </div>
@@ -989,7 +989,7 @@ const Sales = () => {
                         max={new Date().toISOString().split('T')[0]}
                         className="form-input"
                       />
-                      <p className="text-xs text-gray-500 mt-1">
+                      <p className="text-xs text-gray-500 dark:text-dark-textSecondary mt-1">
                         Si no seleccionas una fecha, se usará la fecha y hora actual
                       </p>
                     </div>
@@ -1034,7 +1034,7 @@ const Sales = () => {
                         autoFocus
                       />
                       {searchResults.length > 0 && (
-                        <div className="mt-2 border border-gray-200 rounded-xl max-h-48 overflow-y-auto bg-white">
+                        <div className="mt-2 border border-gray-200 dark:border-dark-border rounded-xl max-h-48 overflow-y-auto bg-white dark:bg-dark-card">
                           {searchResults.map((item, index) => (
                             <div
                               key={item._id}
@@ -1047,7 +1047,7 @@ const Sales = () => {
                               className={`p-3 cursor-pointer border-b border-gray-100 last:border-0 transition-colors ${
                                 index === selectedSearchIndex 
                                   ? 'bg-brand-burgundy bg-opacity-10 border-l-4 border-l-brand-burgundy' 
-                                  : 'hover:bg-gray-50'
+                                  : 'hover:bg-gray-50 dark:bg-dark-surface'
                               }`}
                             >
                               <div className="flex items-center gap-2">
@@ -1058,13 +1058,13 @@ const Sales = () => {
                                 }`}>
                                   {item.type === 'producto' ? 'Producto' : 'Servicio'}
                                 </span>
-                                <p className="font-medium text-gray-900">{item.name}</p>
+                                <p className="font-medium text-gray-900 dark:text-dark-text">{item.name}</p>
                               </div>
                               {item.type === 'producto' && (
-                                <p className="text-sm text-gray-500">SKU: {item.sku} - Stock: {item.stock}</p>
+                                <p className="text-sm text-gray-500 dark:text-dark-textSecondary">SKU: {item.sku} - Stock: {item.stock}</p>
                               )}
                               {item.type === 'servicio' && (
-                                <p className="text-sm text-gray-500">{item.duration} min</p>
+                                <p className="text-sm text-gray-500 dark:text-dark-textSecondary">{item.duration} min</p>
                               )}
                               <p className="text-sm font-medium text-brand-burgundy">
                                 {formatCurrency(item.price)}
@@ -1077,14 +1077,14 @@ const Sales = () => {
 
                     {/* Products */}
                     <div>
-                      <h4 className="font-medium text-gray-900 mb-3">Productos</h4>
+                      <h4 className="font-medium text-gray-900 dark:text-dark-text mb-3">Productos</h4>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         {products.filter(p => p.stock > 0).map(product => (
-                          <div key={product._id} className="border border-gray-200 rounded-xl p-3 hover:border-primary-300 hover:shadow-sm transition-all duration-200">
+                          <div key={product._id} className="border border-gray-200 dark:border-dark-border rounded-xl p-3 hover:border-primary-300 hover:shadow-sm transition-all duration-200">
                             <div className="flex justify-between items-start">
                               <div className="flex-1">
-                                <p className="font-medium text-gray-900">{product.name}</p>
-                                <p className="text-sm text-gray-500">Stock: {product.stock}</p>
+                                <p className="font-medium text-gray-900 dark:text-dark-text">{product.name}</p>
+                                <p className="text-sm text-gray-500 dark:text-dark-textSecondary">Stock: {product.stock}</p>
                                 <p className="text-sm font-medium text-brand-burgundy">
                                   {formatCurrency(product.price)}
                                 </p>
@@ -1103,14 +1103,14 @@ const Sales = () => {
 
                     {/* Services */}
                     <div>
-                      <h4 className="font-medium text-gray-900 mb-3">Servicios</h4>
+                      <h4 className="font-medium text-gray-900 dark:text-dark-text mb-3">Servicios</h4>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         {services.map(service => (
-                          <div key={service._id} className="border border-gray-200 rounded-xl p-3 hover:border-primary-300 hover:shadow-sm transition-all duration-200">
+                          <div key={service._id} className="border border-gray-200 dark:border-dark-border rounded-xl p-3 hover:border-primary-300 hover:shadow-sm transition-all duration-200">
                             <div className="flex justify-between items-start">
                               <div className="flex-1">
-                                <p className="font-medium text-gray-900">{service.name}</p>
-                                <p className="text-sm text-gray-500">{service.duration} min</p>
+                                <p className="font-medium text-gray-900 dark:text-dark-text">{service.name}</p>
+                                <p className="text-sm text-gray-500 dark:text-dark-textSecondary">{service.duration} min</p>
                                 <p className="text-sm font-medium text-brand-burgundy">
                                   {formatCurrency(service.price)}
                                 </p>
@@ -1131,10 +1131,10 @@ const Sales = () => {
                   {/* Cart */}
                   <div className="space-y-4">
                     <div>
-                      <h4 className="font-semibold text-gray-900 mb-3">Carrito</h4>
-                      <div className="border border-gray-200 rounded-xl p-4 space-y-3 bg-gray-50">
+                      <h4 className="font-semibold text-gray-900 dark:text-dark-text mb-3">Carrito</h4>
+                      <div className="border border-gray-200 dark:border-dark-border rounded-xl p-4 space-y-3 bg-gray-50 dark:bg-dark-surface">
                         {cart.length === 0 ? (
-                          <p className="text-gray-500 text-center py-4">Carrito vacío</p>
+                          <p className="text-gray-500 dark:text-dark-textSecondary text-center py-4">Carrito vacío</p>
                         ) : (
                           cart.map((item, index) => {
                             let categoryLower = '';
@@ -1156,22 +1156,22 @@ const Sales = () => {
                               <div key={index} className="space-y-2">
                                 <div className="flex items-center justify-between">
                                   <div className="flex-1">
-                                    <p className="font-medium text-gray-900">{item.name}</p>
-                                    <p className="text-sm text-gray-500">
+                                    <p className="font-medium text-gray-900 dark:text-dark-text">{item.name}</p>
+                                    <p className="text-sm text-gray-500 dark:text-dark-textSecondary">
                                       {formatCurrency(item.unitPrice)} c/u
                                     </p>
                                   </div>
                                   <div className="flex items-center space-x-2">
                                     <button
                                       onClick={() => updateQuantity(index, item.quantity - 1)}
-                                      className="text-gray-400 hover:text-gray-600"
+                                      className="text-gray-400 dark:text-dark-textSecondary hover:text-gray-600 dark:text-dark-textSecondary"
                                     >
                                       <MinusCircle className="h-4 w-4" />
                                     </button>
                                     <span className="w-8 text-center">{item.quantity}</span>
                                     <button
                                       onClick={() => updateQuantity(index, item.quantity + 1)}
-                                      className="text-gray-400 hover:text-gray-600"
+                                      className="text-gray-400 dark:text-dark-textSecondary hover:text-gray-600 dark:text-dark-textSecondary"
                                     >
                                       <PlusCircle className="h-4 w-4" />
                                     </button>
@@ -1189,7 +1189,7 @@ const Sales = () => {
                                     <div className="space-y-2 mt-2">
                                       {[...Array(item.quantity)].map((_, unitIndex) => (
                                         <div key={unitIndex} className="flex items-center space-x-2">
-                                          <span className="text-xs text-gray-600 w-16">Unidad {unitIndex + 1}:</span>
+                                          <span className="text-xs text-gray-600 dark:text-dark-textSecondary w-16">Unidad {unitIndex + 1}:</span>
                                           <select
                                             value={item.aplicaciones[unitIndex]?.mascota || ''}
                                             onChange={(e) => {
@@ -1243,7 +1243,7 @@ const Sales = () => {
                                 )}
                                 {showNextDose && (
                                   <div className="pl-2">
-                                    <label className="text-xs text-gray-600">Días para próxima dosis:</label>
+                                    <label className="text-xs text-gray-600 dark:text-dark-textSecondary">Días para próxima dosis:</label>
                                     <input
                                       type="number"
                                       min="0"
@@ -1256,7 +1256,7 @@ const Sales = () => {
                                       className="form-input text-sm py-1"
                                       placeholder="Ej: 30"
                                     />
-                                    <p className="text-xs text-gray-500 mt-1">El sistema calculará la fecha automáticamente</p>
+                                    <p className="text-xs text-gray-500 dark:text-dark-textSecondary mt-1">El sistema calculará la fecha automáticamente</p>
                                   </div>
                                 )}
                               </div>
@@ -1267,7 +1267,7 @@ const Sales = () => {
                     </div>
 
                     {/* Totals */}
-                    <div className="border border-gray-200 rounded-xl p-4 space-y-2 bg-white shadow-sm">
+                    <div className="border border-gray-200 dark:border-dark-border rounded-xl p-4 space-y-2 bg-white dark:bg-dark-card shadow-sm">
                       <div className="flex justify-between">
                         <span>Subtotal:</span>
                         <span className="font-medium">{formatCurrency(calculateSubtotal())}</span>
@@ -1278,12 +1278,12 @@ const Sales = () => {
                           <span className="font-medium">{formatCurrency(calculateCardCommission())}</span>
                         </div>
                       )}
-                      <div className="flex justify-between text-lg font-bold border-t border-gray-200 pt-2">
+                      <div className="flex justify-between text-lg font-bold border-t border-gray-200 dark:border-dark-border pt-2">
                         <span>Total:</span>
                         <span className="text-brand-burgundy">{formatCurrency(calculateTotal())}</span>
                       </div>
                       {userRole === 'admin' && (
-                        <div className="pt-2 border-t border-gray-200">
+                        <div className="pt-2 border-t border-gray-200 dark:border-dark-border">
                           <label className="flex items-center text-sm">
                             <input
                               type="checkbox"
@@ -1462,7 +1462,7 @@ const Sales = () => {
               </div>
 
             {/* Footer Sticky */}
-            <div className="sticky bottom-0 bg-white p-6 border-t border-gray-200 rounded-b-xl">
+            <div className="sticky bottom-0 bg-white dark:bg-dark-card p-6 border-t border-gray-200 dark:border-dark-border rounded-b-xl">
               <div className="flex space-x-3">
                 <button
                   onClick={() => setShowModal(false)}
@@ -1492,7 +1492,7 @@ const Sales = () => {
             
             <div className="relative modal-content max-w-4xl w-full sm:max-w-4xl max-h-[90vh] overflow-y-auto animate-slide-up">
               <div className="p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-6">Editar Venta #{editingSale._id.slice(-6)}</h3>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-dark-text mb-6">Editar Venta #{editingSale._id.slice(-6)}</h3>
                 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                   {/* Products and Services */}
@@ -1551,7 +1551,7 @@ const Sales = () => {
                         placeholder="Escribe o escanea código de barras..."
                       />
                       {editSearchResults.length > 0 && (
-                        <div className="mt-2 border border-gray-200 rounded-xl max-h-48 overflow-y-auto bg-white">
+                        <div className="mt-2 border border-gray-200 dark:border-dark-border rounded-xl max-h-48 overflow-y-auto bg-white dark:bg-dark-card">
                           {editSearchResults.map((item, index) => (
                             <div
                               key={item._id}
@@ -1561,7 +1561,7 @@ const Sales = () => {
                                 setEditSearchResults([]);
                                 setEditSelectedSearchIndex(-1);
                               }}
-                              className="p-3 cursor-pointer border-b border-gray-100 last:border-0 hover:bg-gray-50 transition-colors"
+                              className="p-3 cursor-pointer border-b border-gray-100 last:border-0 hover:bg-gray-50 dark:bg-dark-surface transition-colors"
                             >
                               <div className="flex items-center gap-2">
                                 <span className={`text-xs px-2 py-1 rounded ${
@@ -1571,13 +1571,13 @@ const Sales = () => {
                                 }`}>
                                   {item.type === 'producto' ? 'Producto' : 'Servicio'}
                                 </span>
-                                <p className="font-medium text-gray-900">{item.name}</p>
+                                <p className="font-medium text-gray-900 dark:text-dark-text">{item.name}</p>
                               </div>
                               {item.type === 'producto' && (
-                                <p className="text-sm text-gray-500">SKU: {item.sku} - Stock: {item.stock}</p>
+                                <p className="text-sm text-gray-500 dark:text-dark-textSecondary">SKU: {item.sku} - Stock: {item.stock}</p>
                               )}
                               {item.type === 'servicio' && (
-                                <p className="text-sm text-gray-500">{item.duration} min</p>
+                                <p className="text-sm text-gray-500 dark:text-dark-textSecondary">{item.duration} min</p>
                               )}
                               <p className="text-sm font-medium text-brand-burgundy">
                                 {formatCurrency(item.price)}
@@ -1590,14 +1590,14 @@ const Sales = () => {
 
                     {/* Products */}
                     <div>
-                      <h4 className="font-medium text-gray-900 mb-3">Productos</h4>
+                      <h4 className="font-medium text-gray-900 dark:text-dark-text mb-3">Productos</h4>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         {products.filter(p => p.stock > 0).map(product => (
-                          <div key={product._id} className="border border-gray-200 rounded-xl p-3 hover:border-primary-300 hover:shadow-sm transition-all duration-200">
+                          <div key={product._id} className="border border-gray-200 dark:border-dark-border rounded-xl p-3 hover:border-primary-300 hover:shadow-sm transition-all duration-200">
                             <div className="flex justify-between items-start">
                               <div className="flex-1">
-                                <p className="font-medium text-gray-900">{product.name}</p>
-                                <p className="text-sm text-gray-500">Stock: {product.stock}</p>
+                                <p className="font-medium text-gray-900 dark:text-dark-text">{product.name}</p>
+                                <p className="text-sm text-gray-500 dark:text-dark-textSecondary">Stock: {product.stock}</p>
                                 <p className="text-sm font-medium text-brand-burgundy">
                                   {formatCurrency(product.price)}
                                 </p>
@@ -1616,14 +1616,14 @@ const Sales = () => {
 
                     {/* Services */}
                     <div>
-                      <h4 className="font-medium text-gray-900 mb-3">Servicios</h4>
+                      <h4 className="font-medium text-gray-900 dark:text-dark-text mb-3">Servicios</h4>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         {services.map(service => (
-                          <div key={service._id} className="border border-gray-200 rounded-xl p-3 hover:border-primary-300 hover:shadow-sm transition-all duration-200">
+                          <div key={service._id} className="border border-gray-200 dark:border-dark-border rounded-xl p-3 hover:border-primary-300 hover:shadow-sm transition-all duration-200">
                             <div className="flex justify-between items-start">
                               <div className="flex-1">
-                                <p className="font-medium text-gray-900">{service.name}</p>
-                                <p className="text-sm text-gray-500">{service.duration} min</p>
+                                <p className="font-medium text-gray-900 dark:text-dark-text">{service.name}</p>
+                                <p className="text-sm text-gray-500 dark:text-dark-textSecondary">{service.duration} min</p>
                                 <p className="text-sm font-medium text-brand-burgundy">
                                   {formatCurrency(service.price)}
                                 </p>
@@ -1644,10 +1644,10 @@ const Sales = () => {
                   {/* Edit Cart */}
                   <div className="space-y-4">
                     <div>
-                      <h4 className="font-semibold text-gray-900 mb-3">Carrito</h4>
-                      <div className="border border-gray-200 rounded-xl p-4 space-y-3 bg-gray-50">
+                      <h4 className="font-semibold text-gray-900 dark:text-dark-text mb-3">Carrito</h4>
+                      <div className="border border-gray-200 dark:border-dark-border rounded-xl p-4 space-y-3 bg-gray-50 dark:bg-dark-surface">
                         {editCart.length === 0 ? (
-                          <p className="text-gray-500 text-center py-4">Carrito vacío</p>
+                          <p className="text-gray-500 dark:text-dark-textSecondary text-center py-4">Carrito vacío</p>
                         ) : (
                           editCart.map((item, index) => {
                             let categoryLower = '';
@@ -1668,22 +1668,22 @@ const Sales = () => {
                               <div key={index} className="space-y-2">
                                 <div className="flex items-center justify-between">
                                   <div className="flex-1">
-                                    <p className="font-medium text-gray-900">{item.name}</p>
-                                    <p className="text-sm text-gray-500">
+                                    <p className="font-medium text-gray-900 dark:text-dark-text">{item.name}</p>
+                                    <p className="text-sm text-gray-500 dark:text-dark-textSecondary">
                                       {formatCurrency(item.unitPrice)} c/u
                                     </p>
                                   </div>
                                   <div className="flex items-center space-x-2">
                                     <button
                                       onClick={() => updateEditQuantity(index, item.quantity - 1)}
-                                      className="text-gray-400 hover:text-gray-600"
+                                      className="text-gray-400 dark:text-dark-textSecondary hover:text-gray-600 dark:text-dark-textSecondary"
                                     >
                                       <MinusCircle className="h-4 w-4" />
                                     </button>
                                     <span className="w-8 text-center">{item.quantity}</span>
                                     <button
                                       onClick={() => updateEditQuantity(index, item.quantity + 1)}
-                                      className="text-gray-400 hover:text-gray-600"
+                                      className="text-gray-400 dark:text-dark-textSecondary hover:text-gray-600 dark:text-dark-textSecondary"
                                     >
                                       <PlusCircle className="h-4 w-4" />
                                     </button>
@@ -1701,7 +1701,7 @@ const Sales = () => {
                                     <div className="space-y-2 mt-2">
                                       {[...Array(item.quantity)].map((_, unitIndex) => (
                                         <div key={unitIndex} className="flex items-center space-x-2">
-                                          <span className="text-xs text-gray-600 w-16">Unidad {unitIndex + 1}:</span>
+                                          <span className="text-xs text-gray-600 dark:text-dark-textSecondary w-16">Unidad {unitIndex + 1}:</span>
                                           <select
                                             value={item.aplicaciones[unitIndex]?.mascota || ''}
                                             onChange={(e) => {
@@ -1767,18 +1767,18 @@ const Sales = () => {
                     </div>
 
                     {/* Totals */}
-                    <div className="border-t border-gray-200 pt-4 space-y-2">
-                      <div className="flex justify-between text-gray-600">
+                    <div className="border-t border-gray-200 dark:border-dark-border pt-4 space-y-2">
+                      <div className="flex justify-between text-gray-600 dark:text-dark-textSecondary">
                         <span>Subtotal:</span>
                         <span>{formatCurrency(editCart.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0))}</span>
                       </div>
                       {editPaymentMethod === 'tarjeta' && (
-                        <div className="flex justify-between text-gray-600">
+                        <div className="flex justify-between text-gray-600 dark:text-dark-textSecondary">
                           <span>Comisión tarjeta (4.06%):</span>
                           <span>{formatCurrency(editCart.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0) * 0.0406)}</span>
                         </div>
                       )}
-                      <div className="flex justify-between font-bold text-lg text-gray-900 pt-2 border-t border-gray-200">
+                      <div className="flex justify-between font-bold text-lg text-gray-900 dark:text-dark-text pt-2 border-t border-gray-200 dark:border-dark-border">
                         <span>Total:</span>
                         <span>
                           {editPaymentMethod === 'tarjeta' 

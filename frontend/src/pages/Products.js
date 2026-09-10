@@ -350,8 +350,8 @@ const Products = () => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-gray-900">Productos</h1>
-          <p className="mt-1 text-sm text-gray-600">
+          <h1 className="text-2xl font-semibold text-gray-900 dark:text-dark-text">Productos</h1>
+          <p className="mt-1 text-sm text-gray-600 dark:text-dark-textSecondary">
             Gestiona tu inventario de productos
           </p>
         </div>
@@ -370,7 +370,7 @@ const Products = () => {
           <div className="flex flex-col sm:flex-row gap-4">
             <div className="flex-1">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 dark:text-dark-textSecondary" />
                 <input
                   type="text"
                   placeholder="Buscar productos..."
@@ -432,20 +432,20 @@ const Products = () => {
 <div className="card hover:shadow-md transition-shadow duration-200 flex flex-col max-h-[calc(100vh-320px)]">
   <div className="table-container flex-1 overflow-auto">
     <table className="table table-fixed w-full">
-      <thead className="sticky top-0 bg-gray-50 z-10">
+      <thead className="sticky top-0 bg-gray-50 dark:bg-dark-surface z-10">
         <tr>
-          <th className="text-sm font-semibold text-gray-700 py-3 w-[17%]">Producto</th>
-          <th className="text-sm font-semibold text-gray-700 py-3 w-[9%]">Categoría</th>
-          <th className="text-sm font-semibold text-gray-700 py-3 w-[9%]">Proveedor</th>
-          <th className="text-sm font-semibold text-gray-700 py-3 w-[7%]">Stock</th>
-          <th className="text-sm font-semibold text-gray-700 py-3 w-[7%]">Costo</th>
-          <th className="text-sm font-semibold text-gray-700 py-3 w-[7%]">Precio</th>
-          <th className="text-sm font-semibold text-gray-700 py-3 w-[8%]">Descuento</th>
-          <th className="text-sm font-semibold text-gray-700 py-3 w-[9%]">Precio Final</th>
-          <th className="text-sm font-semibold text-gray-700 py-3 w-[6%]">Margen</th>
-          <th className="text-sm font-semibold text-gray-700 py-3 w-[8%]">Caducidad</th>
-          <th className="text-sm font-semibold text-gray-700 py-3 w-[6%]">Estado</th>
-          <th className="text-sm font-semibold text-gray-700 py-3 w-[7%]">Acciones</th>
+          <th className="text-sm font-semibold text-gray-700 dark:text-dark-textSecondary py-3 w-[17%]">Producto</th>
+          <th className="text-sm font-semibold text-gray-700 dark:text-dark-textSecondary py-3 w-[9%]">Categoría</th>
+          <th className="text-sm font-semibold text-gray-700 dark:text-dark-textSecondary py-3 w-[9%]">Proveedor</th>
+          <th className="text-sm font-semibold text-gray-700 dark:text-dark-textSecondary py-3 w-[7%]">Stock</th>
+          <th className="text-sm font-semibold text-gray-700 dark:text-dark-textSecondary py-3 w-[7%]">Costo</th>
+          <th className="text-sm font-semibold text-gray-700 dark:text-dark-textSecondary py-3 w-[7%]">Precio</th>
+          <th className="text-sm font-semibold text-gray-700 dark:text-dark-textSecondary py-3 w-[8%]">Descuento</th>
+          <th className="text-sm font-semibold text-gray-700 dark:text-dark-textSecondary py-3 w-[9%]">Precio Final</th>
+          <th className="text-sm font-semibold text-gray-700 dark:text-dark-textSecondary py-3 w-[6%]">Margen</th>
+          <th className="text-sm font-semibold text-gray-700 dark:text-dark-textSecondary py-3 w-[8%]">Caducidad</th>
+          <th className="text-sm font-semibold text-gray-700 dark:text-dark-textSecondary py-3 w-[6%]">Estado</th>
+          <th className="text-sm font-semibold text-gray-700 dark:text-dark-textSecondary py-3 w-[7%]">Acciones</th>
         </tr>
       </thead>
       <tbody>
@@ -453,11 +453,11 @@ const Products = () => {
                 const stockStatus = getStockStatus(product);
                 const expirationStatus = getExpirationStatus(product);
                 return (
-                  <tr key={product._id} className={`table-row-divider ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'} hover:bg-yellow-100`}>
+                  <tr key={product._id} className={`table-row-divider ${index % 2 === 0 ? 'bg-white dark:bg-dark-card' : 'bg-gray-50 dark:bg-dark-surface'} hover:bg-yellow-100`}>
                     <td className="py-5">
                       <div>
-                        <p className="font-medium text-gray-900">{product.name}</p>
-                        <p className="text-sm text-gray-500">SKU: {product.sku}</p>
+                        <p className="font-medium text-gray-900 dark:text-dark-text">{product.name}</p>
+                        <p className="text-sm text-gray-500 dark:text-dark-textSecondary">SKU: {product.sku}</p>
                       </div>
                     </td>
                     <td className="py-5">
@@ -469,7 +469,7 @@ const Products = () => {
                     <td className="py-5">
                       <div className="text-right">
                         <p className="font-medium">{product.stock}</p>
-                        <p className="text-sm text-gray-500">Mín: {product.minStock}</p>
+                        <p className="text-sm text-gray-500 dark:text-dark-textSecondary">Mín: {product.minStock}</p>
                       </div>
                     </td>
                     <td className="py-5 text-right">{formatCurrency(product.cost)}</td>
@@ -478,13 +478,13 @@ const Products = () => {
                       {product.discountPercentage > 0 ? (
                         <span className="text-success-600 font-medium">{product.discountPercentage}%</span>
                       ) : (
-                        <span className="text-gray-400">-</span>
+                        <span className="text-gray-400 dark:text-dark-textSecondary">-</span>
                       )}
                     </td>
                     <td className="py-5 text-right font-semibold">
                       {product.discountPercentage > 0 ? (
                         <div>
-                          <span className="text-gray-400 line-through text-sm">{formatCurrency(product.price)}</span>
+                          <span className="text-gray-400 dark:text-dark-textSecondary line-through text-sm">{formatCurrency(product.price)}</span>
                           <div className="text-success-600">{formatCurrency(product.price * (1 - product.discountPercentage / 100))}</div>
                         </div>
                       ) : (
@@ -549,14 +549,14 @@ const Products = () => {
           
           {filteredProducts.length === 0 && (
             <div className="text-center py-8">
-              <Package className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-500">No se encontraron productos</p>
+              <Package className="h-12 w-12 text-gray-400 dark:text-dark-textSecondary mx-auto mb-4" />
+              <p className="text-gray-500 dark:text-dark-textSecondary">No se encontraron productos</p>
             </div>
           )}
         </div>
         
         {!showDeleted && (
-          <div className="border-t border-gray-200 p-4 bg-gray-50">
+          <div className="border-t border-gray-200 dark:border-dark-border p-4 bg-gray-50 dark:bg-dark-surface">
             <Pagination
               pagination={pagination}
               onPageChange={(page) => setPagination({ ...pagination, page })}
@@ -573,8 +573,8 @@ const Products = () => {
           
           <div className="relative modal-content max-w-3xl w-full animate-slide-up max-h-[90vh] flex flex-col">
             {/* Header Sticky */}
-            <div className="sticky top-0 bg-white z-10 p-6 border-b border-gray-200 rounded-t-xl">
-              <h3 className="text-lg font-semibold text-gray-900">
+            <div className="sticky top-0 bg-white dark:bg-dark-card z-10 p-6 border-b border-gray-200 dark:border-dark-border rounded-t-xl">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-dark-text">
                 {editingProduct ? 'Editar Producto' : 'Nuevo Producto'}
               </h3>
             </div>
@@ -584,7 +584,7 @@ const Products = () => {
               <form ref={formRef} onSubmit={handleSubmit}>
                 {/* Sección: Información del Producto */}
                 <div className="mb-6">
-                  <h4 className="text-sm font-semibold text-gray-700 mb-4 pb-2 border-b border-gray-200">
+                  <h4 className="text-sm font-semibold text-gray-700 dark:text-dark-textSecondary mb-4 pb-2 border-b border-gray-200 dark:border-dark-border">
                     Información del Producto
                   </h4>
                   <div className="space-y-4">
@@ -657,7 +657,7 @@ const Products = () => {
 
                 {/* Sección: Precios e Inventario */}
                 <div className="mb-6">
-                  <h4 className="text-sm font-semibold text-gray-700 mb-4 pb-2 border-b border-gray-200">
+                  <h4 className="text-sm font-semibold text-gray-700 dark:text-dark-textSecondary mb-4 pb-2 border-b border-gray-200 dark:border-dark-border">
                     Precios e Inventario
                   </h4>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -725,7 +725,7 @@ const Products = () => {
 
                 {/* Sección: Caducidad */}
                 <div>
-                  <h4 className="text-sm font-semibold text-gray-700 mb-4 pb-2 border-b border-gray-200">
+                  <h4 className="text-sm font-semibold text-gray-700 dark:text-dark-textSecondary mb-4 pb-2 border-b border-gray-200 dark:border-dark-border">
                     Caducidad
                   </h4>
                   <div className="space-y-4">
@@ -758,7 +758,7 @@ const Products = () => {
                         }}
                         className="h-4 w-4 text-brand-burgundy focus:ring-brand-burgundy border-gray-300 rounded"
                       />
-                      <label htmlFor="isPerishable" className="text-sm text-gray-700">
+                      <label htmlFor="isPerishable" className="text-sm text-gray-700 dark:text-dark-textSecondary">
                         Producto perecedero
                       </label>
                     </div>
@@ -771,7 +771,7 @@ const Products = () => {
                         disabled={!formData.isPerishable}
                         className={`form-input ${!formData.isPerishable ? 'bg-gray-100' : ''}`}
                       />
-                      <p className="text-xs text-gray-500 mt-1">
+                      <p className="text-xs text-gray-500 dark:text-dark-textSecondary mt-1">
                         {formData.isPerishable 
                           ? 'El producto perecedero tiene fecha de caducidad automática de 120 días (modificable)'
                           : 'Marque como perecedero para establecer fecha de caducidad'
@@ -784,7 +784,7 @@ const Products = () => {
             </div>
             
             {/* Footer Sticky */}
-            <div className="sticky bottom-0 bg-white p-6 border-t border-gray-200 rounded-b-xl">
+            <div className="sticky bottom-0 bg-white dark:bg-dark-card p-6 border-t border-gray-200 dark:border-dark-border rounded-b-xl">
               <div className="flex justify-end space-x-3">
                 <button
                   type="button"
@@ -821,12 +821,12 @@ const Products = () => {
           <div>
             <p className="mb-2">¿Estás seguro de que deseas eliminar este producto?</p>
             {getProductToDelete() && (
-              <div className="mt-4 p-3 bg-gray-50 rounded text-sm">
+              <div className="mt-4 p-3 bg-gray-50 dark:bg-dark-surface rounded text-sm">
                 <p><strong>Nombre:</strong> {getProductToDelete().name}</p>
                 <p><strong>SKU:</strong> {getProductToDelete().sku}</p>
               </div>
             )}
-            <p className="mt-3 text-sm text-gray-600">
+            <p className="mt-3 text-sm text-gray-600 dark:text-dark-textSecondary">
               Si el producto tiene historial de operaciones, será archivado en lugar de eliminarse definitivamente.
             </p>
           </div>

@@ -258,8 +258,8 @@ const AccountsPayable = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-xl sm:text-2xl font-semibold text-gray-900">Cuentas por Pagar</h1>
-          <p className="mt-1 text-sm text-gray-600">
+          <h1 className="text-xl sm:text-2xl font-semibold text-gray-900 dark:text-dark-text">Cuentas por Pagar</h1>
+          <p className="mt-1 text-sm text-gray-600 dark:text-dark-textSecondary">
             Gestiona los pagos a tus proveedores con descuentos por pronto pago
           </p>
         </div>
@@ -279,7 +279,7 @@ const AccountsPayable = () => {
           </div>
           <div className="w-full sm:w-64">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 dark:text-dark-textSecondary" />
               <input
                 type="text"
                 placeholder="Buscar cuentas..."
@@ -298,10 +298,10 @@ const AccountsPayable = () => {
           <div className="card-body">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <div>
-                <h3 className="font-semibold text-gray-900">
+                <h3 className="font-semibold text-gray-900 dark:text-dark-text">
                   {selectedAccounts.length} cuenta{selectedAccounts.length !== 1 ? 's' : ''} seleccionada{selectedAccounts.length !== 1 ? 's' : ''}
                 </h3>
-                <div className="text-sm text-gray-600 mt-1">
+                <div className="text-sm text-gray-600 dark:text-dark-textSecondary mt-1">
                   <span>Subtotal: {formatCurrency(getSelectedAccountsSummary().subtotal)}</span>
                   <span className="mx-2">|</span>
                   <span>IVA: {formatCurrency(getSelectedAccountsSummary().iva)}</span>
@@ -352,7 +352,7 @@ const AccountsPayable = () => {
                 const discountStatus = getDiscountStatus(account.discountInfo);
                 const dueDateText = getDueDateText(account.dueDate, account.status);
                 return (
-                  <tr key={account._id} className={`table-row-divider ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'} hover:bg-yellow-100`}>
+                  <tr key={account._id} className={`table-row-divider ${index % 2 === 0 ? 'bg-white dark:bg-dark-card' : 'bg-gray-50 dark:bg-dark-surface'} hover:bg-yellow-100`}>
                     <td className="py-4">
                       <input
                         type="checkbox"
@@ -366,7 +366,7 @@ const AccountsPayable = () => {
                     <td className="py-4">{account.receiptNumber || '-'}</td>
                     <td className="py-4">{account.compra?.invoice || 'N/A'}</td>
                     <td className="py-4">{formatCurrency(account.subtotal || account.montoBase || account.monto)}</td>
-                    <td className={`py-4 ${account.hasIVA ? 'text-blue-600' : 'text-gray-400'}`}>
+                    <td className={`py-4 ${account.hasIVA ? 'text-blue-600' : 'text-gray-400 dark:text-dark-textSecondary'}`}>
                       {account.hasIVA ? formatCurrency(account.ivaAmount) : '$0.00'}
                     </td>
                     <td className="py-4 font-semibold">
@@ -414,7 +414,7 @@ const AccountsPayable = () => {
                           disabled={account.status === 'pagado' || account.status === 'cancelada'}
                           className={`text-sm font-medium ${
                             account.status === 'pagado' || account.status === 'cancelada'
-                              ? 'text-gray-400 cursor-not-allowed' 
+                              ? 'text-gray-400 dark:text-dark-textSecondary cursor-not-allowed' 
                               : 'text-brand-burgundy hover:text-primary-900'
                           }`}
                         >
@@ -457,13 +457,13 @@ const AccountsPayable = () => {
           const discountStatus = getDiscountStatus(account.discountInfo);
           const dueDateText = getDueDateText(account.dueDate, account.status);
           return (
-            <div key={account._id} className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+            <div key={account._id} className="bg-white dark:bg-dark-card border border-gray-200 dark:border-dark-border rounded-lg p-4 shadow-sm">
               <div className="flex justify-between items-start mb-3">
                 <div>
-                  <h3 className="font-semibold text-gray-900">{account.proveedor?.name}</h3>
-                  <p className="text-sm text-gray-600">Factura: {account.compra?.invoice || 'N/A'}</p>
+                  <h3 className="font-semibold text-gray-900 dark:text-dark-text">{account.proveedor?.name}</h3>
+                  <p className="text-sm text-gray-600 dark:text-dark-textSecondary">Factura: {account.compra?.invoice || 'N/A'}</p>
                   {account.receiptNumber && (
-                    <p className="text-sm text-gray-600">Recibo: {account.receiptNumber}</p>
+                    <p className="text-sm text-gray-600 dark:text-dark-textSecondary">Recibo: {account.receiptNumber}</p>
                   )}
                 </div>
                 <span className={`px-2 py-1 rounded text-xs ${
@@ -477,28 +477,28 @@ const AccountsPayable = () => {
 
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Subtotal:</span>
+                  <span className="text-gray-600 dark:text-dark-textSecondary">Subtotal:</span>
                   <span className="font-medium">{formatCurrency(account.subtotal || account.montoBase || account.monto)}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600">IVA:</span>
-                  <span className={account.hasIVA ? 'text-blue-600 font-medium' : 'text-gray-400'}>
+                  <span className="text-gray-600 dark:text-dark-textSecondary">IVA:</span>
+                  <span className={account.hasIVA ? 'text-blue-600 font-medium' : 'text-gray-400 dark:text-dark-textSecondary'}>
                     {account.hasIVA ? formatCurrency(account.ivaAmount) : '$0.00'}
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Total:</span>
+                  <span className="text-gray-600 dark:text-dark-textSecondary">Total:</span>
                   <span className="font-semibold">{formatCurrency(account.monto)}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Saldo Pendiente:</span>
+                  <span className="text-gray-600 dark:text-dark-textSecondary">Saldo Pendiente:</span>
                   <span className="font-semibold text-brand-burgundy">{formatCurrency(account.saldo)}</span>
                 </div>
                 
                 {account.discountDeadline && (
-                  <div className="pt-2 border-t border-gray-200">
+                  <div className="pt-2 border-t border-gray-200 dark:border-dark-border">
                     <div className="flex justify-between items-center">
-                      <span className="text-gray-600">Límite Descuento:</span>
+                      <span className="text-gray-600 dark:text-dark-textSecondary">Límite Descuento:</span>
                       <div className="text-right">
                         <div className="text-sm">{formatCalendarDate(account.discountDeadline)}</div>
                         <span className={`text-xs px-2 py-1 rounded ${
@@ -513,8 +513,8 @@ const AccountsPayable = () => {
                   </div>
                 )}
 
-                <div className="flex justify-between items-center pt-2 border-t border-gray-200">
-                  <span className="text-gray-600">Vencimiento:</span>
+                <div className="flex justify-between items-center pt-2 border-t border-gray-200 dark:border-dark-border">
+                  <span className="text-gray-600 dark:text-dark-textSecondary">Vencimiento:</span>
                   <div className="text-right">
                     <div className="text-sm">{formatCalendarDate(account.dueDate)}</div>
                     <span className={`text-xs px-2 py-1 rounded ${
@@ -529,13 +529,13 @@ const AccountsPayable = () => {
                 </div>
               </div>
 
-              <div className="mt-4 pt-3 border-t border-gray-200 flex space-x-2">
+              <div className="mt-4 pt-3 border-t border-gray-200 dark:border-dark-border flex space-x-2">
                 <button 
                   onClick={() => handlePaymentClick(account)}
                   disabled={account.status === 'pagado' || account.status === 'cancelada'}
                   className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium ${
                     account.status === 'pagado' || account.status === 'cancelada'
-                      ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
+                      ? 'bg-gray-100 text-gray-400 dark:text-dark-textSecondary cursor-not-allowed' 
                       : 'bg-brand-burgundy text-white hover:bg-primary-900'
                   }`}
                 >
@@ -570,11 +570,11 @@ const AccountsPayable = () => {
             <div className="modal-overlay" onClick={() => setShowPaymentModal(false)} />
             
             <div className="relative modal-content max-w-md w-full sm:max-w-md max-h-[90vh] overflow-y-auto animate-slide-up">
-              <div className="flex items-center justify-between p-4 md:p-6 border-b border-gray-200 sticky top-0 bg-white rounded-t-xl">
-                <h3 className="text-lg font-semibold text-gray-900">Registrar Pago</h3>
+              <div className="flex items-center justify-between p-4 md:p-6 border-b border-gray-200 dark:border-dark-border sticky top-0 bg-white dark:bg-dark-card rounded-t-xl">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-dark-text">Registrar Pago</h3>
                 <button
                   onClick={() => setShowPaymentModal(false)}
-                  className="text-gray-400 hover:text-gray-600 transition-colors p-1"
+                  className="text-gray-400 dark:text-dark-textSecondary hover:text-gray-600 dark:text-dark-textSecondary transition-colors p-1"
                 >
                   <X className="h-5 w-5" />
                 </button>
@@ -583,18 +583,18 @@ const AccountsPayable = () => {
             <form onSubmit={handlePaymentSubmit} className="p-4 md:p-6 space-y-4">
               <div>
                 <label className="form-label">Proveedor</label>
-                <p className="text-gray-900 font-medium">{selectedAccount.proveedor?.name}</p>
+                <p className="text-gray-900 dark:text-dark-text font-medium">{selectedAccount.proveedor?.name}</p>
               </div>
               
-              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+              <div className="bg-gray-50 dark:bg-dark-surface border border-gray-200 dark:border-dark-border rounded-lg p-4">
                 <div className="text-sm space-y-2">
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Subtotal:</span>
+                    <span className="text-gray-600 dark:text-dark-textSecondary">Subtotal:</span>
                     <span className="font-medium">{formatCurrency(selectedAccount.subtotal || selectedAccount.montoBase || selectedAccount.monto)}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-600">IVA ({selectedAccount.hasIVA ? (selectedAccount.ivaRate * 100).toFixed(0) + '%' : '0%'}):</span>
-                    <span className={selectedAccount.hasIVA ? 'text-blue-600 font-medium' : 'text-gray-400'}>
+                    <span className="text-gray-600 dark:text-dark-textSecondary">IVA ({selectedAccount.hasIVA ? (selectedAccount.ivaRate * 100).toFixed(0) + '%' : '0%'}):</span>
+                    <span className={selectedAccount.hasIVA ? 'text-blue-600 font-medium' : 'text-gray-400 dark:text-dark-textSecondary'}>
                       {formatCurrency(selectedAccount.ivaAmount || 0)}
                     </span>
                   </div>
@@ -617,7 +617,7 @@ const AccountsPayable = () => {
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Saldo Pendiente:</span>
+                    <span className="text-gray-600 dark:text-dark-textSecondary">Saldo Pendiente:</span>
                     <span className="font-semibold text-brand-burgundy">{formatCurrency(selectedAccount.saldo)}</span>
                   </div>
                 </div>
@@ -696,29 +696,29 @@ const AccountsPayable = () => {
             <div className="modal-overlay" onClick={() => setShowMassivePaymentModal(false)} />
             
             <div className="relative modal-content max-w-md w-full sm:max-w-md max-h-[90vh] overflow-y-auto animate-slide-up">
-              <div className="flex items-center justify-between p-4 md:p-6 border-b border-gray-200 sticky top-0 bg-white rounded-t-xl">
-                <h3 className="text-lg font-semibold text-gray-900">Pagar Cuentas Seleccionadas</h3>
+              <div className="flex items-center justify-between p-4 md:p-6 border-b border-gray-200 dark:border-dark-border sticky top-0 bg-white dark:bg-dark-card rounded-t-xl">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-dark-text">Pagar Cuentas Seleccionadas</h3>
                 <button
                   onClick={() => setShowMassivePaymentModal(false)}
-                  className="text-gray-400 hover:text-gray-600 transition-colors p-1"
+                  className="text-gray-400 dark:text-dark-textSecondary hover:text-gray-600 dark:text-dark-textSecondary transition-colors p-1"
                 >
                   <X className="h-5 w-5" />
                 </button>
               </div>
             
             <form onSubmit={handleMassivePaymentSubmit} className="p-4 md:p-6 space-y-4">
-              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+              <div className="bg-gray-50 dark:bg-dark-surface border border-gray-200 dark:border-dark-border rounded-lg p-4">
                 <div className="text-sm space-y-2">
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Cuentas a pagar:</span>
+                    <span className="text-gray-600 dark:text-dark-textSecondary">Cuentas a pagar:</span>
                     <span className="font-medium">{selectedAccounts.length}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Subtotal:</span>
+                    <span className="text-gray-600 dark:text-dark-textSecondary">Subtotal:</span>
                     <span className="font-medium">{formatCurrency(getSelectedAccountsSummary().subtotal)}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-600">IVA:</span>
+                    <span className="text-gray-600 dark:text-dark-textSecondary">IVA:</span>
                     <span className="font-medium">{formatCurrency(getSelectedAccountsSummary().iva)}</span>
                   </div>
                   <div className="flex justify-between border-t border-gray-300 pt-2">

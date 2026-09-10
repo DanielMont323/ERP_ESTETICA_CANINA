@@ -120,8 +120,8 @@ const ServiceCategories = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-xl sm:text-2xl font-semibold text-gray-900">Categorías de Servicios</h1>
-          <p className="mt-1 text-sm text-gray-600">
+          <h1 className="text-xl sm:text-2xl font-semibold text-gray-500 dark:text-dark-textSecondary dark:text-dark-text">Categorías de Servicios</h1>
+          <p className="mt-1 text-sm text-gray-600 dark:text-dark-textSecondary">
             Gestiona las categorías para organizar tus servicios
           </p>
         </div>
@@ -149,28 +149,28 @@ const ServiceCategories = () => {
                     <Scissors className="h-5 w-5" />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-gray-900">{category.name}</h3>
+                    <h3 className="font-semibold text-gray-500 dark:text-dark-textSecondary dark:text-dark-text">{category.name}</h3>
                     {category.description && (
-                      <p className="text-sm text-gray-600 mt-1">{category.description}</p>
+                      <p className="text-sm text-gray-600 dark:text-dark-textSecondary mt-1">{category.description}</p>
                     )}
                   </div>
                 </div>
                 <div className="flex items-center space-x-2">
                   <button
                     onClick={() => handleEdit(category)}
-                    className="text-gray-400 hover:text-brand-burgundy transition-colors"
+                    className="text-gray-400 dark:text-dark-textSecondary hover:text-brand-burgundy transition-colors"
                   >
                     <Edit className="h-4 w-4" />
                   </button>
                   <button
                     onClick={() => handleDelete(category._id)}
-                    className="text-gray-400 hover:text-danger-600 transition-colors"
+                    className="text-gray-400 dark:text-dark-textSecondary hover:text-danger-600 transition-colors"
                   >
                     <Trash2 className="h-4 w-4" />
                   </button>
                 </div>
               </div>
-              <div className="flex items-center justify-between pt-4 border-t border-gray-200">
+              <div className="flex items-center justify-between pt-4 border-t border-gray-200 dark:border-dark-border">
                 <span className={`text-xs px-2 py-1 rounded ${
                   category.isActive 
                     ? 'bg-green-100 text-green-800' 
@@ -197,7 +197,7 @@ const ServiceCategories = () => {
             <div className="modal-overlay" onClick={() => setShowModal(false)} />
             
             <div className="relative modal-content max-w-md w-full sm:max-w-md p-6 animate-slide-up">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">
+              <h3 className="text-lg font-semibold text-gray-500 dark:text-dark-textSecondary dark:text-dark-text mb-4">
                 {editingCategory ? 'Editar Categoría' : 'Nueva Categoría'}
               </h3>
               
@@ -234,7 +234,7 @@ const ServiceCategories = () => {
                       onChange={(e) => setFormData({...formData, isActive: e.target.checked})}
                       className="mr-2"
                     />
-                    <label htmlFor="isActive" className="text-sm text-gray-700">
+                    <label htmlFor="isActive" className="text-sm text-gray-700 dark:text-dark-textSecondary">
                       Categoría activa
                     </label>
                   </div>

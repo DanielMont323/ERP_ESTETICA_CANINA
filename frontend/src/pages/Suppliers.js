@@ -196,15 +196,15 @@ const Suppliers = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold text-gray-900">Proveedores</h1>
-          <p className="mt-1 text-sm text-gray-600">
+          <h1 className="text-2xl font-semibold text-gray-700 dark:text-dark-textSecondary">Proveedores</h1>
+          <p className="mt-1 text-sm text-gray-600 dark:text-dark-textSecondary">
             Gestiona la información de tus proveedores
           </p>
         </div>
         <div className="flex items-center gap-3">
           <div className="w-full sm:w-64">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 dark:text-dark-textSecondary" />
               <input
                 type="text"
                 placeholder="Buscar proveedores..."
@@ -232,16 +232,16 @@ const Suppliers = () => {
             <div className="card-body">
               <div className="flex items-start justify-between">
                 <div className="flex-1">
-                  <h3 className="text-lg font-medium text-gray-900">{supplier.name}</h3>
+                  <h3 className="text-lg font-medium text-gray-700 dark:text-dark-textSecondary">{supplier.name}</h3>
                   <div className="mt-2 space-y-1">
-                    <div className="flex items-center text-sm text-gray-600">
+                    <div className="flex items-center text-sm text-gray-600 dark:text-dark-textSecondary">
                       <span className="font-medium">Contacto:</span> {supplier.contact}
                     </div>
-                    <div className="flex items-center text-sm text-gray-600">
+                    <div className="flex items-center text-sm text-gray-600 dark:text-dark-textSecondary">
                       <Phone className="h-4 w-4 mr-2" />
                       {supplier.phone}
                     </div>
-                    <div className="flex items-center text-sm text-gray-600">
+                    <div className="flex items-center text-sm text-gray-600 dark:text-dark-textSecondary">
                       <DollarSign className="h-4 w-4 mr-2" />
                       Crédito: {supplier.creditDays} días
                     </div>
@@ -250,7 +250,7 @@ const Suppliers = () => {
                         Descuento pronto pago: {supplier.earlyPaymentDiscount}%
                       </div>
                     )}
-                    <div className="flex items-center text-sm text-gray-600">
+                    <div className="flex items-center text-sm text-gray-600 dark:text-dark-textSecondary">
                       Deuda actual: {formatCurrency(supplier.currentDebt)}
                     </div>
                   </div>
@@ -288,7 +288,7 @@ const Suppliers = () => {
             <div className="modal-overlay" onClick={() => setShowModal(false)} />
             
             <div className="relative modal-content max-w-md w-full sm:max-w-md p-6 animate-slide-up">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">
+              <h3 className="text-lg font-semibold text-gray-700 dark:text-dark-textSecondary mb-4">
                 {editingSupplier ? 'Editar Proveedor' : 'Nuevo Proveedor'}
               </h3>
               <form ref={formRef} onSubmit={handleSubmit} className="mt-4 space-y-4">
@@ -374,7 +374,7 @@ const Suppliers = () => {
                     }}
                     className="form-input"
                   />
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-xs text-gray-500 dark:text-dark-textSecondary mt-1">
                     Porcentaje de descuento que aplica el proveedor si la cuenta se paga dentro del periodo de crédito.
                   </p>
                 </div>

@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { ThemeProvider } from './contexts/ThemeContext';
 import Layout from './components/Layout';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
@@ -63,91 +64,93 @@ const PublicRoute = ({ children }) => {
 
 function App() {
   return (
-    <AuthProvider>
-      <Router>
-        <div className="App">
-          <Routes>
-            {/* Public Routes */}
-            <Route path="/login" element={
-              <PublicRoute>
-                <Login />
-              </PublicRoute>
-            } />
+    <ThemeProvider>
+      <AuthProvider>
+        <Router>
+          <div className="App">
+            <Routes>
+              {/* Public Routes */}
+              <Route path="/login" element={
+                <PublicRoute>
+                  <Login />
+                </PublicRoute>
+              } />
+              
+              {/* Protected Routes */}
+              <Route path="/" element={
+                <ProtectedRoute>
+                  <Layout />
+                </ProtectedRoute>
+              }>
+                <Route index element={<Navigate to="/dashboard" />} />
+                <Route path="dashboard" element={<Dashboard />} />
+                <Route path="products" element={<Products />} />
+                <Route path="product-categories" element={<ProductCategories />} />
+                <Route path="sales" element={<Sales />} />
+                <Route path="purchases" element={<Purchases />} />
+                <Route path="customers" element={<Customers />} />
+                <Route path="pets" element={<Pets />} />
+                <Route path="vaccination-cards" element={<VaccinationCards />} />
+                <Route path="vaccines-catalog" element={<VaccinesCatalog />} />
+                <Route path="services" element={<Services />} />
+                <Route path="service-categories" element={<ServiceCategories />} />
+                <Route path="suppliers" element={<Suppliers />} />
+                <Route path="accounts-payable" element={<AccountsPayable />} />
+                <Route path="costs" element={<Costs />} />
+                <Route path="reminders" element={<Reminders />} />
+                <Route path="reports" element={<Reports />} />
+                <Route path="settings" element={<Settings />} />
+                <Route path="low-stock-orders" element={<LowStockOrders />} />
+              </Route>
+              
+              {/* Fallback */}
+              <Route path="*" element={<Navigate to="/dashboard" />} />
+            </Routes>
             
-            {/* Protected Routes */}
-            <Route path="/" element={
-              <ProtectedRoute>
-                <Layout />
-              </ProtectedRoute>
-            }>
-              <Route index element={<Navigate to="/dashboard" />} />
-              <Route path="dashboard" element={<Dashboard />} />
-              <Route path="products" element={<Products />} />
-              <Route path="product-categories" element={<ProductCategories />} />
-              <Route path="sales" element={<Sales />} />
-              <Route path="purchases" element={<Purchases />} />
-              <Route path="customers" element={<Customers />} />
-              <Route path="pets" element={<Pets />} />
-              <Route path="vaccination-cards" element={<VaccinationCards />} />
-              <Route path="vaccines-catalog" element={<VaccinesCatalog />} />
-              <Route path="services" element={<Services />} />
-              <Route path="service-categories" element={<ServiceCategories />} />
-              <Route path="suppliers" element={<Suppliers />} />
-              <Route path="accounts-payable" element={<AccountsPayable />} />
-              <Route path="costs" element={<Costs />} />
-              <Route path="reminders" element={<Reminders />} />
-              <Route path="reports" element={<Reports />} />
-              <Route path="settings" element={<Settings />} />
-              <Route path="low-stock-orders" element={<LowStockOrders />} />
-            </Route>
-            
-            {/* Fallback */}
-            <Route path="*" element={<Navigate to="/dashboard" />} />
-          </Routes>
-          
-          {/* Toast notifications */}
-          <Toaster
-            position="top-right"
-            toastOptions={{
-              duration: 4000,
-              style: {
-                background: 'white',
-                color: '#1f2937',
-                borderRadius: '0.75rem',
-                padding: '1rem',
-                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
-                border: '1px solid #e5e7eb',
-              },
-              success: {
-                duration: 3000,
-                iconTheme: {
-                  primary: '#16a34a',
-                  secondary: '#fff',
-                },
+            {/* Toast notifications */}
+            <Toaster
+              position="top-right"
+              toastOptions={{
+                duration: 4000,
                 style: {
-                  borderLeft: '4px solid #16a34a',
+                  background: 'var(--toast-bg, white)',
+                  color: 'var(--toast-text, #1f2937)',
+                  borderRadius: '0.75rem',
+                  padding: '1rem',
+                  boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+                  border: '1px solid var(--toast-border, #e5e7eb)',
                 },
-              },
-              error: {
-                duration: 5000,
-                iconTheme: {
-                  primary: '#dc2626',
-                  secondary: '#fff',
+                success: {
+                  duration: 3000,
+                  iconTheme: {
+                    primary: '#16a34a',
+                    secondary: '#fff',
+                  },
+                  style: {
+                    borderLeft: '4px solid #16a34a',
+                  },
                 },
-                style: {
-                  borderLeft: '4px solid #dc2626',
+                error: {
+                  duration: 5000,
+                  iconTheme: {
+                    primary: '#dc2626',
+                    secondary: '#fff',
+                  },
+                  style: {
+                    borderLeft: '4px solid #dc2626',
+                  },
                 },
-              },
-              loading: {
-                style: {
-                  borderLeft: '4px solid #2563eb',
+                loading: {
+                  style: {
+                    borderLeft: '4px solid #2563eb',
+                  },
                 },
-              },
-            }}
-          />
-        </div>
-      </Router>
-    </AuthProvider>
+              }}
+            />
+          </div>
+        </Router>
+      </AuthProvider>
+    </ThemeProvider>
   );
 }
 

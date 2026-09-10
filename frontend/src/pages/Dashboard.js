@@ -103,8 +103,8 @@ const Dashboard = () => {
         <div className="card-body p-6">
           <div className="flex items-start justify-between">
             <div className="flex-1">
-              <p className="text-sm font-medium text-gray-600 mb-1">{title}</p>
-              <p className="text-3xl font-bold text-gray-900 mb-2">{value}</p>
+              <p className="text-sm font-medium text-gray-600 dark:text-dark-textSecondary mb-1">{title}</p>
+              <p className="text-3xl font-bold text-gray-900 dark:text-dark-text mb-2">{value}</p>
               {change !== undefined && (
                 <div className={`flex items-center text-sm ${
                   changeType === 'positive' ? 'text-success-600' : 'text-danger-600'
@@ -169,7 +169,7 @@ const Dashboard = () => {
       {/* Header */}
       <div>
         <h1 className="text-2xl font-semibold text-brand-burgundy">Dashboard</h1>
-        <p className="mt-1 text-sm text-gray-600">
+        <p className="mt-1 text-sm text-gray-600 dark:text-dark-textSecondary">
           Bienvenido al sistema ERP. Aquí tienes un resumen de tu negocio.
         </p>
       </div>
@@ -208,12 +208,12 @@ const Dashboard = () => {
 
       {/* Attention Required Section */}
       <div>
-        <h2 className="text-xl font-semibold text-gray-900 mb-6">Atención requerida</h2>
+        <h2 className="text-xl font-semibold text-gray-900 dark:text-dark-text mb-6">Atención requerida</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
         {/* Mascotas - Vacunas Próximas */}
         <div className="card hover:shadow-md transition-shadow duration-200">
           <div 
-            className="card-header cursor-pointer hover:bg-gray-50 transition-colors p-5"
+className="card-header cursor-pointer hover:bg-gray-50 dark:hover:bg-dark-hover transition-colors p-5"
             onClick={() => setExpandedSection(expandedSection === 'pets' ? null : 'pets')}
           >
             <div className="flex items-center justify-between">
@@ -222,18 +222,18 @@ const Dashboard = () => {
                   <Dog className="h-5 w-5" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900">Mascotas</h3>
-                  <p className="text-sm text-gray-600">Vacunas próximas</p>
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-dark-text">Mascotas</h3>
+                  <p className="text-sm text-gray-600 dark:text-dark-textSecondary">Vacunas próximas</p>
                 </div>
               </div>
               <div className="flex items-center">
-                <span className="text-3xl font-bold text-gray-900 mr-3">
+                <span className="text-3xl font-bold text-gray-900 dark:text-dark-text mr-3">
                   {remindersData?.counts?.vaccines || 0}
                 </span>
                 {expandedSection === 'pets' ? (
-                  <ChevronUp className="h-5 w-5 text-gray-400" />
+                  <ChevronUp className="h-5 w-5 text-gray-400 dark:text-dark-textSecondary" />
                 ) : (
-                  <ChevronDown className="h-5 w-5 text-gray-400" />
+                  <ChevronDown className="h-5 w-5 text-gray-400 dark:text-dark-textSecondary" />
                 )}
               </div>
             </div>
@@ -250,8 +250,8 @@ const Dashboard = () => {
                     >
                       <div className="flex items-center justify-between">
                         <div className="flex-1 min-w-0 pr-3">
-                          <p className="font-medium text-gray-900 truncate" title={vaccine.mascotaNombre}>{vaccine.mascotaNombre}</p>
-                          <p className="text-sm text-gray-600 truncate" title={vaccine.title}>{vaccine.title}</p>
+                          <p className="font-medium text-gray-900 dark:text-dark-text truncate" title={vaccine.mascotaNombre}>{vaccine.mascotaNombre}</p>
+                          <p className="text-sm text-gray-600 dark:text-dark-textSecondary truncate" title={vaccine.title}>{vaccine.title}</p>
                         </div>
                         <div className="text-right flex-shrink-0">
                           <p className="text-sm font-semibold text-brand-burgundy">
@@ -269,7 +269,7 @@ const Dashboard = () => {
                   ))}
                 </div>
               ) : (
-                <p className="text-gray-500 text-center py-6">
+                <p className="text-gray-500 dark:text-dark-textSecondary text-center py-6">
                   ✓ No hay vacunas próximas
                 </p>
               )}
@@ -280,7 +280,7 @@ const Dashboard = () => {
         {/* Cuentas por Pagar */}
         <div className="card hover:shadow-md transition-shadow duration-200">
           <div 
-            className="card-header cursor-pointer hover:bg-gray-50 transition-colors p-5"
+className="card-header cursor-pointer hover:bg-gray-50 dark:hover:bg-dark-hover transition-colors p-5"
             onClick={() => setExpandedSection(expandedSection === 'accounts' ? null : 'accounts')}
           >
             <div className="flex items-center justify-between">
@@ -289,18 +289,18 @@ const Dashboard = () => {
                   <DollarSign className="h-5 w-5" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900">Cuentas por Pagar</h3>
-                  <p className="text-sm text-gray-600">Pagos pendientes</p>
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-dark-text">Cuentas por Pagar</h3>
+                  <p className="text-sm text-gray-600 dark:text-dark-textSecondary">Pagos pendientes</p>
                 </div>
               </div>
               <div className="flex items-center">
-                <span className="text-3xl font-bold text-gray-900 mr-3">
+                <span className="text-3xl font-bold text-gray-900 dark:text-dark-text mr-3">
                   {remindersData?.counts?.accounts || 0}
                 </span>
                 {expandedSection === 'accounts' ? (
-                  <ChevronUp className="h-5 w-5 text-gray-400" />
+                  <ChevronUp className="h-5 w-5 text-gray-400 dark:text-dark-textSecondary" />
                 ) : (
-                  <ChevronDown className="h-5 w-5 text-gray-400" />
+                  <ChevronDown className="h-5 w-5 text-gray-400 dark:text-dark-textSecondary" />
                 )}
               </div>
             </div>
@@ -317,8 +317,8 @@ const Dashboard = () => {
                     >
                       <div className="flex items-center justify-between">
                         <div className="flex-1 min-w-0 pr-3">
-                          <p className="font-medium text-gray-900 truncate" title={account.title}>{account.title}</p>
-                          <p className="text-sm text-gray-600 truncate" title={account.description}>{account.description}</p>
+                          <p className="font-medium text-gray-900 dark:text-dark-text truncate" title={account.title}>{account.title}</p>
+                          <p className="text-sm text-gray-600 dark:text-dark-textSecondary truncate" title={account.description}>{account.description}</p>
                         </div>
                         <div className="text-right flex-shrink-0">
                           <p className="text-sm font-semibold text-success-600">
@@ -337,7 +337,7 @@ const Dashboard = () => {
                   ))}
                 </div>
               ) : (
-                <p className="text-gray-500 text-center py-6">
+                <p className="text-gray-500 dark:text-dark-textSecondary text-center py-6">
                   ✓ No hay pagos pendientes próximos
                 </p>
               )}
@@ -348,7 +348,7 @@ const Dashboard = () => {
         {/* Productos - Stock Bajo */}
         <div className="card hover:shadow-md transition-shadow duration-200">
           <div 
-            className="card-header cursor-pointer hover:bg-gray-50 transition-colors p-5"
+className="card-header cursor-pointer hover:bg-gray-50 dark:hover:bg-dark-hover transition-colors p-5"
             onClick={() => setExpandedSection(expandedSection === 'products' ? null : 'products')}
           >
             <div className="flex items-center justify-between">
@@ -357,18 +357,18 @@ const Dashboard = () => {
                   <Package className="h-5 w-5" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900">Productos</h3>
-                  <p className="text-sm text-gray-600">Stock bajo</p>
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-dark-text">Productos</h3>
+                  <p className="text-sm text-gray-600 dark:text-dark-textSecondary">Stock bajo</p>
                 </div>
               </div>
               <div className="flex items-center">
-                <span className="text-3xl font-bold text-gray-900 mr-3">
+                <span className="text-3xl font-bold text-gray-900 dark:text-dark-text mr-3">
                   {remindersData?.counts?.lowStockProducts || 0}
                 </span>
                 {expandedSection === 'products' ? (
-                  <ChevronUp className="h-5 w-5 text-gray-400" />
+                  <ChevronUp className="h-5 w-5 text-gray-400 dark:text-dark-textSecondary" />
                 ) : (
-                  <ChevronDown className="h-5 w-5 text-gray-400" />
+                  <ChevronDown className="h-5 w-5 text-gray-400 dark:text-dark-textSecondary" />
                 )}
               </div>
             </div>
@@ -385,21 +385,21 @@ const Dashboard = () => {
                     >
                       <div className="flex items-center justify-between">
                         <div className="flex-1 min-w-0 pr-3">
-                          <p className="font-medium text-gray-900 truncate" title={product.title}>{product.title}</p>
-                          <p className="text-sm text-gray-600 truncate" title={`SKU: ${product.sku}`}>SKU: {product.sku}</p>
+                          <p className="font-medium text-gray-900 dark:text-dark-text truncate" title={product.title}>{product.title}</p>
+                          <p className="text-sm text-gray-600 dark:text-dark-textSecondary truncate" title={`SKU: ${product.sku}`}>SKU: {product.sku}</p>
                         </div>
                         <div className="text-right flex-shrink-0">
                           <p className="text-sm font-semibold text-warning-600">
                             Stock: {product.stock}
                           </p>
-                          <p className="text-xs text-gray-600">Mínimo: {product.minStock}</p>
+                          <p className="text-xs text-gray-600 dark:text-dark-textSecondary">Mínimo: {product.minStock}</p>
                         </div>
                       </div>
                     </div>
                   ))}
                 </div>
               ) : (
-                <p className="text-gray-500 text-center py-6">
+                <p className="text-gray-500 dark:text-dark-textSecondary text-center py-6">
                   ✓ No hay productos con stock bajo
                 </p>
               )}
@@ -410,7 +410,7 @@ const Dashboard = () => {
         {/* Productos - Por Caducar */}
         <div className="card hover:shadow-md transition-shadow duration-200">
           <div 
-            className="card-header cursor-pointer hover:bg-gray-50 transition-colors p-5"
+className="card-header cursor-pointer hover:bg-gray-50 dark:hover:bg-dark-hover transition-colors p-5"
             onClick={() => setExpandedSection(expandedSection === 'expiring' ? null : 'expiring')}
           >
             <div className="flex items-center justify-between">
@@ -419,18 +419,18 @@ const Dashboard = () => {
                   <Package className="h-5 w-5" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900">Productos</h3>
-                  <p className="text-sm text-gray-600">Por caducar</p>
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-dark-text">Productos</h3>
+                  <p className="text-sm text-gray-600 dark:text-dark-textSecondary">Por caducar</p>
                 </div>
               </div>
               <div className="flex items-center">
-                <span className="text-3xl font-bold text-gray-900 mr-3">
+                <span className="text-3xl font-bold text-gray-900 dark:text-dark-text mr-3">
                   {remindersData?.expiringProducts?.length || 0}
                 </span>
                 {expandedSection === 'expiring' ? (
-                  <ChevronUp className="h-5 w-5 text-gray-400" />
+                  <ChevronUp className="h-5 w-5 text-gray-400 dark:text-dark-textSecondary" />
                 ) : (
-                  <ChevronDown className="h-5 w-5 text-gray-400" />
+                  <ChevronDown className="h-5 w-5 text-gray-400 dark:text-dark-textSecondary" />
                 )}
               </div>
             </div>
@@ -475,23 +475,23 @@ const Dashboard = () => {
                       >
                         <div className="flex items-center justify-between">
                           <div className="flex-1 min-w-0 pr-3">
-                            <p className="font-medium text-gray-900 truncate" title={product.name}>{product.name}</p>
-                            <p className="text-sm text-gray-600 truncate" title={`SKU: ${product.sku}`}>SKU: {product.sku}</p>
+                            <p className="font-medium text-gray-900 dark:text-dark-text truncate" title={product.name}>{product.name}</p>
+                            <p className="text-sm text-gray-600 dark:text-dark-textSecondary truncate" title={`SKU: ${product.sku}`}>SKU: {product.sku}</p>
                             {product.lotNumber && (
-                              <p className="text-xs text-gray-500 truncate" title={`Lote: ${product.lotNumber}`}>Lote: {product.lotNumber}</p>
+                              <p className="text-xs text-gray-500 dark:text-dark-textSecondary truncate" title={`Lote: ${product.lotNumber}`}>Lote: {product.lotNumber}</p>
                             )}
                           </div>
                           <div className="text-right flex-shrink-0">
                             <p className={`text-sm font-semibold ${textColor}`}>
                               {status}
                             </p>
-                            <p className="text-xs text-gray-600">
+                            <p className="text-xs text-gray-600 dark:text-dark-textSecondary">
                               {daysUntilExpiration < 0 
                                 ? `${Math.abs(daysUntilExpiration)} días vencido`
                                 : `${daysUntilExpiration} días restantes`
                               }
                             </p>
-                            <p className="text-xs text-gray-500">
+                            <p className="text-xs text-gray-500 dark:text-dark-textSecondary">
                               {formatCalendarDate(product.expirationDate)}
                             </p>
                           </div>
@@ -501,7 +501,7 @@ const Dashboard = () => {
                   })}
                 </div>
               ) : (
-                <p className="text-gray-500 text-center py-6">
+                <p className="text-gray-500 dark:text-dark-textSecondary text-center py-6">
                   ✓ No hay productos perecederos próximos a caducar
                 </p>
               )}
@@ -512,7 +512,7 @@ const Dashboard = () => {
         {/* Cumpleaños de Mascotas */}
         <div className="card hover:shadow-md transition-shadow duration-200">
           <div 
-            className="card-header cursor-pointer hover:bg-gray-50 transition-colors p-5"
+className="card-header cursor-pointer hover:bg-gray-50 dark:hover:bg-dark-hover transition-colors p-5"
             onClick={() => setExpandedSection(expandedSection === 'birthdays' ? null : 'birthdays')}
           >
             <div className="flex items-center justify-between">
@@ -521,18 +521,18 @@ const Dashboard = () => {
                   <Cake className="h-5 w-5" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900">Cumpleaños de mascotas</h3>
-                  <p className="text-sm text-gray-600">{getMonthName(new Date().getMonth() + 1)}</p>
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-dark-text">Cumpleaños de mascotas</h3>
+                  <p className="text-sm text-gray-600 dark:text-dark-textSecondary">{getMonthName(new Date().getMonth() + 1)}</p>
                 </div>
               </div>
               <div className="flex items-center">
-                <span className="text-3xl font-bold text-gray-900 mr-3">
+                <span className="text-3xl font-bold text-gray-900 dark:text-dark-text mr-3">
                   {birthdayData?.length || 0}
                 </span>
                 {expandedSection === 'birthdays' ? (
-                  <ChevronUp className="h-5 w-5 text-gray-400" />
+                  <ChevronUp className="h-5 w-5 text-gray-400 dark:text-dark-textSecondary" />
                 ) : (
-                  <ChevronDown className="h-5 w-5 text-gray-400" />
+                  <ChevronDown className="h-5 w-5 text-gray-400 dark:text-dark-textSecondary" />
                 )}
               </div>
             </div>
@@ -549,12 +549,12 @@ const Dashboard = () => {
                     >
                       <div className="flex items-center justify-between">
                         <div className="flex-1 min-w-0 pr-3">
-                          <p className="font-medium text-gray-900 truncate" title={pet.name}>{pet.name}</p>
-                          <p className="text-sm text-gray-600 truncate">
+                          <p className="font-medium text-gray-900 dark:text-dark-text truncate" title={pet.name}>{pet.name}</p>
+                          <p className="text-sm text-gray-600 dark:text-dark-textSecondary truncate">
                             {getCalendarDay(pet.birthDate)} de {getMonthName(getCalendarMonth(pet.birthDate))}
                           </p>
                           {pet.owner && (
-                            <p className="text-xs text-gray-500 truncate">Dueño: {pet.owner.name}</p>
+                            <p className="text-xs text-gray-500 dark:text-dark-textSecondary truncate">Dueño: {pet.owner.name}</p>
                           )}
                         </div>
                         <div className="text-right flex-shrink-0">
@@ -575,7 +575,7 @@ const Dashboard = () => {
               ) : (
                 <div className="text-center py-6">
                   <Cake className="h-8 w-8 text-gray-300 mx-auto mb-2" />
-                  <p className="text-sm text-gray-500">
+                  <p className="text-sm text-gray-500 dark:text-dark-textSecondary">
                     No hay mascotas que cumplan años este mes
                   </p>
                 </div>
@@ -587,7 +587,7 @@ const Dashboard = () => {
         {/* Recordatorios Manuales */}
         <div className="card hover:shadow-md transition-shadow duration-200">
           <div 
-            className="card-header cursor-pointer hover:bg-gray-50 transition-colors p-5"
+className="card-header cursor-pointer hover:bg-gray-50 dark:hover:bg-dark-hover transition-colors p-5"
             onClick={() => setExpandedSection(expandedSection === 'reminders' ? null : 'reminders')}
           >
             <div className="flex items-center justify-between">
@@ -596,18 +596,18 @@ const Dashboard = () => {
                   <Bell className="h-5 w-5" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900">Recordatorios</h3>
-                  <p className="text-sm text-gray-600">Tareas pendientes</p>
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-dark-text">Recordatorios</h3>
+                  <p className="text-sm text-gray-600 dark:text-dark-textSecondary">Tareas pendientes</p>
                 </div>
               </div>
               <div className="flex items-center">
-                <span className="text-3xl font-bold text-gray-900 mr-3">
+                <span className="text-3xl font-bold text-gray-900 dark:text-dark-text mr-3">
                   {manualReminders?.length || 0}
                 </span>
                 {expandedSection === 'reminders' ? (
-                  <ChevronUp className="h-5 w-5 text-gray-400" />
+                  <ChevronUp className="h-5 w-5 text-gray-400 dark:text-dark-textSecondary" />
                 ) : (
-                  <ChevronDown className="h-5 w-5 text-gray-400" />
+                  <ChevronDown className="h-5 w-5 text-gray-400 dark:text-dark-textSecondary" />
                 )}
               </div>
             </div>
@@ -624,11 +624,11 @@ const Dashboard = () => {
                     >
                       <div className="flex items-center justify-between">
                         <div className="flex-1 min-w-0 pr-3">
-                          <p className="font-medium text-gray-900 truncate" title={reminder.title}>{reminder.title}</p>
+                          <p className="font-medium text-gray-900 dark:text-dark-text truncate" title={reminder.title}>{reminder.title}</p>
                           {reminder.description && (
-                            <p className="text-sm text-gray-600 line-clamp-2" title={reminder.description}>{reminder.description}</p>
+                            <p className="text-sm text-gray-600 dark:text-dark-textSecondary line-clamp-2" title={reminder.description}>{reminder.description}</p>
                           )}
-                          <div className="flex items-center text-sm text-gray-600 mt-2">
+                          <div className="flex items-center text-sm text-gray-600 dark:text-dark-textSecondary mt-2">
                             <Calendar className="h-4 w-4 mr-2 flex-shrink-0" />
                             {formatCalendarDate(reminder.date)}
                           </div>
@@ -654,7 +654,7 @@ const Dashboard = () => {
                   )}
                 </div>
               ) : (
-                <p className="text-gray-500 text-center py-6">
+                <p className="text-gray-500 dark:text-dark-textSecondary text-center py-6">
                   ✓ No hay recordatorios pendientes
                 </p>
               )}
@@ -666,7 +666,7 @@ const Dashboard = () => {
       {/* Quick Actions */}
       <div className="card hover:shadow-md transition-shadow duration-200">
         <div className="card-header p-5">
-          <h3 className="text-lg font-semibold text-gray-900">Acciones rápidas</h3>
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-dark-text">Acciones rápidas</h3>
         </div>
         <div className="card-body p-5">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -675,28 +675,28 @@ const Dashboard = () => {
               className="p-5 border-2 border-dashed border-gray-300 rounded-xl hover:border-brand-burgundy hover:bg-brand-cream hover:shadow-sm transition-all duration-200 cursor-pointer group"
             >
               <ShoppingCart className="h-7 w-7 text-brand-burgundy mx-auto mb-3 group-hover:scale-110 transition-transform" />
-              <p className="text-sm font-semibold text-gray-900">Nueva venta</p>
+              <p className="text-sm font-semibold text-gray-900 dark:text-dark-text">Nueva venta</p>
             </button>
             <button 
               onClick={() => navigate('/products')}
               className="p-5 border-2 border-dashed border-gray-300 rounded-xl hover:border-brand-burgundy hover:bg-brand-cream hover:shadow-sm transition-all duration-200 cursor-pointer group"
             >
               <Package className="h-7 w-7 text-brand-burgundy mx-auto mb-3 group-hover:scale-110 transition-transform" />
-              <p className="text-sm font-semibold text-gray-900">Agregar producto</p>
+              <p className="text-sm font-semibold text-gray-900 dark:text-dark-text">Agregar producto</p>
             </button>
             <button 
               onClick={() => navigate('/customers')}
               className="p-5 border-2 border-dashed border-gray-300 rounded-xl hover:border-brand-burgundy hover:bg-brand-cream hover:shadow-sm transition-all duration-200 cursor-pointer group"
             >
               <Users className="h-7 w-7 text-brand-burgundy mx-auto mb-3 group-hover:scale-110 transition-transform" />
-              <p className="text-sm font-semibold text-gray-900">Nuevo cliente</p>
+              <p className="text-sm font-semibold text-gray-900 dark:text-dark-text">Nuevo cliente</p>
             </button>
             <button 
               onClick={() => navigate('/reports')}
               className="p-5 border-2 border-dashed border-gray-300 rounded-xl hover:border-brand-burgundy hover:bg-brand-cream hover:shadow-sm transition-all duration-200 cursor-pointer group"
             >
               <FileText className="h-7 w-7 text-brand-burgundy mx-auto mb-3 group-hover:scale-110 transition-transform" />
-              <p className="text-sm font-semibold text-gray-900">Generar reporte</p>
+              <p className="text-sm font-semibold text-gray-900 dark:text-dark-text">Generar reporte</p>
             </button>
           </div>
         </div>

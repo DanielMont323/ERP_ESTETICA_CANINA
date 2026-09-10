@@ -184,15 +184,15 @@ const Reminders = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold text-gray-900">Recordatorios</h1>
-          <p className="mt-1 text-sm text-gray-600">
+          <h1 className="text-2xl font-semibold text-gray-700 dark:text-dark-textSecondary dark:text-dark-text">Recordatorios</h1>
+          <p className="mt-1 text-sm text-gray-600 dark:text-dark-textSecondary">
             Gestiona tus recordatorios y tareas pendientes
           </p>
         </div>
         <div className="flex items-center gap-3">
           <div className="w-full sm:w-64">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 dark:text-dark-textSecondary" />
               <input
                 type="text"
                 placeholder="Buscar recordatorios..."
@@ -218,14 +218,14 @@ const Reminders = () => {
       {/* Automatic Reminders */}
       {showAutomatic && (
         <div className="space-y-4">
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <div className="bg-white dark:bg-dark-card-50 border border-gray-200 dark:border-dark-border rounded-lg p-4">
             <p className="text-sm text-blue-800">
               <strong>Recordatorios automáticos:</strong> Generados automáticamente desde cuentas por pagar y carnets de vacunación.
             </p>
           </div>
           
           {automaticReminders.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
+            <div className="text-center py-8 text-gray-50 dark:bg-dark-surface0 dark:text-dark-textSecondary">
               No hay recordatorios automáticos pendientes
             </div>
           ) : (
@@ -238,12 +238,12 @@ const Reminders = () => {
                   <div className="card-body">
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
-                        <h3 className="text-lg font-medium text-gray-900">{reminder.title}</h3>
+                        <h3 className="text-lg font-medium text-gray-700 dark:text-dark-textSecondary dark:text-dark-text">{reminder.title}</h3>
                         {reminder.description && (
-                          <p className="mt-1 text-sm text-gray-600">{reminder.description}</p>
+                          <p className="mt-1 text-sm text-gray-600 dark:text-dark-textSecondary">{reminder.description}</p>
                         )}
                         <div className="mt-3 space-y-2">
-                          <div className="flex items-center text-sm text-gray-600">
+                          <div className="flex items-center text-sm text-gray-600 dark:text-dark-textSecondary">
                             <Calendar className="h-4 w-4 mr-2" />
                             {new Date(reminder.date).toLocaleDateString('es-MX')}
                           </div>
@@ -251,7 +251,7 @@ const Reminders = () => {
                             <span className={`capitalize badge badge-${getUrgencyColor(reminder.urgency)}`}>
                               {reminder.urgencyText}
                             </span>
-                            <span className="text-xs text-gray-500 capitalize">
+                            <span className="text-xs text-gray-50 dark:bg-dark-surface0 dark:text-dark-textSecondary capitalize">
                               {reminder.type.replace('_', ' ')}
                             </span>
                           </div>
@@ -278,25 +278,26 @@ const Reminders = () => {
                 <div className="card-body">
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
-                      <h3 className="text-lg font-medium text-gray-900">{reminder.title}</h3>
+                      <h3 className="text-lg font-medium text-gray-700 dark:text-dark-textSecondary dark:text-dark-text">{reminder.title}</h3>
                       {reminder.description && (
-                        <p className="mt-1 text-sm text-gray-600">{reminder.description}</p>
+                        <p className="mt-1 text-sm text-gray-600 dark:text-dark-textSecondary">{reminder.description}</p>
                       )}
                       <div className="mt-3 space-y-2">
-                        <div className="flex items-center text-sm text-gray-600">
-                        <Calendar className="h-4 w-4 mr-2" />
-                        {new Date(reminder.date).toLocaleDateString('es-MX', { timeZone: 'America/Mazatlan' })}
-                        {isOverdue(reminder.date) && (
-                          <AlertTriangle className="h-4 w-4 ml-2 text-danger-600" />
-                        )}
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="capitalize badge badge-info">
-                          {reminder.type}
-                        </span>
-                        <span className={`capitalize badge badge-${getPriorityColor(reminder.priority)}`}>
-                          {reminder.priority}
-                        </span>
+                        <div className="flex items-center text-sm text-gray-600 dark:text-dark-textSecondary">
+                          <Calendar className="h-4 w-4 mr-2" />
+                          {new Date(reminder.date).toLocaleDateString('es-MX', { timeZone: 'America/Mazatlan' })}
+                          {isOverdue(reminder.date) && (
+                            <AlertTriangle className="h-4 w-4 ml-2 text-danger-600" />
+                          )}
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="capitalize badge badge-info">
+                            {reminder.type}
+                          </span>
+                          <span className={`capitalize badge badge-${getPriorityColor(reminder.priority)}`}>
+                            {reminder.priority}
+                          </span>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -325,15 +326,14 @@ const Reminders = () => {
                   </div>
                 </div>
               </div>
-            </div>
-          ))}
-        </div>
-        
-        <Pagination
-          pagination={pagination}
-          onPageChange={(page) => setPagination({ ...pagination, page })}
-          onLimitChange={(limit) => setPagination({ ...pagination, limit, page: 1 })}
-        />
+            ))}
+          </div>
+          
+          <Pagination
+            pagination={pagination}
+            onPageChange={(page) => setPagination({ ...pagination, page })}
+            onLimitChange={(limit) => setPagination({ ...pagination, limit, page: 1 })}
+          />
         </>
       )}
 
@@ -344,7 +344,7 @@ const Reminders = () => {
             <div className="modal-overlay" onClick={() => setShowModal(false)} />
             
             <div className="relative modal-content max-w-md w-full sm:max-w-md p-6 animate-slide-up">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">
+              <h3 className="text-lg font-semibold text-gray-700 dark:text-dark-textSecondary dark:text-dark-text mb-4">
                 {editingReminder ? 'Editar Recordatorio' : 'Nuevo Recordatorio'}
               </h3>
               <form onSubmit={handleSubmit} className="mt-4 space-y-4">

@@ -463,7 +463,7 @@ const LowStockOrders = () => {
           </button>
           <div>
             <h1 className="text-2xl font-semibold text-brand-burgundy">Pedidos a Proveedores</h1>
-            <p className="mt-1 text-sm text-gray-600">
+            <p className="mt-1 text-sm text-gray-600 dark:text-dark-textSecondary">
               Genera pedidos para productos con bajo stock
             </p>
           </div>
@@ -489,14 +489,14 @@ const LowStockOrders = () => {
                 <button
                   type="button"
                   onClick={() => handleSupplierChange('all')}
-                  className={`text-xs px-2 py-1 rounded ${selectedSupplier === 'all' ? 'bg-brand-burgundy text-white' : 'bg-gray-200 text-gray-700'}`}
+                  className={`text-xs px-2 py-1 rounded ${selectedSupplier === 'all' ? 'bg-brand-burgundy text-white' : 'bg-gray-200 text-gray-700 dark:text-dark-textSecondary'}`}
                 >
                   Todos
                 </button>
                 <button
                   type="button"
                   onClick={() => handleSupplierChange('none')}
-                  className={`text-xs px-2 py-1 rounded ${selectedSupplier === 'none' ? 'bg-brand-burgundy text-white' : 'bg-gray-200 text-gray-700'}`}
+                  className={`text-xs px-2 py-1 rounded ${selectedSupplier === 'none' ? 'bg-brand-burgundy text-white' : 'bg-gray-200 text-gray-700 dark:text-dark-textSecondary'}`}
                 >
                   Sin proveedor
                 </button>
@@ -516,15 +516,15 @@ const LowStockOrders = () => {
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
               <div>
-                <span className="text-gray-600">Proveedor:</span>
+                <span className="text-gray-600 dark:text-dark-textSecondary">Proveedor:</span>
                 <p className="font-semibold text-brand-burgundy">{getSelectedSupplierName()}</p>
               </div>
               <div>
-                <span className="text-gray-600">Productos seleccionados:</span>
+                <span className="text-gray-600 dark:text-dark-textSecondary">Productos seleccionados:</span>
                 <p className="font-semibold text-brand-burgundy">{selectedProductsList.length}</p>
               </div>
               <div>
-                <span className="text-gray-600">Total de unidades:</span>
+                <span className="text-gray-600 dark:text-dark-textSecondary">Total de unidades:</span>
                 <p className="font-semibold text-brand-burgundy">{getTotalUnits()}</p>
               </div>
             </div>
@@ -536,7 +536,7 @@ const LowStockOrders = () => {
       <div className="card">
         <div className="card-body">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="font-semibold text-gray-900">Productos con bajo stock</h3>
+            <h3 className="font-semibold text-gray-900 dark:text-dark-text">Productos con bajo stock</h3>
             {products.length > 0 && (
               <button
                 onClick={handleSelectAll}
@@ -558,8 +558,8 @@ const LowStockOrders = () => {
           </div>
 
           {products.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
-              <Package className="h-12 w-12 mx-auto mb-3 text-gray-400" />
+            <div className="text-center py-8 text-gray-500 dark:text-dark-textSecondary">
+              <Package className="h-12 w-12 mx-auto mb-3 text-gray-400 dark:text-dark-textSecondary" />
               <p>No hay productos con bajo stock</p>
             </div>
           ) : (
@@ -590,11 +590,11 @@ const LowStockOrders = () => {
                           className="h-4 w-4 text-brand-burgundy focus:ring-brand-burgundy border-gray-300 rounded"
                         />
                       </td>
-                      <td className="font-medium text-gray-900">{product.name}</td>
-                      <td className="text-gray-600">{product.sku}</td>
+                      <td className="font-medium text-gray-900 dark:text-dark-text">{product.name}</td>
+                      <td className="text-gray-600 dark:text-dark-textSecondary">{product.sku}</td>
                       <td>
                         {product.supplier ? (
-                          <span className="text-sm text-gray-600">
+                          <span className="text-sm text-gray-600 dark:text-dark-textSecondary">
                             {product.supplier.name}
                           </span>
                         ) : (
@@ -602,9 +602,9 @@ const LowStockOrders = () => {
                         )}
                       </td>
                       <td className="text-brand-burgundy font-semibold">{product.stock}</td>
-                      <td className="text-gray-600">{product.minStock}</td>
-                      <td className="text-gray-600">{product.idealStock || '-'}</td>
-                      <td className="text-gray-600">{product.unit}</td>
+                      <td className="text-gray-600 dark:text-dark-textSecondary">{product.minStock}</td>
+                      <td className="text-gray-600 dark:text-dark-textSecondary">{product.idealStock || '-'}</td>
+                      <td className="text-gray-600 dark:text-dark-textSecondary">{product.unit}</td>
                       <td>
                         <input
                           type="number"
@@ -663,23 +663,23 @@ const LowStockOrders = () => {
             
             <div className="relative modal-content max-w-md w-full sm:max-w-md p-6 animate-slide-up">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-gray-900">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-dark-text">
                   Editar Stock - {editingProduct.name}
                 </h3>
                 <button
                   onClick={() => setShowEditModal(false)}
-                  className="text-gray-400 hover:text-gray-600 transition-colors"
+                  className="text-gray-400 dark:text-dark-textSecondary hover:text-gray-600 dark:text-dark-textSecondary transition-colors"
                 >
                   <X className="h-5 w-5" />
                 </button>
               </div>
 
               <div className="space-y-4">
-                <div className="bg-gray-50 rounded-lg p-3 mb-4">
-                  <p className="text-sm text-gray-600">
+                <div className="bg-gray-50 dark:bg-dark-surface rounded-lg p-3 mb-4">
+                  <p className="text-sm text-gray-600 dark:text-dark-textSecondary">
                     <span className="font-medium">Stock actual:</span> {editingProduct.stock}
                   </p>
-                  <p className="text-sm text-gray-600">
+                  <p className="text-sm text-gray-600 dark:text-dark-textSecondary">
                     <span className="font-medium">SKU:</span> {editingProduct.sku}
                   </p>
                 </div>
@@ -693,7 +693,7 @@ const LowStockOrders = () => {
                     onChange={(e) => setEditFormData({...editFormData, minStock: parseInt(e.target.value) || 0})}
                     className="form-input"
                   />
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-xs text-gray-500 dark:text-dark-textSecondary mt-1">
                     Nivel en el que el producto se considera en bajo stock
                   </p>
                 </div>
@@ -707,7 +707,7 @@ const LowStockOrders = () => {
                     onChange={(e) => setEditFormData({...editFormData, idealStock: parseInt(e.target.value) || 0})}
                     className="form-input"
                   />
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-xs text-gray-500 dark:text-dark-textSecondary mt-1">
                     Cantidad que queremos tener disponible después del pedido
                   </p>
                 </div>
@@ -716,7 +716,7 @@ const LowStockOrders = () => {
                   <p className="text-sm font-medium text-brand-burgundy">
                     Cantidad sugerida: {calculateSuggestedQuantity(editingProduct.stock, editFormData.minStock, editFormData.idealStock)}
                   </p>
-                  <p className="text-xs text-gray-600 mt-1">
+                  <p className="text-xs text-gray-600 dark:text-dark-textSecondary mt-1">
                     {editingProduct.stock <= editFormData.minStock
                       ? 'Producto en bajo stock - se sugiere pedido'
                       : 'Producto NO está en bajo stock - no se sugiere pedido'
