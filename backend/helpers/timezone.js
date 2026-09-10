@@ -8,10 +8,10 @@
  */
 const getCurrentDateGMT7 = () => {
   const now = new Date();
-  // Ajustar a GMT-7 (restar 7 horas del UTC)
-  const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
-  const gmt7 = new Date(utc - (7 * 3600000));
-  return gmt7;
+  // Restar 7 horas del timestamp UTC para obtener GMT-7
+  // No usar getTimezoneOffset() porque depende del servidor
+  const gmt7Timestamp = now.getTime() - (7 * 3600000);
+  return new Date(gmt7Timestamp);
 };
 
 /**
@@ -22,9 +22,10 @@ const getCurrentDateGMT7 = () => {
 const toGMT7 = (date) => {
   if (!date) return null;
   const d = new Date(date);
-  const utc = d.getTime() + (d.getTimezoneOffset() * 60000);
-  const gmt7 = new Date(utc - (7 * 3600000));
-  return gmt7;
+  // Restar 7 horas del timestamp UTC para obtener GMT-7
+  // No usar getTimezoneOffset() porque depende del servidor
+  const gmt7Timestamp = d.getTime() - (7 * 3600000);
+  return new Date(gmt7Timestamp);
 };
 
 /**
