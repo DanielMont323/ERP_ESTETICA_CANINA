@@ -68,7 +68,7 @@ router.get('/audit-info', async (req, res) => {
 router.get('/audit-sales', async (req, res) => {
   try {
     const { startDate, endDate } = req.query;
-    
+
     if (!startDate || !endDate) {
       return res.status(400).json({
         success: false,
@@ -110,6 +110,61 @@ router.get('/audit-sales', async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Error al obtener ventas de auditoría'
+    });
+  }
+});
+
+// @route   GET /api/reports/audit-dashboard-sales
+// @desc    Endpoint temporal de auditoría - devuelve ventas usando filtro de Dashboard (sin GMT-7)
+// @access  Temporal - eliminar después de auditoría
+router.get('/audit-dashboard-sales', async (req, res) => {
+  try {
+    const { startDate, endDate } = req.query;
+
+    if (!startDate || !endDate) {
+      return res.status(400).json({
+        success: false,
+        message: 'Se requieren startDate y endDate'
+      });
+    }
+
+    // Filtro igual al Dashboard: usa new Date() sin GMT-7
+    const startOfMonth = new Date(new Date(startDate).getFullYear(), new Date(startDate).getMonth(), 1);
+    const endOfMonth = new Date(new Date(endDate).getFullYear(), new Date(endDate).getMonth() + 1, 0);
+    endOfMonth.setHours(23, 59, 59, 999);
+
+    const ventas = await Venta.find({
+      date: { $gte: startOfMonth, $lte: endOfMonth },
+      status: 'completada'
+    }).sort({ date: 1 });
+
+    const ventasDetalle = ventas.map(venta => ({
+      id: venta._id.toString(),
+      date: venta.date.toISOString(),
+      total: venta.total,
+      paymentMethod: venta.paymentMethod,
+      status: venta.status,
+      unidades: venta.items.reduce((sum, item) => sum + item.quantity, 0),
+      itemCount: venta.items.length
+    }));
+
+    res.json({
+      success: true,
+      data: {
+        filter: {
+          startDate: startOfMonth.toISOString(),
+          endDate: endOfMonth.toISOString(),
+          method: 'DASHBOARD (sin GMT-7)'
+        },
+        total: ventas.length,
+        ventas: ventasDetalle
+      }
+    });
+  } catch (error) {
+    console.error('Error en endpoint de auditoría de ventas Dashboard:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error al obtener ventas de auditoría Dashboard'
     });
   }
 });
