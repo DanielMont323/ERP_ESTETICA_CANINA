@@ -169,6 +169,53 @@ router.get('/audit-dashboard-sales', async (req, res) => {
   }
 });
 
+// @route   GET /api/reports/audit-dashboard-current-month
+// @desc    Endpoint temporal de auditoría - devuelve ventas del mes actual usando filtro exacto de Dashboard
+// @access  Temporal - eliminar después de auditoría
+router.get('/audit-dashboard-current-month', async (req, res) => {
+  try {
+    // Filtro exacto del Dashboard (líneas 821-830 de reports.js)
+    const today = new Date();
+    const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+
+    const ventas = await Venta.find({
+      date: { $gte: startOfMonth },
+      status: 'completada'
+    }).sort({ date: 1 });
+
+    const ventasDetalle = ventas.map(venta => ({
+      id: venta._id.toString(),
+      date: venta.date.toISOString(),
+      total: venta.total,
+      paymentMethod: venta.paymentMethod,
+      status: venta.status,
+      unidades: venta.items.reduce((sum, item) => sum + item.quantity, 0),
+      itemCount: venta.items.length
+    }));
+
+    const total = ventas.reduce((sum, venta) => sum + venta.total, 0);
+
+    res.json({
+      success: true,
+      data: {
+        filter: {
+          startOfMonth: startOfMonth.toISOString(),
+          method: 'DASHBOARD exacto (sin fin de mes, sin GMT-7)'
+        },
+        total: ventas.length,
+        totalAmount: total,
+        ventas: ventasDetalle
+      }
+    });
+  } catch (error) {
+    console.error('Error en endpoint de auditoría de ventas Dashboard mes actual:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error al obtener ventas de auditoría Dashboard mes actual'
+    });
+  }
+});
+
 // @route   GET /api/reports/income-statement
 // @desc    Estado de resultados
 router.get('/income-statement', async (req, res) => {
