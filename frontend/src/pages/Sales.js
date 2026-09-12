@@ -516,9 +516,22 @@ const Sales = () => {
     const total = subtotal - totalDiscount;
     const tolerance = 0.01;
     
-    if (Math.abs(totalPayments - total) > tolerance) {
-      toast.error(`La suma de pagos ($${totalPayments.toFixed(2)}) no coincide con el total ($${total.toFixed(2)})`);
-      return;
+    // Verificar si hay pagos en efectivo
+    const hasCashPayment = editPayments.some(p => p.method === 'efectivo');
+    
+    if (hasCashPayment) {
+      // Con efectivo, permitir sobrepago (el excedente será el cambio)
+      if (totalPayments < total - tolerance) {
+        const missing = total - totalPayments;
+        toast.error(`Faltan $${missing.toFixed(2)} para completar el pago`);
+        return;
+      }
+    } else {
+      // Sin efectivo, el pago debe ser exacto
+      if (Math.abs(totalPayments - total) > tolerance) {
+        toast.error(`La suma de pagos ($${totalPayments.toFixed(2)}) no coincide con el total ($${total.toFixed(2)})`);
+        return;
+      }
     }
 
     try {
@@ -920,9 +933,22 @@ const Sales = () => {
     const total = calculateTotal();
     const tolerance = 0.01;
     
-    if (Math.abs(totalPayments - total) > tolerance) {
-      toast.error(`La suma de pagos ($${totalPayments.toFixed(2)}) no coincide con el total ($${total.toFixed(2)})`);
-      return;
+    // Verificar si hay pagos en efectivo
+    const hasCashPayment = payments.some(p => p.method === 'efectivo');
+    
+    if (hasCashPayment) {
+      // Con efectivo, permitir sobrepago (el excedente será el cambio)
+      if (totalPayments < total - tolerance) {
+        const missing = total - totalPayments;
+        toast.error(`Faltan $${missing.toFixed(2)} para completar el pago`);
+        return;
+      }
+    } else {
+      // Sin efectivo, el pago debe ser exacto
+      if (Math.abs(totalPayments - total) > tolerance) {
+        toast.error(`La suma de pagos ($${totalPayments.toFixed(2)}) no coincide con el total ($${total.toFixed(2)})`);
+        return;
+      }
     }
 
     try {
@@ -991,6 +1017,7 @@ const Sales = () => {
       setSelectedPet('');
       setPets([]);
       setPaymentMethod('efectivo');
+      setPayments([{ method: 'efectivo', amount: 0 }]);
       setSaleChannel('local');
       setCustomCommission('');
       setUseCustomCommission(false);
@@ -1138,6 +1165,7 @@ const Sales = () => {
                 <th className="text-sm font-semibold text-gray-700 dark:text-dark-textSecondary py-3 px-4 text-left min-w-[120px]">Vendedor</th>
                 <th className="text-sm font-semibold text-gray-700 dark:text-dark-textSecondary py-3 px-4 text-left min-w-[200px]">Items</th>
                 <th className="text-sm font-semibold text-gray-700 dark:text-dark-textSecondary py-3 px-4 text-right min-w-[100px]">Subtotal</th>
+                <th className="text-sm font-semibold text-gray-700 dark:text-dark-textSecondary py-3 px-4 text-right min-w-[100px]">Descuento</th>
                 <th className="text-sm font-semibold text-gray-700 dark:text-dark-textSecondary py-3 px-4 text-right min-w-[120px]">Comisión Tarjeta</th>
                 <th className="text-sm font-semibold text-gray-700 dark:text-dark-textSecondary py-3 px-4 text-right min-w-[100px]">Total</th>
                 <th className="text-sm font-semibold text-gray-700 dark:text-dark-textSecondary py-3 px-4 text-right min-w-[100px]">Ingreso Neto</th>
@@ -1170,6 +1198,9 @@ const Sales = () => {
                   </td>
                   <td className="py-4 px-4 text-right font-medium">
                     {formatCurrency(sale.subtotal || sale.total)}
+                  </td>
+                  <td className="py-4 px-4 text-right text-green-600 dark:text-green-400">
+                    {sale.totalDiscount > 0 ? formatCurrency(sale.totalDiscount) : '-'}
                   </td>
                   <td className="py-4 px-4 text-right">
                     {sale.cardCommission > 0 ? formatCurrency(sale.cardCommission) : '-'}
