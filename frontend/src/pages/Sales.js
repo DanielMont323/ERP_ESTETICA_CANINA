@@ -59,7 +59,12 @@ const Sales = () => {
   const [editSelectedSearchIndex, setEditSelectedSearchIndex] = useState(-1);
   const [paymentMethod, setPaymentMethod] = useState('efectivo');
   const [editPaymentMethod, setEditPaymentMethod] = useState('efectivo');
+  const [payments, setPayments] = useState([{ method: 'efectivo', amount: 0 }]);
+  const [editPayments, setEditPayments] = useState([{ method: 'efectivo', amount: 0 }]);
+  const [employeeDiscountApplied, setEmployeeDiscountApplied] = useState(false);
+  const [editEmployeeDiscountApplied, setEditEmployeeDiscountApplied] = useState(false);
   const [saleChannel, setSaleChannel] = useState('local');
+  const [expandedSale, setExpandedSale] = useState(null); // Para expandir detalles en móvil
   const [editSaleChannel, setEditSaleChannel] = useState('local');
   const [customCommission, setCustomCommission] = useState('');
   const [useCustomCommission, setUseCustomCommission] = useState(false);
@@ -411,13 +416,19 @@ const Sales = () => {
         item: item._id,
         type,
         quantity: 1,
-        unitPrice: finalPrice,
+        unitPrice: Number(item.price), // Precio original sin descuento
         name: item.name,
         category: item.category,
         nextDoseDate: '',
         diasProximaDosis: '',
         mascota: '',
-        aplicaciones: []
+        aplicaciones: [],
+        // Campos de descuento por item
+        discountType: 'ninguno',
+        discountValue: 0,
+        discountAmount: 0,
+        subtotalBeforeDiscount: Number(item.price),
+        subtotalAfterDiscount: Number(item.price)
       }]);
     }
   };
@@ -436,7 +447,13 @@ const Sales = () => {
         type: item.type,
         quantity: item.quantity,
         unitPrice: item.unitPrice,
-        name: item.item?.name || 'Producto'
+        name: item.item?.name || 'Producto',
+        // Campos de descuento
+        discountType: item.discountType || 'ninguno',
+        discountValue: item.discountValue || 0,
+        discountAmount: item.discountAmount || 0,
+        subtotalBeforeDiscount: item.subtotalBeforeDiscount || (item.quantity * item.unitPrice),
+        subtotalAfterDiscount: item.subtotalAfterDiscount || (item.quantity * item.unitPrice)
       })));
       
       setEditCustomer(sale.customer || null);
@@ -445,6 +462,18 @@ const Sales = () => {
       setEditSaleChannel(sale.saleChannel || 'local');
       setEditNotes(sale.notes || '');
       setEditAmountReceived(sale.amountReceived?.toString() || '');
+      setEditEmployeeDiscountApplied(sale.employeeDiscountApplied || false);
+      
+      // Cargar pagos divididos si existen
+      if (sale.payments && sale.payments.length > 0) {
+        setEditPayments(sale.payments.map(p => ({
+          method: p.method,
+          amount: p.amount
+        })));
+      } else {
+        // Compatibilidad con ventas antiguas
+        setEditPayments([{ method: sale.paymentMethod || 'efectivo', amount: sale.total || 0 }]);
+      }
       
       // Cargar mascotas del cliente si existe
       if (sale.customer) {
@@ -478,25 +507,52 @@ const Sales = () => {
       return;
     }
 
+    // Validar pagos
+    const totalPayments = editPayments.reduce((sum, p) => sum + p.amount, 0);
+    const subtotal = editCart.reduce((sum, item) => sum + (item.subtotalBeforeDiscount || (item.quantity * item.unitPrice)), 0);
+    const totalDiscount = editEmployeeDiscountApplied 
+      ? Math.round((subtotal * 0.20) * 100) / 100
+      : editCart.reduce((sum, item) => sum + (item.discountAmount || 0), 0);
+    const total = subtotal - totalDiscount;
+    const tolerance = 0.01;
+    
+    if (Math.abs(totalPayments - total) > tolerance) {
+      toast.error(`La suma de pagos ($${totalPayments.toFixed(2)}) no coincide con el total ($${total.toFixed(2)})`);
+      return;
+    }
+
     try {
       const updateData = {
-        items: editCart,
+        items: editCart.map(item => ({
+          type: item.type,
+          item: item.item,
+          quantity: item.quantity,
+          unitPrice: item.unitPrice,
+          discountType: item.discountType || 'ninguno',
+          discountValue: item.discountValue || 0,
+          discountAmount: item.discountAmount || 0,
+          subtotalBeforeDiscount: item.subtotalBeforeDiscount || (item.quantity * item.unitPrice),
+          subtotalAfterDiscount: item.subtotalAfterDiscount || (item.quantity * item.unitPrice),
+          nextDoseDate: item.nextDoseDate || null,
+          diasProximaDosis: item.diasProximaDosis ? parseInt(item.diasProximaDosis) : null,
+          mascota: item.mascota || null,
+          aplicaciones: item.aplicaciones && item.aplicaciones.length > 0 ? item.aplicaciones : null
+        })),
+        payments: editPayments,
+        employeeDiscountApplied: editEmployeeDiscountApplied,
+        employeeDiscountPercentage: editEmployeeDiscountApplied ? 20 : 0,
         customer: editCustomer?._id || null,
         mascota: editPet || null,
-        paymentMethod: editPaymentMethod,
         saleChannel: editSaleChannel,
         notes: editNotes
       };
-
-      if (editPaymentMethod === 'efectivo' && editAmountReceived) {
-        updateData.amountReceived = parseFloat(editAmountReceived);
-      }
 
       await salesAPI.update(editingSale._id, updateData);
       toast.success('Venta actualizada correctamente');
       setShowEditModal(false);
       setEditingSale(null);
       setEditCart([]);
+      setEditPayments([{ method: 'efectivo', amount: 0 }]);
       fetchSales();
     } catch (error) {
       console.error('Error al actualizar venta:', error);
@@ -555,29 +611,274 @@ const Sales = () => {
     }
   };
 
+  const updateEditItemDiscount = (index, field, value) => {
+    if (editEmployeeDiscountApplied) {
+      toast.error('No puedes aplicar descuentos individuales mientras está activo el descuento de empleado del 20%');
+      return;
+    }
+    
+    setEditCart(editCart.map((item, i) => {
+      if (i === index) {
+        const newItem = { ...item };
+        
+        if (field === 'discountType') {
+          newItem.discountType = value;
+          if (value === 'ninguno') {
+            newItem.discountValue = 0;
+            newItem.discountAmount = 0;
+          }
+        } else if (field === 'discountValue') {
+          newItem.discountValue = parseFloat(value) || 0;
+        }
+        
+        const subtotalBeforeDiscount = item.quantity * item.unitPrice;
+        newItem.subtotalBeforeDiscount = Math.round(subtotalBeforeDiscount * 100) / 100;
+        
+        if (newItem.discountType === 'porcentaje') {
+          const percentage = Math.min(Math.max(newItem.discountValue, 0), 100);
+          newItem.discountAmount = Math.round((subtotalBeforeDiscount * (percentage / 100)) * 100) / 100;
+        } else if (newItem.discountType === 'monto') {
+          const discountAmount = Math.min(newItem.discountValue, subtotalBeforeDiscount);
+          newItem.discountAmount = Math.round(discountAmount * 100) / 100;
+        } else {
+          newItem.discountAmount = 0;
+        }
+        
+        newItem.subtotalAfterDiscount = Math.round((subtotalBeforeDiscount - newItem.discountAmount) * 100) / 100;
+        return newItem;
+      }
+      return item;
+    }));
+  };
+
+  const addEditPayment = () => {
+    if (editPayments.length < 3) {
+      // Obtener métodos ya seleccionados
+      const selectedMethods = editPayments.map(p => p.method);
+      const allMethods = ['efectivo', 'tarjeta', 'transferencia'];
+      // Encontrar el primer método disponible
+      const availableMethod = allMethods.find(method => !selectedMethods.includes(method)) || 'efectivo';
+      setEditPayments([...editPayments, { method: availableMethod, amount: 0 }]);
+    } else {
+      toast.error('Máximo 3 métodos de pago permitidos');
+    }
+  };
+
+  const removeEditPayment = (index) => {
+    if (editPayments.length > 1) {
+      setEditPayments(editPayments.filter((_, i) => i !== index));
+    }
+  };
+
+  const updateEditPayment = (index, field, value) => {
+    setEditPayments(editPayments.map((payment, i) => {
+      if (i === index) {
+        if (field === 'method') {
+          return { ...payment, method: value };
+        } else if (field === 'amount') {
+          return { ...payment, amount: parseFloat(value) || 0 };
+        }
+      }
+      return payment;
+    }));
+  };
+
+  // Obtener métodos de pago disponibles para edición (excluyendo los ya seleccionados en otros pagos)
+  const getAvailableEditPaymentMethods = (currentIndex) => {
+    const selectedMethods = editPayments
+      .map((p, i) => i !== currentIndex ? p.method : null)
+      .filter(m => m !== null);
+    const allMethods = ['efectivo', 'tarjeta', 'transferencia'];
+    // Si solo hay 1 pago, mostrar todos los métodos
+    if (editPayments.length === 1) {
+      return allMethods;
+    }
+    return allMethods.filter(method => !selectedMethods.includes(method));
+  };
+
+  const handleEditEmployeeDiscountToggle = (checked) => {
+    if (checked) {
+      // Activar descuento de empleado: eliminar todos los descuentos individuales
+      const updatedCart = editCart.map(item => ({
+        ...item,
+        discountType: 'ninguno',
+        discountValue: 0,
+        discountAmount: 0,
+        subtotalBeforeDiscount: item.quantity * item.unitPrice,
+        subtotalAfterDiscount: item.quantity * item.unitPrice
+      }));
+      setEditCart(updatedCart);
+      setEditEmployeeDiscountApplied(true);
+    } else {
+      // Desactivar descuento de empleado
+      setEditEmployeeDiscountApplied(false);
+    }
+  };
+
   const updateQuantity = (index, quantity) => {
     if (quantity <= 0) {
       removeFromCart(index);
     } else {
-      setCart(cart.map((item, i) =>
-        i === index ? { ...item, quantity } : item
-      ));
+      setCart(cart.map((item, i) => {
+        if (i === index) {
+          const newItem = { ...item, quantity };
+          // Recalcular descuento
+          const subtotalBeforeDiscount = quantity * item.unitPrice;
+          newItem.subtotalBeforeDiscount = Math.round(subtotalBeforeDiscount * 100) / 100;
+          
+          if (item.discountType === 'porcentaje') {
+            newItem.discountAmount = Math.round((subtotalBeforeDiscount * (item.discountValue / 100)) * 100) / 100;
+          } else if (item.discountType === 'monto') {
+            newItem.discountAmount = Math.round(Math.min(item.discountValue, subtotalBeforeDiscount) * 100) / 100;
+          } else {
+            newItem.discountAmount = 0;
+          }
+          
+          newItem.subtotalAfterDiscount = Math.round((subtotalBeforeDiscount - newItem.discountAmount) * 100) / 100;
+          return newItem;
+        }
+        return item;
+      }));
     }
+  };
+
+  const updateItemDiscount = (index, field, value) => {
+    if (employeeDiscountApplied) {
+      toast.error('No puedes aplicar descuentos individuales mientras está activo el descuento de empleado del 20%');
+      return;
+    }
+    
+    setCart(cart.map((item, i) => {
+      if (i === index) {
+        const newItem = { ...item };
+        
+        if (field === 'discountType') {
+          newItem.discountType = value;
+          // Limpiar valor anterior si cambia de tipo
+          if (value === 'ninguno') {
+            newItem.discountValue = 0;
+            newItem.discountAmount = 0;
+          }
+        } else if (field === 'discountValue') {
+          newItem.discountValue = parseFloat(value) || 0;
+        }
+        
+        // Recalcular descuento
+        const subtotalBeforeDiscount = item.quantity * item.unitPrice;
+        newItem.subtotalBeforeDiscount = Math.round(subtotalBeforeDiscount * 100) / 100;
+        
+        if (newItem.discountType === 'porcentaje') {
+          const percentage = Math.min(Math.max(newItem.discountValue, 0), 100);
+          newItem.discountAmount = Math.round((subtotalBeforeDiscount * (percentage / 100)) * 100) / 100;
+        } else if (newItem.discountType === 'monto') {
+          const discountAmount = Math.min(newItem.discountValue, subtotalBeforeDiscount);
+          newItem.discountAmount = Math.round(discountAmount * 100) / 100;
+        } else {
+          newItem.discountAmount = 0;
+        }
+        
+        newItem.subtotalAfterDiscount = Math.round((subtotalBeforeDiscount - newItem.discountAmount) * 100) / 100;
+        return newItem;
+      }
+      return item;
+    }));
+  };
+
+  const handleEmployeeDiscountToggle = (checked) => {
+    if (checked) {
+      // Activar descuento de empleado: eliminar todos los descuentos individuales
+      const updatedCart = cart.map(item => ({
+        ...item,
+        discountType: 'ninguno',
+        discountValue: 0,
+        discountAmount: 0,
+        subtotalBeforeDiscount: item.quantity * item.unitPrice,
+        subtotalAfterDiscount: item.quantity * item.unitPrice
+      }));
+      setCart(updatedCart);
+      setEmployeeDiscountApplied(true);
+    } else {
+      // Desactivar descuento de empleado
+      setEmployeeDiscountApplied(false);
+    }
+  };
+
+  const addPayment = () => {
+    if (payments.length < 3) {
+      // Obtener métodos ya seleccionados
+      const selectedMethods = payments.map(p => p.method);
+      const allMethods = ['efectivo', 'tarjeta', 'transferencia'];
+      // Encontrar el primer método disponible
+      const availableMethod = allMethods.find(method => !selectedMethods.includes(method)) || 'efectivo';
+      setPayments([...payments, { method: availableMethod, amount: 0 }]);
+    } else {
+      toast.error('Máximo 3 métodos de pago permitidos');
+    }
+  };
+
+  const removePayment = (index) => {
+    if (payments.length > 1) {
+      setPayments(payments.filter((_, i) => i !== index));
+    }
+  };
+
+  const updatePayment = (index, field, value) => {
+    setPayments(payments.map((payment, i) => {
+      if (i === index) {
+        if (field === 'method') {
+          return { ...payment, method: value };
+        } else if (field === 'amount') {
+          return { ...payment, amount: parseFloat(value) || 0 };
+        }
+      }
+      return payment;
+    }));
+  };
+
+  // Obtener métodos de pago disponibles (excluyendo los ya seleccionados en otros pagos)
+  const getAvailablePaymentMethods = (currentIndex) => {
+    const selectedMethods = payments
+      .map((p, i) => i !== currentIndex ? p.method : null)
+      .filter(m => m !== null);
+    const allMethods = ['efectivo', 'tarjeta', 'transferencia'];
+    // Si solo hay 1 pago, mostrar todos los métodos
+    if (payments.length === 1) {
+      return allMethods;
+    }
+    return allMethods.filter(method => !selectedMethods.includes(method));
   };
 
   const calculateSubtotal = () => {
     if (useManualFinancials && saleChannel === 'mercado_libre' && manualSubtotal !== '') {
       return parseFloat(manualSubtotal);
     }
-    return cart.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0);
+    // Suma de subtotalBeforeDiscount (subtotal original sin descuentos)
+    return cart.reduce((sum, item) => sum + (item.subtotalBeforeDiscount || (item.quantity * item.unitPrice)), 0);
+  };
+
+  const calculateTotalDiscount = () => {
+    if (useManualFinancials && saleChannel === 'mercado_libre') {
+      return 0;
+    }
+    // Si hay descuento de empleado, calcular 20% del subtotal
+    if (employeeDiscountApplied) {
+      const subtotal = calculateSubtotal();
+      return Math.round((subtotal * 0.20) * 100) / 100;
+    }
+    // Suma de discountAmount de todos los items
+    return cart.reduce((sum, item) => sum + (item.discountAmount || 0), 0);
   };
 
   const calculateCardCommission = () => {
     if (useManualFinancials && saleChannel === 'mercado_libre') {
       return 0; // Mercado Libre maneja sus propias comisiones
     }
-    const subtotal = calculateSubtotal();
-    return paymentMethod === 'tarjeta' ? subtotal * 0.0406 : 0;
+    // Calcular comisión basado en pagos con tarjeta
+    const total = calculateTotal();
+    const totalCardPayment = payments.reduce((sum, p) => 
+      p.method === 'tarjeta' ? sum + p.amount : sum, 0
+    );
+    return totalCardPayment * 0.0406;
   };
 
   const calculateCommission = () => {
@@ -592,8 +893,9 @@ const Sales = () => {
       return parseFloat(manualTotal);
     }
     const subtotal = calculateSubtotal();
-    const cardCommission = calculateCardCommission();
-    return subtotal + cardCommission;
+    const totalDiscount = calculateTotalDiscount();
+    // Total = subtotal - totalDiscount
+    return subtotal - totalDiscount;
   };
 
   const calculateNetIncome = () => {
@@ -603,6 +905,7 @@ const Sales = () => {
     const total = calculateTotal();
     const cardCommission = calculateCardCommission();
     const commission = calculateCommission();
+    // Ingreso neto = total - comisión vendedor - comisión tarjeta
     return total - commission - cardCommission;
   };
 
@@ -612,14 +915,14 @@ const Sales = () => {
       return;
     }
 
-    // Validar monto recibido para efectivo
-    if (paymentMethod === 'efectivo') {
-      const total = calculateTotal();
-      const received = parseFloat(amountReceived) || 0;
-      if (received < total) {
-        toast.error(`El monto recibido es insuficiente. Faltan $${(total - received).toFixed(2)}`);
-        return;
-      }
+    // Validar pagos
+    const totalPayments = payments.reduce((sum, p) => sum + p.amount, 0);
+    const total = calculateTotal();
+    const tolerance = 0.01;
+    
+    if (Math.abs(totalPayments - total) > tolerance) {
+      toast.error(`La suma de pagos ($${totalPayments.toFixed(2)}) no coincide con el total ($${total.toFixed(2)})`);
+      return;
     }
 
     try {
@@ -629,12 +932,19 @@ const Sales = () => {
           item: item.item,
           quantity: item.quantity,
           unitPrice: item.unitPrice,
+          discountType: item.discountType || 'ninguno',
+          discountValue: item.discountValue || 0,
+          discountAmount: item.discountAmount || 0,
+          subtotalBeforeDiscount: item.subtotalBeforeDiscount || (item.quantity * item.unitPrice),
+          subtotalAfterDiscount: item.subtotalAfterDiscount || (item.quantity * item.unitPrice),
           nextDoseDate: item.nextDoseDate || null,
           diasProximaDosis: item.diasProximaDosis ? parseInt(item.diasProximaDosis) : null,
           mascota: item.mascota || null,
           aplicaciones: item.aplicaciones && item.aplicaciones.length > 0 ? item.aplicaciones : null
         })),
-        paymentMethod,
+        payments: payments,
+        employeeDiscountApplied,
+        employeeDiscountPercentage: employeeDiscountApplied ? 20 : 0,
         saleChannel,
         customer: selectedCustomer?._id || null,
         notes,
@@ -646,9 +956,17 @@ const Sales = () => {
         saleData.date = saleDate;
       }
 
-      // Agregar amountReceived solo si es efectivo
-      if (paymentMethod === 'efectivo' && amountReceived) {
-        saleData.amountReceived = parseFloat(amountReceived);
+      // Agregar valores manuales solo si es Mercado Libre
+      if (saleChannel === 'mercado_libre' && useManualFinancials) {
+        saleData.manualFinancials = true;
+        if (manualSubtotal) saleData.subtotal = parseFloat(manualSubtotal);
+        if (manualTotal) saleData.total = parseFloat(manualTotal);
+        if (manualNetIncome) saleData.netIncome = parseFloat(manualNetIncome);
+      }
+
+      // Agregar comisión personalizada si existe
+      if (useCustomCommission && customCommission) {
+        saleData.commission = parseFloat(customCommission);
       }
 
       // Solo administradores pueden modificar la comisión
@@ -810,36 +1128,38 @@ const Sales = () => {
 
       {/* Sales Table */}
       <div className="card hover:shadow-md transition-shadow duration-200 flex flex-col max-h-[calc(100vh-320px)]">
-        <div className="table-container flex-1 overflow-auto">
-          <table className="table table-fixed w-full">
+        {/* Desktop Table - Hidden on Mobile */}
+        <div className="hidden md:block table-container flex-1 overflow-auto">
+          <table className="table min-w-full">
             <thead className="sticky top-0 bg-gray-50 dark:bg-dark-surface z-10">
               <tr>
-                <th className="text-sm font-semibold text-gray-700 dark:text-dark-textSecondary py-3 w-[8%]">Fecha</th>
-                <th className="text-sm font-semibold text-gray-700 dark:text-dark-textSecondary py-3 w-[15%]">Cliente</th>
-                <th className="text-sm font-semibold text-gray-700 dark:text-dark-textSecondary py-3 w-[12%]">Vendedor</th>
-                <th className="text-sm font-semibold text-gray-700 dark:text-dark-textSecondary py-3 w-[18%]">Items</th>
-                <th className="text-sm font-semibold text-gray-700 dark:text-dark-textSecondary py-3 w-[7%]">Subtotal</th>
-                <th className="text-sm font-semibold text-gray-700 dark:text-dark-textSecondary py-3 w-[9%]">Comisión Tarjeta</th>
-                <th className="text-sm font-semibold text-gray-700 dark:text-dark-textSecondary py-3 w-[10%]">Total</th>
-                <th className="text-sm font-semibold text-gray-700 dark:text-dark-textSecondary py-3 w-[10%]">Ingreso Neto</th>
-                <th className="text-sm font-semibold text-gray-700 dark:text-dark-textSecondary py-3 w-[5%]">Método</th>
-                <th className="text-sm font-semibold text-gray-700 dark:text-dark-textSecondary py-3 w-[6%]">Estado</th>
-                <th className="text-sm font-semibold text-gray-700 dark:text-dark-textSecondary py-3 w-[5%]">Acciones</th>
+                <th className="text-sm font-semibold text-gray-700 dark:text-dark-textSecondary py-3 px-4 text-left min-w-[100px]">Fecha</th>
+                <th className="text-sm font-semibold text-gray-700 dark:text-dark-textSecondary py-3 px-4 text-left min-w-[150px]">Cliente</th>
+                <th className="text-sm font-semibold text-gray-700 dark:text-dark-textSecondary py-3 px-4 text-left min-w-[120px]">Vendedor</th>
+                <th className="text-sm font-semibold text-gray-700 dark:text-dark-textSecondary py-3 px-4 text-left min-w-[200px]">Items</th>
+                <th className="text-sm font-semibold text-gray-700 dark:text-dark-textSecondary py-3 px-4 text-right min-w-[100px]">Subtotal</th>
+                <th className="text-sm font-semibold text-gray-700 dark:text-dark-textSecondary py-3 px-4 text-right min-w-[120px]">Comisión Tarjeta</th>
+                <th className="text-sm font-semibold text-gray-700 dark:text-dark-textSecondary py-3 px-4 text-right min-w-[100px]">Total</th>
+                <th className="text-sm font-semibold text-gray-700 dark:text-dark-textSecondary py-3 px-4 text-right min-w-[100px]">Ingreso Neto</th>
+                <th className="text-sm font-semibold text-gray-700 dark:text-dark-textSecondary py-3 px-4 text-left min-w-[80px]">Método</th>
+                <th className="text-sm font-semibold text-gray-700 dark:text-dark-textSecondary py-3 px-4 text-center min-w-[80px]">Desc. empleado</th>
+                <th className="text-sm font-semibold text-gray-700 dark:text-dark-textSecondary py-3 px-4 text-left min-w-[80px]">Estado</th>
+                <th className="text-sm font-semibold text-gray-700 dark:text-dark-textSecondary py-3 px-4 text-center min-w-[80px]">Acciones</th>
               </tr>
             </thead>
             <tbody>
               {filteredSales.map((sale, index) => (
                 <tr key={sale._id} className={`table-row-divider ${index % 2 === 0 ? 'bg-white dark:bg-dark-card' : 'bg-gray-50 dark:bg-dark-surface'} hover:bg-yellow-100`}>
-                  <td className="py-5">
+                  <td className="py-4 px-4">
                     {new Date(sale.date).toLocaleDateString('es-MX')}
                   </td>
-                  <td className="py-5">
+                  <td className="py-4 px-4">
                     {sale.customer ? sale.customer.name : 'Cliente general'}
                   </td>
-                  <td className="py-5">
+                  <td className="py-4 px-4">
                     {sale.user ? sale.user.name : 'Sin vendedor registrado'}
                   </td>
-                  <td className="py-5">
+                  <td className="py-4 px-4">
                     <div className="space-y-1">
                       {sale.items.map((item, index) => (
                         <div key={index} className="text-sm">
@@ -848,22 +1168,29 @@ const Sales = () => {
                       ))}
                     </div>
                   </td>
-                  <td className="py-5 text-right font-medium">
+                  <td className="py-4 px-4 text-right font-medium">
                     {formatCurrency(sale.subtotal || sale.total)}
                   </td>
-                  <td className="py-5 text-right">
+                  <td className="py-4 px-4 text-right">
                     {sale.cardCommission > 0 ? formatCurrency(sale.cardCommission) : '-'}
                   </td>
-                  <td className="py-5 text-right font-medium">
+                  <td className="py-4 px-4 text-right font-medium">
                     {formatCurrency(sale.total)}
                   </td>
-                  <td className="py-5 text-right font-medium text-success-600">
+                  <td className="py-4 px-4 text-right font-medium text-success-600">
                     {formatCurrency(sale.netIncome)}
                   </td>
-                  <td className="py-5">
+                  <td className="py-4 px-4">
                     <span className="capitalize">{sale.paymentMethod}</span>
                   </td>
-                  <td className="py-5">
+                  <td className="py-4 px-4 text-center">
+                    {sale.employeeDiscountApplied ? (
+                      <span className="text-green-600 dark:text-green-400 font-bold">✓</span>
+                    ) : (
+                      <span className="text-gray-400">—</span>
+                    )}
+                  </td>
+                  <td className="py-4 px-4">
                     <span className={`badge badge-${
                       sale.status === 'completada' ? 'success' :
                       sale.status === 'cancelada' ? 'danger' : 'warning'
@@ -871,8 +1198,8 @@ const Sales = () => {
                       {sale.status}
                     </span>
                   </td>
-                  <td className="py-5">
-                    <div className="flex gap-2">
+                  <td className="py-4 px-4">
+                    <div className="flex gap-2 justify-center">
                       {userRole === 'admin' && sale.status !== 'cancelada' && (
                         <>
                           <button
@@ -897,6 +1224,141 @@ const Sales = () => {
               ))}
             </tbody>
           </table>
+          
+          {filteredSales.length === 0 && (
+            <div className="text-center py-8">
+              <ShoppingCart className="h-12 w-12 text-gray-400 dark:text-dark-textSecondary mx-auto mb-4" />
+              <p className="text-gray-500 dark:text-dark-textSecondary">No se encontraron ventas</p>
+            </div>
+          )}
+        </div>
+
+        {/* Mobile Cards View */}
+        <div className="md:hidden space-y-4 p-4 overflow-auto">
+          {filteredSales.map((sale, index) => (
+            <div key={sale._id} className="card">
+              <div className="card-body">
+                {/* Card Header - Always Visible */}
+                <div className="flex justify-between items-start mb-3">
+                  <div>
+                    <div className="text-sm text-gray-500 dark:text-dark-textSecondary">
+                      {new Date(sale.date).toLocaleDateString('es-MX')}
+                    </div>
+                    <div className="font-medium text-gray-900 dark:text-dark-text">
+                      {sale.customer ? sale.customer.name : 'Cliente general'}
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-lg font-bold text-brand-burgundy">
+                      {formatCurrency(sale.total)}
+                    </div>
+                    {sale.employeeDiscountApplied && (
+                      <div className="text-xs text-green-600 dark:text-green-400 font-medium">
+                        ✓ Desc. empleado
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Quick Info */}
+                <div className="flex items-center gap-2 mb-3">
+                  <span className={`badge badge-${
+                    sale.status === 'completada' ? 'success' :
+                    sale.status === 'cancelada' ? 'danger' : 'warning'
+                  }`}>
+                    {sale.status}
+                  </span>
+                  <span className="text-sm text-gray-600 dark:text-dark-textSecondary capitalize">
+                    {sale.paymentMethod}
+                  </span>
+                </div>
+
+                {/* Expandable Details */}
+                <button
+                  onClick={() => setExpandedSale(expandedSale === sale._id ? null : sale._id)}
+                  className="w-full text-center text-sm text-brand-burgundy hover:text-brand-burgundy-dark py-2 border-t border-gray-200 dark:border-dark-border"
+                >
+                  {expandedSale === sale._id ? 'Ocultar detalles' : 'Ver detalles'}
+                </button>
+
+                {/* Expanded Content */}
+                {expandedSale === sale._id && (
+                  <div className="mt-3 pt-3 border-t border-gray-200 dark:border-dark-border space-y-2 text-sm">
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <span className="text-gray-500 dark:text-dark-textSecondary">Vendedor:</span>
+                        <span className="ml-2">{sale.user ? sale.user.name : 'Sin vendedor'}</span>
+                      </div>
+                      <div>
+                        <span className="text-gray-500 dark:text-dark-textSecondary">Subtotal:</span>
+                        <span className="ml-2">{formatCurrency(sale.subtotal || sale.total)}</span>
+                      </div>
+                    </div>
+
+                    {sale.employeeDiscountApplied && (
+                      <div className="text-green-600 dark:text-green-400">
+                        Descuento empleado (20%): -{formatCurrency(sale.employeeDiscountAmount || 0)}
+                      </div>
+                    )}
+
+                    {sale.cardCommission > 0 && (
+                      <div>
+                        <span className="text-gray-500 dark:text-dark-textSecondary">Comisión tarjeta:</span>
+                        <span className="ml-2">{formatCurrency(sale.cardCommission)}</span>
+                      </div>
+                    )}
+
+                    <div>
+                      <span className="text-gray-500 dark:text-dark-textSecondary">Ingreso neto:</span>
+                      <span className="ml-2 text-success-600 font-medium">{formatCurrency(sale.netIncome)}</span>
+                    </div>
+
+                    <div>
+                      <span className="text-gray-500 dark:text-dark-textSecondary">Items:</span>
+                      <div className="mt-1 space-y-1">
+                        {sale.items.map((item, index) => (
+                          <div key={index} className="text-gray-700 dark:text-dark-text">
+                            {item.quantity}x {item.item.name}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {sale.payments && sale.payments.length > 0 && (
+                      <div>
+                        <span className="text-gray-500 dark:text-dark-textSecondary">Pagos:</span>
+                        <div className="mt-1 space-y-1">
+                          {sale.payments.map((payment, index) => (
+                            <div key={index} className="text-gray-700 dark:text-dark-text">
+                              {payment.method}: {formatCurrency(payment.amount)}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Actions */}
+                    {userRole === 'admin' && sale.status !== 'cancelada' && (
+                      <div className="flex gap-2 pt-2 border-t border-gray-200 dark:border-dark-border">
+                        <button
+                          onClick={() => handleEditSale(sale)}
+                          className="flex-1 btn btn-primary btn-sm"
+                        >
+                          Editar
+                        </button>
+                        <button
+                          onClick={() => handleCancelSale(sale)}
+                          className="flex-1 btn btn-danger btn-sm"
+                        >
+                          Cancelar
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+          ))}
           
           {filteredSales.length === 0 && (
             <div className="text-center py-8">
@@ -1183,6 +1645,39 @@ const Sales = () => {
                                     </button>
                                   </div>
                                 </div>
+                                
+                                {/* Descuento por item */}
+                                <div className="pl-2 bg-gray-50 dark:bg-dark-surface border border-gray-200 dark:border-dark-border rounded-lg p-2">
+                                  <div className="flex items-center space-x-2">
+                                    <select
+                                      value={item.discountType || 'ninguno'}
+                                      onChange={(e) => updateItemDiscount(index, 'discountType', e.target.value)}
+                                      className="form-input text-sm py-1 flex-1"
+                                      disabled={employeeDiscountApplied}
+                                    >
+                                      <option value="ninguno">Sin descuento</option>
+                                      <option value="porcentaje">Porcentaje</option>
+                                      <option value="monto">Monto fijo</option>
+                                    </select>
+                                    {item.discountType !== 'ninguno' && (
+                                      <input
+                                        type="number"
+                                        value={item.discountValue || ''}
+                                        onChange={(e) => updateItemDiscount(index, 'discountValue', e.target.value)}
+                                        placeholder={item.discountType === 'porcentaje' ? '%' : '$'}
+                                        min="0"
+                                        max={item.discountType === 'porcentaje' ? 100 : item.subtotalBeforeDiscount}
+                                        className="form-input text-sm py-1 w-24"
+                                        disabled={employeeDiscountApplied}
+                                      />
+                                    )}
+                                  </div>
+                                  {item.discountType !== 'ninguno' && item.discountAmount > 0 && (
+                                    <div className="mt-1 text-xs text-green-600 dark:text-green-400">
+                                      Descuento: -{formatCurrency(item.discountAmount)}
+                                    </div>
+                                  )}
+                                </div>
                                 {showAplicacionesSelector && (
                                   <div className="pl-2 bg-yellow-50 border border-yellow-200 rounded-lg p-2">
                                     <label className="text-xs font-semibold text-yellow-800">⚠️ Mascota a la que se aplicará (OBLIGATORIO):</label>
@@ -1266,13 +1761,32 @@ const Sales = () => {
                       </div>
                     </div>
 
+                    {/* Employee Discount Checkbox */}
+                    <div>
+                      <label className="flex items-center text-sm cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={employeeDiscountApplied}
+                          onChange={(e) => handleEmployeeDiscountToggle(e.target.checked)}
+                          className="mr-2"
+                        />
+                        Descuento de empleado (20%)
+                      </label>
+                    </div>
+
                     {/* Totals */}
                     <div className="border border-gray-200 dark:border-dark-border rounded-xl p-4 space-y-2 bg-white dark:bg-dark-card shadow-sm">
                       <div className="flex justify-between">
                         <span>Subtotal:</span>
                         <span className="font-medium">{formatCurrency(calculateSubtotal())}</span>
                       </div>
-                      {paymentMethod === 'tarjeta' && (
+                      {calculateTotalDiscount() > 0 && (
+                        <div className="flex justify-between text-green-600 dark:text-green-400">
+                          <span>{employeeDiscountApplied ? 'Descuento empleado (20%)' : 'Descuentos'}:</span>
+                          <span className="font-medium">-{formatCurrency(calculateTotalDiscount())}</span>
+                        </div>
+                      )}
+                      {calculateCardCommission() > 0 && (
                         <div className="flex justify-between text-brand-burgundy">
                           <span>Comisión por pago con tarjeta (4.06%):</span>
                           <span className="font-medium">{formatCurrency(calculateCardCommission())}</span>
@@ -1314,58 +1828,73 @@ const Sales = () => {
                       </div>
                     </div>
 
-                    {/* Payment Method */}
+                    {/* Multiple Payments */}
                     <div>
-                      <label className="form-label">Método de pago</label>
-                      <select
-                        value={paymentMethod}
-                        onChange={(e) => {
-                          setPaymentMethod(e.target.value);
-                          if (e.target.value !== 'efectivo') {
-                            setAmountReceived('');
-                          }
-                        }}
-                        className="form-input"
-                      >
-                        <option value="efectivo">Efectivo</option>
-                        <option value="tarjeta">Tarjeta</option>
-                        <option value="transferencia">Transferencia</option>
-                      </select>
+                      <label className="form-label">Pagos</label>
+                      <div className="space-y-2">
+                        {payments.map((payment, index) => (
+                          <div key={index} className="flex items-center space-x-2">
+                            <select
+                              value={payment.method}
+                              onChange={(e) => updatePayment(index, 'method', e.target.value)}
+                              className="form-input flex-1"
+                            >
+                              {getAvailablePaymentMethods(index).map(method => (
+                                <option key={method} value={method}>
+                                  {method === 'efectivo' ? 'Efectivo' : method === 'tarjeta' ? 'Tarjeta' : 'Transferencia'}
+                                </option>
+                              ))}
+                            </select>
+                            <input
+                              type="number"
+                              min="0"
+                              step="0.01"
+                              value={payment.amount || ''}
+                              onChange={(e) => updatePayment(index, 'amount', e.target.value)}
+                              placeholder="Monto"
+                              className="form-input w-32"
+                            />
+                            {payments.length > 1 && (
+                              <button
+                                onClick={() => removePayment(index)}
+                                className="text-danger-600 hover:text-danger-900"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </button>
+                            )}
+                          </div>
+                        ))}
+                        {payments.length < 3 && (
+                          <button
+                            onClick={addPayment}
+                            className="text-sm text-brand-burgundy hover:text-brand-burgundy-dark flex items-center"
+                          >
+                            <PlusCircle className="h-4 w-4 mr-1" />
+                            Agregar pago
+                          </button>
+                        )}
+                      </div>
+                      <div className="mt-2 text-sm text-gray-600 dark:text-dark-textSecondary">
+                        Total pagos: {formatCurrency(payments.reduce((sum, p) => sum + (p.amount || 0), 0))}
+                      </div>
                     </div>
 
-                    {/* Amount Received and Change (only for cash) */}
-                    {paymentMethod === 'efectivo' && (
-                      <>
-                        <div>
-                          <label className="form-label">Pago recibido</label>
-                          <input
-                            type="number"
-                            min="0"
-                            step="0.01"
-                            value={amountReceived}
-                            onChange={(e) => setAmountReceived(e.target.value)}
-                            className="form-input"
-                            placeholder="Monto recibido..."
-                          />
+                    {/* Change (calculated automatically for cash payments) */}
+                    {payments.some(p => p.method === 'efectivo') && (
+                      <div className="bg-success-50 border border-success-200 rounded-xl p-3">
+                        <div className="flex justify-between items-center">
+                          <span className="font-medium text-success-900">Cambio:</span>
+                          <span className="text-lg font-bold text-success-600">
+                            {(() => {
+                              const totalCash = payments.filter(p => p.method === 'efectivo').reduce((sum, p) => sum + (p.amount || 0), 0);
+                              const nonCashTotal = payments.filter(p => p.method !== 'efectivo').reduce((sum, p) => sum + (p.amount || 0), 0);
+                              const cashRequired = calculateTotal() - nonCashTotal;
+                              const change = totalCash - cashRequired;
+                              return formatCurrency(Math.max(0, change));
+                            })()}
+                          </span>
                         </div>
-                        {amountReceived && parseFloat(amountReceived) >= calculateTotal() && (
-                          <div className="bg-success-50 border border-success-200 rounded-xl p-3">
-                            <div className="flex justify-between items-center">
-                              <span className="font-medium text-success-900">Cambio:</span>
-                              <span className="text-lg font-bold text-success-600">
-                                {formatCurrency(parseFloat(amountReceived) - calculateTotal())}
-                              </span>
-                            </div>
-                          </div>
-                        )}
-                        {amountReceived && parseFloat(amountReceived) < calculateTotal() && (
-                          <div className="bg-danger-50 border border-danger-200 rounded-xl p-3">
-                            <p className="text-danger-900">
-                              Faltan: {formatCurrency(calculateTotal() - parseFloat(amountReceived))}
-                            </p>
-                          </div>
-                        )}
-                      </>
+                      </div>
                     )}
 
                     {/* Sale Channel */}
@@ -1695,6 +2224,39 @@ const Sales = () => {
                                     </button>
                                   </div>
                                 </div>
+                                
+                                {/* Descuento por item en edición */}
+                                <div className="pl-2 bg-gray-50 dark:bg-dark-surface border border-gray-200 dark:border-dark-border rounded-lg p-2">
+                                  <div className="flex items-center space-x-2">
+                                    <select
+                                      value={item.discountType || 'ninguno'}
+                                      onChange={(e) => updateEditItemDiscount(index, 'discountType', e.target.value)}
+                                      className="form-input text-sm py-1 flex-1"
+                                      disabled={editEmployeeDiscountApplied}
+                                    >
+                                      <option value="ninguno">Sin descuento</option>
+                                      <option value="porcentaje">Porcentaje</option>
+                                      <option value="monto">Monto fijo</option>
+                                    </select>
+                                    {item.discountType !== 'ninguno' && (
+                                      <input
+                                        type="number"
+                                        value={item.discountValue || ''}
+                                        onChange={(e) => updateEditItemDiscount(index, 'discountValue', e.target.value)}
+                                        placeholder={item.discountType === 'porcentaje' ? '%' : '$'}
+                                        min="0"
+                                        max={item.discountType === 'porcentaje' ? 100 : item.subtotalBeforeDiscount}
+                                        className="form-input text-sm py-1 w-24"
+                                        disabled={editEmployeeDiscountApplied}
+                                      />
+                                    )}
+                                  </div>
+                                  {item.discountType !== 'ninguno' && item.discountAmount > 0 && (
+                                    <div className="mt-1 text-xs text-green-600 dark:text-green-400">
+                                      Descuento: -{formatCurrency(item.discountAmount)}
+                                    </div>
+                                  )}
+                                </div>
                                 {showAplicacionesSelector && (
                                   <div className="pl-2 bg-yellow-50 border border-yellow-200 rounded-lg p-2">
                                     <label className="text-xs font-semibold text-yellow-800">⚠️ Mascota a la que se aplicará (OBLIGATORIO):</label>
@@ -1766,74 +2328,109 @@ const Sales = () => {
                       </div>
                     </div>
 
+                    {/* Employee Discount Checkbox in Edit */}
+                    <div>
+                      <label className="flex items-center text-sm cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={editEmployeeDiscountApplied}
+                          onChange={(e) => handleEditEmployeeDiscountToggle(e.target.checked)}
+                          className="mr-2"
+                        />
+                        Descuento de empleado (20%)
+                      </label>
+                    </div>
+
                     {/* Totals */}
                     <div className="border-t border-gray-200 dark:border-dark-border pt-4 space-y-2">
                       <div className="flex justify-between text-gray-600 dark:text-dark-textSecondary">
                         <span>Subtotal:</span>
-                        <span>{formatCurrency(editCart.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0))}</span>
+                        <span>{formatCurrency(editCart.reduce((sum, item) => sum + (item.subtotalBeforeDiscount || (item.quantity * item.unitPrice)), 0))}</span>
                       </div>
-                      {editPaymentMethod === 'tarjeta' && (
-                        <div className="flex justify-between text-gray-600 dark:text-dark-textSecondary">
-                          <span>Comisión tarjeta (4.06%):</span>
-                          <span>{formatCurrency(editCart.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0) * 0.0406)}</span>
+                      {(editCart.reduce((sum, item) => sum + (item.discountAmount || 0), 0) > 0 || editEmployeeDiscountApplied) && (
+                        <div className="flex justify-between text-green-600 dark:text-green-400">
+                          <span>{editEmployeeDiscountApplied ? 'Descuento empleado (20%)' : 'Descuentos'}:</span>
+                          <span>-{formatCurrency(editEmployeeDiscountApplied 
+                            ? Math.round((editCart.reduce((sum, item) => sum + (item.subtotalBeforeDiscount || (item.quantity * item.unitPrice)), 0) * 0.20) * 100) / 100
+                            : editCart.reduce((sum, item) => sum + (item.discountAmount || 0), 0))}</span>
                         </div>
                       )}
                       <div className="flex justify-between font-bold text-lg text-gray-900 dark:text-dark-text pt-2 border-t border-gray-200 dark:border-dark-border">
                         <span>Total:</span>
-                        <span>
-                          {editPaymentMethod === 'tarjeta' 
-                            ? formatCurrency(editCart.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0) * 1.0406)
-                            : formatCurrency(editCart.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0))
-                          }
-                        </span>
+                        <span>{formatCurrency(editEmployeeDiscountApplied
+                          ? Math.round((editCart.reduce((sum, item) => sum + (item.subtotalBeforeDiscount || (item.quantity * item.unitPrice)), 0) * 0.80) * 100) / 100
+                          : editCart.reduce((sum, item) => sum + (item.subtotalAfterDiscount || (item.quantity * item.unitPrice)), 0))}</span>
                       </div>
                     </div>
 
-                    {/* Payment Method */}
+                    {/* Multiple Payments in Edit */}
                     <div>
-                      <label className="form-label">Método de pago</label>
-                      <select
-                        value={editPaymentMethod}
-                        onChange={(e) => {
-                          setEditPaymentMethod(e.target.value);
-                          if (e.target.value !== 'efectivo') {
-                            setEditAmountReceived('');
-                          }
-                        }}
-                        className="form-input"
-                      >
-                        <option value="efectivo">Efectivo</option>
-                        <option value="tarjeta">Tarjeta</option>
-                        <option value="transferencia">Transferencia</option>
-                      </select>
+                      <label className="form-label">Pagos</label>
+                      <div className="space-y-2">
+                        {editPayments.map((payment, index) => (
+                          <div key={index} className="flex items-center space-x-2">
+                            <select
+                              value={payment.method}
+                              onChange={(e) => updateEditPayment(index, 'method', e.target.value)}
+                              className="form-input flex-1"
+                            >
+                              {getAvailableEditPaymentMethods(index).map(method => (
+                                <option key={method} value={method}>
+                                  {method === 'efectivo' ? 'Efectivo' : method === 'tarjeta' ? 'Tarjeta' : 'Transferencia'}
+                                </option>
+                              ))}
+                            </select>
+                            <input
+                              type="number"
+                              min="0"
+                              step="0.01"
+                              value={payment.amount || ''}
+                              onChange={(e) => updateEditPayment(index, 'amount', e.target.value)}
+                              placeholder="Monto"
+                              className="form-input w-32"
+                            />
+                            {editPayments.length > 1 && (
+                              <button
+                                onClick={() => removeEditPayment(index)}
+                                className="text-danger-600 hover:text-danger-900"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </button>
+                            )}
+                          </div>
+                        ))}
+                        {editPayments.length < 3 && (
+                          <button
+                            onClick={addEditPayment}
+                            className="text-sm text-brand-burgundy hover:text-brand-burgundy-dark flex items-center"
+                          >
+                            <PlusCircle className="h-4 w-4 mr-1" />
+                            Agregar pago
+                          </button>
+                        )}
+                      </div>
+                      <div className="mt-2 text-sm text-gray-600 dark:text-dark-textSecondary">
+                        Total pagos: {formatCurrency(editPayments.reduce((sum, p) => sum + (p.amount || 0), 0))}
+                      </div>
                     </div>
 
-                    {/* Amount Received and Change (only for cash) */}
-                    {editPaymentMethod === 'efectivo' && (
-                      <>
-                        <div>
-                          <label className="form-label">Pago recibido</label>
-                          <input
-                            type="number"
-                            min="0"
-                            step="0.01"
-                            value={editAmountReceived}
-                            onChange={(e) => setEditAmountReceived(e.target.value)}
-                            className="form-input"
-                            placeholder="Monto recibido..."
-                          />
+                    {/* Change in Edit */}
+                    {editPayments.some(p => p.method === 'efectivo') && (
+                      <div className="bg-success-50 border border-success-200 rounded-xl p-3">
+                        <div className="flex justify-between items-center">
+                          <span className="font-medium text-success-900">Cambio:</span>
+                          <span className="text-lg font-bold text-success-600">
+                            {(() => {
+                              const totalCash = editPayments.filter(p => p.method === 'efectivo').reduce((sum, p) => sum + (p.amount || 0), 0);
+                              const nonCashTotal = editPayments.filter(p => p.method !== 'efectivo').reduce((sum, p) => sum + (p.amount || 0), 0);
+                              const total = editCart.reduce((sum, item) => sum + (item.subtotalAfterDiscount || (item.quantity * item.unitPrice)), 0);
+                              const cashRequired = total - nonCashTotal;
+                              const change = totalCash - cashRequired;
+                              return formatCurrency(Math.max(0, change));
+                            })()}
+                          </span>
                         </div>
-                        {editAmountReceived && parseFloat(editAmountReceived) >= (editPaymentMethod === 'tarjeta' ? editCart.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0) * 1.0406 : editCart.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0)) && (
-                          <div className="bg-success-50 border border-success-200 rounded-xl p-3">
-                            <div className="flex justify-between items-center">
-                              <span className="font-medium text-success-900">Cambio:</span>
-                              <span className="text-lg font-bold text-success-600">
-                                {formatCurrency(parseFloat(editAmountReceived) - (editPaymentMethod === 'tarjeta' ? editCart.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0) * 1.0406 : editCart.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0)))}
-                              </span>
-                            </div>
-                          </div>
-                        )}
-                      </>
+                      </div>
                     )}
 
                     {/* Sale Channel */}

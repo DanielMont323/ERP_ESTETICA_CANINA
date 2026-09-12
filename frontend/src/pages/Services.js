@@ -46,11 +46,24 @@ const Services = () => {
   const nameInputRef = useRef(null);
   const formRef = useRef(null);
 
+  // Debounce para búsqueda de servicios
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setPagination(prev => ({ ...prev, page: 1 }));
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
+  // Fetch servicios cuando cambia la paginación o el término de búsqueda
   useEffect(() => {
     fetchServices();
+  }, [pagination.page, pagination.limit, searchTerm]);
+
+  // Cargar categorías y productos una sola vez
+  useEffect(() => {
     fetchCategories();
     fetchProducts();
-  }, [pagination.page, pagination.limit]);
+  }, []);
 
   // Listener para evento personalizado de F9 contextual (nuevo servicio)
   useEffect(() => {
@@ -89,6 +102,10 @@ const Services = () => {
         limit: pagination.limit,
         active: true
       };
+      // Agregar parámetro de búsqueda si existe
+      if (searchTerm.trim()) {
+        params.search = searchTerm.trim();
+      }
       const response = await servicesAPI.getAll(params);
       setServices(response.data.data);
       setPagination(response.data.pagination || pagination);
@@ -255,10 +272,7 @@ const Services = () => {
 
       {/* Services Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {services.filter(service =>
-          service.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          service.description?.toLowerCase().includes(searchTerm.toLowerCase())
-        ).map((service) => (
+        {services.map((service) => (
           <div key={service._id} className="card">
             <div className="card-body">
               <div className="flex items-start justify-between">

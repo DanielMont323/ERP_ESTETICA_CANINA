@@ -188,7 +188,7 @@ router.get('/:id', async (req, res) => {
 // @desc    Crear nueva venta
 router.post('/', authenticateToken, async (req, res) => {
   try {
-    const { items, paymentMethod, customer, mascota, notes, amountReceived, saleChannel, commission, subtotal, total, netIncome, date, manualFinancials } = req.body;
+    const { items, paymentMethod, payments, customer, mascota, notes, amountReceived, saleChannel, commission, subtotal, total, netIncome, date, manualFinancials, employeeDiscountApplied, employeeDiscountPercentage } = req.body;
 
     // Usar req.user._id para el usuario autenticado (ignorar user del body por seguridad)
     const user = req.user._id;
@@ -209,6 +209,78 @@ router.post('/', authenticateToken, async (req, res) => {
         success: false,
         message: 'La venta debe tener al menos un item'
       });
+    }
+
+    // 1.5. Validar pagos
+    let effectivePayments = [];
+    let effectivePaymentMethod = paymentMethod;
+    
+    if (payments && payments.length > 0) {
+      // Usar payments[] proporcionado
+      effectivePayments = payments;
+      
+      // Validar que cada pago tenga method y amount
+      for (const payment of payments) {
+        if (!payment.method || !['efectivo', 'tarjeta', 'transferencia'].includes(payment.method)) {
+          return res.status(400).json({
+            success: false,
+            message: 'Método de pago inválido. Debe ser: efectivo, tarjeta o transferencia'
+          });
+        }
+        if (payment.amount === undefined || payment.amount < 0) {
+          return res.status(400).json({
+            success: false,
+            message: 'El monto de pago debe ser un número positivo'
+          });
+        }
+      }
+      
+      // Calcular total de pagos
+      const totalPayments = payments.reduce((sum, p) => sum + (p.amount || 0), 0);
+      
+      // Validar que la suma de pagos coincida con el total (se validará después de calcular el total)
+      // Por ahora guardamos para validar después
+      req.totalPayments = totalPayments;
+      
+      // Determinar paymentMethod principal para compatibilidad (primer pago o mayor monto)
+      if (payments.length === 1) {
+        effectivePaymentMethod = payments[0].method;
+      } else {
+        // Usar el método con mayor monto
+        const maxPayment = payments.reduce((max, p) => (p.amount > max.amount ? p : max), payments[0]);
+        effectivePaymentMethod = maxPayment.method;
+      }
+    } else {
+      // Compatibilidad con ventas antiguas: usar paymentMethod
+      if (!paymentMethod || !['efectivo', 'tarjeta', 'transferencia'].includes(paymentMethod)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Método de pago inválido. Debe ser: efectivo, tarjeta o transferencia'
+        });
+      }
+    }
+
+    // 1.6. Validar descuento de empleado excluye descuentos individuales
+    if (employeeDiscountApplied === true) {
+      // Verificar que ningún item tenga descuento individual
+      const hasIndividualDiscounts = items.some(item => 
+        item.discountType && item.discountType !== 'ninguno' && item.discountAmount > 0
+      );
+      
+      if (hasIndividualDiscounts) {
+        return res.status(400).json({
+          success: false,
+          message: 'El descuento de empleado no puede combinarse con descuentos individuales por producto o servicio'
+        });
+      }
+      
+      // Validar que el porcentaje sea 20%
+      if (employeeDiscountPercentage !== undefined && employeeDiscountPercentage !== 20) {
+        return res.status(400).json({
+          success: false,
+          message: 'El porcentaje de descuento de empleado debe ser 20%'
+        });
+      }
     }
 
     // 1.5. Detectar si hay vacunas o desparasitantes en la venta y validar mascotas por item
@@ -397,7 +469,8 @@ router.post('/', authenticateToken, async (req, res) => {
     }
 
     // 3. Validar monto recibido para efectivo
-    if (paymentMethod === 'efectivo') {
+    if (effectivePaymentMethod === 'efectivo' && !payments) {
+      // Compatibilidad con ventas antiguas
       if (!amountReceived || amountReceived < 0) {
         return res.status(400).json({
           success: false,
@@ -429,7 +502,8 @@ router.post('/', authenticateToken, async (req, res) => {
     // 5. Crear venta
     const venta = await Venta.create({
       items,
-      paymentMethod,
+      paymentMethod: effectivePaymentMethod,
+      ...(effectivePayments.length > 0 && { payments: effectivePayments }),
       saleChannel,
       customer,
       mascota,
@@ -445,6 +519,39 @@ router.post('/', authenticateToken, async (req, res) => {
       ...(saleChannel === 'mercado_libre' && total !== undefined && { total }),
       ...(saleChannel === 'mercado_libre' && netIncome !== undefined && { netIncome })
     });
+
+    // 5.5. Validar que los pagos coincidan con el total (si se usó payments[])
+    if (effectivePayments.length > 0) {
+      const totalPayments = effectivePayments.reduce((sum, p) => sum + (p.amount || 0), 0);
+      const tolerance = 0.01; // Tolerancia para redondeo
+      
+      if (Math.abs(totalPayments - venta.total) > tolerance) {
+        // Eliminar venta si los pagos no coinciden (stock no fue descargado aún)
+        await Venta.findByIdAndDelete(venta._id);
+        
+        return res.status(400).json({
+          success: false,
+          message: `La suma de pagos ($${totalPayments.toFixed(2)}) no coincide con el total de la venta ($${venta.total.toFixed(2)})`
+        });
+      }
+      
+      // Calcular cambio si hay pagos en efectivo
+      const cashPayments = effectivePayments.filter(p => p.method === 'efectivo');
+      if (cashPayments.length > 0) {
+        const totalCash = cashPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
+        const nonCashTotal = effectivePayments.filter(p => p.method !== 'efectivo').reduce((sum, p) => sum + (p.amount || 0), 0);
+        
+        // El cambio es el excedente de efectivo sobre lo que corresponde pagar
+        const cashRequired = venta.total - nonCashTotal;
+        const calculatedChange = Math.round((totalCash - cashRequired) * 100) / 100;
+        
+        if (calculatedChange >= 0) {
+          venta.amountReceived = totalCash;
+          venta.change = calculatedChange;
+          await venta.save();
+        }
+      }
+    }
 
     // 5.5. Agregar venta al historial de compras del cliente (solo si hay cliente y hay productos no vacuna/desparasitante)
     if (customer) {
@@ -480,8 +587,8 @@ router.post('/', authenticateToken, async (req, res) => {
       }
     }
 
-    // 6. Calcular y validar cambio para efectivo
-    if (paymentMethod === 'efectivo' && amountReceived) {
+    // 6. Calcular y validar cambio para efectivo (compatibilidad con ventas antiguas)
+    if (!payments && effectivePaymentMethod === 'efectivo' && amountReceived) {
       const calculatedChange = Math.round((amountReceived - venta.total) * 100) / 100;
       
       if (calculatedChange < 0) {
@@ -732,7 +839,7 @@ router.post('/', authenticateToken, async (req, res) => {
 // @desc    Actualizar venta (solo status o notas para usuarios normales, campos sensibles solo para admin)
 router.put('/:id', authenticateToken, async (req, res) => {
   try {
-    const { status, notes, items, total, commission, discount, customer, mascota, amountReceived, change, paymentMethod, saleChannel } = req.body;
+    const { status, notes, items, total, commission, discount, customer, mascota, amountReceived, change, paymentMethod, saleChannel, employeeDiscountApplied, employeeDiscountPercentage } = req.body;
     
     const venta = await Venta.findById(req.params.id);
     if (!venta) {
@@ -743,7 +850,7 @@ router.put('/:id', authenticateToken, async (req, res) => {
     }
 
     // Campos sensibles que solo admin puede modificar
-    const sensitiveFields = ['items', 'total', 'commission', 'discount', 'customer', 'mascota', 'amountReceived', 'change', 'paymentMethod', 'saleChannel'];
+    const sensitiveFields = ['items', 'total', 'commission', 'discount', 'customer', 'mascota', 'amountReceived', 'change', 'paymentMethod', 'saleChannel', 'employeeDiscountApplied', 'employeeDiscountPercentage'];
     const hasSensitiveFields = sensitiveFields.some(field => req.body[field] !== undefined);
 
     if (hasSensitiveFields) {
@@ -856,6 +963,8 @@ router.put('/:id', authenticateToken, async (req, res) => {
       if (mascota !== undefined) venta.mascota = mascota;
       if (amountReceived !== undefined) venta.amountReceived = amountReceived;
       if (change !== undefined) venta.change = change;
+      if (employeeDiscountApplied !== undefined) venta.employeeDiscountApplied = employeeDiscountApplied;
+      if (employeeDiscountPercentage !== undefined) venta.employeeDiscountPercentage = employeeDiscountPercentage;
       
       // Si se modifican items o paymentMethod, recalcular totales en backend
       if (items || paymentMethod !== undefined) {
@@ -874,11 +983,11 @@ router.put('/:id', authenticateToken, async (req, res) => {
           venta.cardCommission = 0;
         }
         
-        // Calcular total (subtotal + comisión de tarjeta)
-        venta.total = Math.round((venta.subtotal + venta.cardCommission) * 100) / 100;
+        // Calcular total (subtotal sin comisión de tarjeta - la empresa absorbe la comisión)
+        venta.total = Math.round(venta.subtotal * 100) / 100;
         
-        // Calcular ingreso neto (total - commission - cardCommission)
-        venta.netIncome = Math.round((venta.total - (venta.commission || 0) - venta.cardCommission) * 100) / 100;
+        // Calcular ingreso neto (subtotal - commission - cardCommission)
+        venta.netIncome = Math.round((venta.subtotal - (venta.commission || 0) - venta.cardCommission) * 100) / 100;
       }
       
       // Si se envían manualmente, usar esos valores (solo admin puede hacerlo)
