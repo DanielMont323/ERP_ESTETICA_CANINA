@@ -254,7 +254,7 @@ const Autocomplete = ({
       {mounted && isOpen && options.length > 0 && createPortal(
         <div
           ref={dropdownRef}
-          className="bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto"
+          className="bg-white dark:bg-dark-card border border-gray-300 dark:border-dark-border rounded-md shadow-lg max-h-60 overflow-auto"
           style={dropdownStyle}
         >
           {options.map((option, index) => (
@@ -263,8 +263,8 @@ const Autocomplete = ({
               onClick={() => handleSelectOption(option)}
               className={`px-4 py-2 cursor-pointer transition-colors ${
                 index === selectedIndex
-                  ? 'bg-blue-100 text-blue-900'
-                  : 'hover:bg-gray-100'
+                  ? 'bg-blue-100 dark:bg-blue-900 text-blue-900 dark:text-blue-100'
+                  : 'hover:bg-gray-100 dark:hover:bg-dark-surface text-gray-900 dark:text-gray-200'
               }`}
             >
               {displayValue(option)}
@@ -275,7 +275,7 @@ const Autocomplete = ({
       )}
 
       {isOpen && query.length >= minLength && options.length === 0 && !loading && (
-        <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg px-4 py-2 text-gray-500">
+        <div className="absolute z-50 w-full mt-1 bg-white dark:bg-dark-card border border-gray-300 dark:border-dark-border rounded-md shadow-lg px-4 py-2 text-gray-500 dark:text-dark-textSecondary">
           No se encontraron resultados
         </div>
       )}
