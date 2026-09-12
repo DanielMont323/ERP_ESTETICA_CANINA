@@ -216,6 +216,60 @@ router.get('/audit-dashboard-current-month', async (req, res) => {
   }
 });
 
+// @route   GET /api/reports/audit-sale-detail
+// @desc    Endpoint temporal de auditoría -uelve detalles completos de una venta por ID
+// @access  Temporal - eliminar después de auditoría
+router.get('/audit-sale-detail', async (req, res) => {
+  try {
+    const { id } = req.query;
+
+    if (!id) {
+      return res.status(400).json({
+        success: false,
+        message: 'Se requiere el ID de la venta'
+      });
+    }
+
+    const venta = await Venta.findById(id).populate('items.item');
+
+    if (!venta) {
+      return res.status(404).json({
+        success: false,
+        message: 'Venta no encontrada'
+      });
+    }
+
+    res.json({
+      success: true,
+      data: {
+        id: venta._id.toString(),
+        date: venta.date.toISOString(),
+        total: venta.total,
+        commission: venta.commission,
+        netIncome: venta.netIncome,
+        paymentMethod: venta.paymentMethod,
+        status: venta.status,
+        items: venta.items.map(item => ({
+          type: item.type,
+          itemId: item.item ? item.item._id.toString() : null,
+          name: item.item ? item.item.name : 'N/A',
+          quantity: item.quantity,
+          price: item.price,
+          subtotal: item.quantity * item.price
+        })),
+        unidades: venta.items.reduce((sum, item) => sum + item.quantity, 0),
+        itemCount: venta.items.length
+      }
+    });
+  } catch (error) {
+    console.error('Error en endpoint de auditoría de detalle de venta:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error al obtener detalle de venta'
+    });
+  }
+});
+
 // @route   GET /api/reports/income-statement
 // @desc    Estado de resultados
 router.get('/income-statement', async (req, res) => {
@@ -486,9 +540,61 @@ router.get('/sales-summary', async (req, res) => {
         }
       },
       {
+        $addFields: {
+          // Si existe payments[], usarlo. Si no, crear un pago único basado en paymentMethod
+          effectivePayments: {
+            $cond: {
+              if: { $and: [{ $isArray: '$payments' }, { $gt: [{ $size: '$payments' }, 0] }] },
+              then: '$payments',
+              else: [{ method: '$paymentMethod', amount: '$total' }]
+            }
+          },
+          // Calcular total de pagos no efectivo para distribuir correctamente el cambio
+          nonCashTotal: {
+            $cond: {
+              if: { $and: [{ $isArray: '$payments' }, { $gt: [{ $size: '$payments' }, 0] }] },
+              then: {
+                $reduce: {
+                  input: '$payments',
+                  initialValue: 0,
+                  in: {
+                    $cond: {
+                      if: { $ne: ['$$this.method', 'efectivo'] },
+                      then: { $add: ['$$value', '$$this.amount'] },
+                      else: '$$value'
+                    }
+                  }
+                }
+              },
+              else: {
+                $cond: {
+                  if: { $ne: ['$paymentMethod', 'efectivo'] },
+                  then: '$total',
+                  else: 0
+                }
+              }
+            }
+          }
+        }
+      },
+      { $unwind: '$effectivePayments' },
+      {
+        $addFields: {
+          // Para efectivo: el monto real es (total - nonCashTotal) = cashRequired
+          // Para otros métodos: el monto es el pagado (no hay cambio)
+          adjustedPaymentAmount: {
+            $cond: {
+              if: { $eq: ['$effectivePayments.method', 'efectivo'] },
+              then: { $subtract: ['$total', '$nonCashTotal'] },
+              else: '$effectivePayments.amount'
+            }
+          }
+        }
+      },
+      {
         $group: {
-          _id: '$paymentMethod',
-          total: { $sum: '$total' },
+          _id: '$effectivePayments.method',
+          total: { $sum: '$adjustedPaymentAmount' },
           count: { $sum: 1 }
         }
       }
@@ -626,10 +732,62 @@ router.get('/sales-behavior', async (req, res) => {
         }
       },
       {
+        $addFields: {
+          // Si existe payments[], usarlo. Si no, crear un pago único basado en paymentMethod
+          effectivePayments: {
+            $cond: {
+              if: { $and: [{ $isArray: '$payments' }, { $gt: [{ $size: '$payments' }, 0] }] },
+              then: '$payments',
+              else: [{ method: '$paymentMethod', amount: '$total' }]
+            }
+          },
+          // Calcular total de pagos no efectivo para distribuir correctamente el cambio
+          nonCashTotal: {
+            $cond: {
+              if: { $and: [{ $isArray: '$payments' }, { $gt: [{ $size: '$payments' }, 0] }] },
+              then: {
+                $reduce: {
+                  input: '$payments',
+                  initialValue: 0,
+                  in: {
+                    $cond: {
+                      if: { $ne: ['$$this.method', 'efectivo'] },
+                      then: { $add: ['$$value', '$$this.amount'] },
+                      else: '$$value'
+                    }
+                  }
+                }
+              },
+              else: {
+                $cond: {
+                  if: { $ne: ['$paymentMethod', 'efectivo'] },
+                  then: '$total',
+                  else: 0
+                }
+              }
+            }
+          }
+        }
+      },
+      { $unwind: '$effectivePayments' },
+      {
+        $addFields: {
+          // Para efectivo: el monto real es (total - nonCashTotal) = cashRequired
+          // Para otros métodos: el monto es el pagado (no hay cambio)
+          adjustedPaymentAmount: {
+            $cond: {
+              if: { $eq: ['$effectivePayments.method', 'efectivo'] },
+              then: { $subtract: ['$total', '$nonCashTotal'] },
+              else: '$effectivePayments.amount'
+            }
+          }
+        }
+      },
+      {
         $group: {
-          _id: '$paymentMethod',
+          _id: '$effectivePayments.method',
           count: { $sum: 1 },
-          total: { $sum: '$total' }
+          total: { $sum: '$adjustedPaymentAmount' }
         }
       },
       { $sort: { count: -1 } }
@@ -1255,12 +1413,17 @@ router.get('/export-sales', async (req, res) => {
     
     const salesByPaymentMethod = {};
     ventas.forEach(venta => {
-      const method = venta.paymentMethod;
-      if (!salesByPaymentMethod[method]) {
-        salesByPaymentMethod[method] = { count: 0, total: 0 };
-      }
-      salesByPaymentMethod[method].count += 1;
-      salesByPaymentMethod[method].total += venta.total || 0;
+      // Si existe payments[], usarlo. Si no, usar paymentMethod
+      const payments = venta.payments && venta.payments.length > 0 ? venta.payments : [{ method: venta.paymentMethod, amount: venta.total || 0 }];
+      
+      payments.forEach(payment => {
+        const method = payment.method;
+        if (!salesByPaymentMethod[method]) {
+          salesByPaymentMethod[method] = { count: 0, total: 0 };
+        }
+        salesByPaymentMethod[method].count += 1;
+        salesByPaymentMethod[method].total += payment.amount || 0;
+      });
     });
 
     paymentWorksheet.columns = [

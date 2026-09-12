@@ -525,14 +525,32 @@ router.post('/', authenticateToken, async (req, res) => {
       const totalPayments = effectivePayments.reduce((sum, p) => sum + (p.amount || 0), 0);
       const tolerance = 0.01; // Tolerancia para redondeo
       
-      if (Math.abs(totalPayments - venta.total) > tolerance) {
-        // Eliminar venta si los pagos no coinciden (stock no fue descargado aún)
-        await Venta.findByIdAndDelete(venta._id);
-        
-        return res.status(400).json({
-          success: false,
-          message: `La suma de pagos ($${totalPayments.toFixed(2)}) no coincide con el total de la venta ($${venta.total.toFixed(2)})`
-        });
+      // Verificar si hay pagos en efectivo
+      const hasCashPayment = effectivePayments.some(p => p.method === 'efectivo');
+      
+      if (hasCashPayment) {
+        // Con efectivo, permitir sobrepago (el excedente será el cambio)
+        if (totalPayments < venta.total - tolerance) {
+          const missing = venta.total - totalPayments;
+          // Eliminar venta si los pagos son insuficientes (stock no fue descargado aún)
+          await Venta.findByIdAndDelete(venta._id);
+          
+          return res.status(400).json({
+            success: false,
+            message: `Faltan $${missing.toFixed(2)} para completar el pago`
+          });
+        }
+      } else {
+        // Sin efectivo, el pago debe ser exacto
+        if (Math.abs(totalPayments - venta.total) > tolerance) {
+          // Eliminar venta si los pagos no coinciden (stock no fue descargado aún)
+          await Venta.findByIdAndDelete(venta._id);
+          
+          return res.status(400).json({
+            success: false,
+            message: `La suma de pagos ($${totalPayments.toFixed(2)}) no coincide con el total de la venta ($${venta.total.toFixed(2)})`
+          });
+        }
       }
       
       // Calcular cambio si hay pagos en efectivo
@@ -839,7 +857,7 @@ router.post('/', authenticateToken, async (req, res) => {
 // @desc    Actualizar venta (solo status o notas para usuarios normales, campos sensibles solo para admin)
 router.put('/:id', authenticateToken, async (req, res) => {
   try {
-    const { status, notes, items, total, commission, discount, customer, mascota, amountReceived, change, paymentMethod, saleChannel, employeeDiscountApplied, employeeDiscountPercentage } = req.body;
+    const { status, notes, items, total, commission, discount, customer, mascota, amountReceived, change, paymentMethod, saleChannel, employeeDiscountApplied, employeeDiscountPercentage, payments } = req.body;
     
     const venta = await Venta.findById(req.params.id);
     if (!venta) {
@@ -850,7 +868,7 @@ router.put('/:id', authenticateToken, async (req, res) => {
     }
 
     // Campos sensibles que solo admin puede modificar
-    const sensitiveFields = ['items', 'total', 'commission', 'discount', 'customer', 'mascota', 'amountReceived', 'change', 'paymentMethod', 'saleChannel', 'employeeDiscountApplied', 'employeeDiscountPercentage'];
+    const sensitiveFields = ['items', 'total', 'commission', 'discount', 'customer', 'mascota', 'amountReceived', 'change', 'paymentMethod', 'saleChannel', 'employeeDiscountApplied', 'employeeDiscountPercentage', 'payments'];
     const hasSensitiveFields = sensitiveFields.some(field => req.body[field] !== undefined);
 
     if (hasSensitiveFields) {
@@ -994,6 +1012,70 @@ router.put('/:id', authenticateToken, async (req, res) => {
       if (total !== undefined) venta.total = total;
       if (commission !== undefined) venta.commission = commission;
       if (discount !== undefined) venta.discount = discount;
+      
+      // Validar payments[] si se envía
+      if (payments !== undefined && payments.length > 0) {
+        // Validar que cada pago tenga method y amount
+        for (const payment of payments) {
+          if (!payment.method || !['efectivo', 'tarjeta', 'transferencia'].includes(payment.method)) {
+            return res.status(400).json({
+              success: false,
+              message: 'Método de pago inválido. Debe ser: efectivo, tarjeta o transferencia'
+            });
+          }
+          if (payment.amount === undefined || payment.amount < 0) {
+            return res.status(400).json({
+              success: false,
+              message: 'El monto de pago debe ser un número positivo'
+            });
+          }
+        }
+        
+        // Calcular total de pagos
+        const totalPayments = payments.reduce((sum, p) => sum + (p.amount || 0), 0);
+        const tolerance = 0.01;
+        
+        // Verificar si hay pagos en efectivo
+        const hasCashPayment = payments.some(p => p.method === 'efectivo');
+        
+        if (hasCashPayment) {
+          // Con efectivo, permitir sobrepago (el excedente será el cambio)
+          if (totalPayments < venta.total - tolerance) {
+            const missing = venta.total - totalPayments;
+            return res.status(400).json({
+              success: false,
+              message: `Faltan $${missing.toFixed(2)} para completar el pago`
+            });
+          }
+        } else {
+          // Sin efectivo, el pago debe ser exacto
+          if (Math.abs(totalPayments - venta.total) > tolerance) {
+            return res.status(400).json({
+              success: false,
+              message: `La suma de pagos ($${totalPayments.toFixed(2)}) no coincide con el total de la venta ($${venta.total.toFixed(2)})`
+            });
+          }
+        }
+        
+        // Guardar payments
+        venta.payments = payments;
+        
+        // Calcular cambio si hay pagos en efectivo
+        const cashPayments = payments.filter(p => p.method === 'efectivo');
+        if (cashPayments.length > 0) {
+          const totalCash = cashPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
+          const nonCashTotal = payments.filter(p => p.method !== 'efectivo').reduce((sum, p) => sum + (p.amount || 0), 0);
+          
+          // El cambio es el excedente de efectivo sobre lo que corresponde pagar
+          const cashRequired = venta.total - nonCashTotal;
+          const calculatedChange = Math.round((totalCash - cashRequired) * 100) / 100;
+          
+          if (calculatedChange >= 0) {
+            venta.amountReceived = totalCash;
+            venta.change = calculatedChange;
+          }
+        }
+      }
     }
 
     // Cualquier usuario puede modificar status y notas
