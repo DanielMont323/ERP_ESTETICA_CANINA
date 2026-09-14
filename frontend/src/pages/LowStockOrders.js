@@ -303,10 +303,8 @@ const LowStockOrders = () => {
       pdf.setFontSize(10);
       pdf.setFont('helvetica', 'bold');
       pdf.text('Producto', margin + 5, yPosition + 7);
-      pdf.text('SKU', margin + 60, yPosition + 7);
-      pdf.text('Stock', margin + 100, yPosition + 7);
-      pdf.text('A pedir', margin + 140, yPosition + 7);
-      pdf.text('Unidad', margin + 175, yPosition + 7);
+      pdf.text('A pedir', margin + 120, yPosition + 7);
+      pdf.text('Unidad', margin + 160, yPosition + 7);
 
       yPosition += 15;
       pdf.setTextColor(60, 60, 60);
@@ -318,11 +316,9 @@ const LowStockOrders = () => {
           yPosition = margin;
         }
 
-        pdf.text(product.name.substring(0, 25), margin + 5, yPosition);
-        pdf.text(product.sku.substring(0, 10), margin + 60, yPosition);
-        pdf.text(product.stock.toString(), margin + 100, yPosition);
-        pdf.text(quantities[product._id].toString(), margin + 140, yPosition);
-        pdf.text(product.unit, margin + 175, yPosition);
+        pdf.text(product.name.substring(0, 50), margin + 5, yPosition);
+        pdf.text(quantities[product._id].toString(), margin + 120, yPosition);
+        pdf.text(product.unit, margin + 160, yPosition);
         yPosition += 8;
       });
 
@@ -391,8 +387,6 @@ const LowStockOrders = () => {
           <thead>
             <tr style="background: #D9A323; color: white;">
               <th style="padding: 10px; text-align: left; border: 1px solid #8B3A3A;">Producto</th>
-              <th style="padding: 10px; text-align: left; border: 1px solid #8B3A3A;">SKU</th>
-              <th style="padding: 10px; text-align: left; border: 1px solid #8B3A3A;">Stock</th>
               <th style="padding: 10px; text-align: left; border: 1px solid #8B3A3A;">A pedir</th>
               <th style="padding: 10px; text-align: left; border: 1px solid #8B3A3A;">Unidad</th>
             </tr>
@@ -401,8 +395,6 @@ const LowStockOrders = () => {
             ${selectedProductsList.map(product => `
               <tr style="background: white;">
                 <td style="padding: 8px; border: 1px solid #8B3A3A; color: #333;">${product.name}</td>
-                <td style="padding: 8px; border: 1px solid #8B3A3A; color: #333;">${product.sku}</td>
-                <td style="padding: 8px; border: 1px solid #8B3A3A; color: #333;">${product.stock}</td>
                 <td style="padding: 8px; border: 1px solid #8B3A3A; color: #333;">${quantities[product._id]}</td>
                 <td style="padding: 8px; border: 1px solid #8B3A3A; color: #333;">${product.unit}</td>
               </tr>
@@ -453,7 +445,7 @@ const LowStockOrders = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="flex items-center space-x-4">
           <button
             onClick={() => navigate('/dashboard')}
@@ -468,6 +460,26 @@ const LowStockOrders = () => {
             </p>
           </div>
         </div>
+        {selectedProductsList.length > 0 && (
+          <div className="flex flex-col sm:flex-row gap-3">
+            <button
+              onClick={generatePDF}
+              disabled={generating}
+              className="btn-primary flex items-center justify-center space-x-2"
+            >
+              <FileText className="h-4 w-4" />
+              <span>{generating ? 'Generando...' : 'Generar PDF'}</span>
+            </button>
+            <button
+              onClick={generateImage}
+              disabled={generating}
+              className="btn-secondary flex items-center justify-center space-x-2"
+            >
+              <ImageIcon className="h-4 w-4" />
+              <span>{generating ? 'Generando...' : 'Descargar imagen'}</span>
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Filtros */}
@@ -563,26 +575,26 @@ const LowStockOrders = () => {
               <p>No hay productos con bajo stock</p>
             </div>
           ) : (
-            <div className="table-container">
+            <div className="table-container max-h-[500px] overflow-y-auto">
               <table className="table-responsive">
-                <thead>
+                <thead className="sticky top-0 bg-white dark:bg-dark-card z-10">
                   <tr>
-                    <th className="w-10"></th>
-                    <th>Producto</th>
-                    <th>SKU</th>
-                    <th>Proveedor</th>
-                    <th>Stock actual</th>
-                    <th>Stock mínimo</th>
-                    <th>Stock ideal</th>
-                    <th>Unidad</th>
-                    <th>Cantidad a pedir</th>
-                    <th></th>
+                    <th className="w-10 px-4 py-3"></th>
+                    <th className="min-w-[200px] px-4 py-3">Producto</th>
+                    <th className="min-w-[120px] px-4 py-3">SKU</th>
+                    <th className="min-w-[150px] px-4 py-3">Proveedor</th>
+                    <th className="min-w-[80px] px-4 py-3 text-center">Stock actual</th>
+                    <th className="min-w-[80px] px-4 py-3 text-center">Stock mínimo</th>
+                    <th className="min-w-[80px] px-4 py-3 text-center">Stock ideal</th>
+                    <th className="min-w-[60px] px-4 py-3 text-center">Unidad</th>
+                    <th className="min-w-[80px] px-4 py-3 text-center">Cantidad a pedir</th>
+                    <th className="min-w-[40px] px-4 py-3"></th>
                   </tr>
                 </thead>
                 <tbody>
                   {products.map(product => (
                     <tr key={product._id}>
-                      <td>
+                      <td className="px-4 py-3">
                         <input
                           type="checkbox"
                           checked={selectedProducts[product._id] || false}
@@ -590,9 +602,9 @@ const LowStockOrders = () => {
                           className="h-4 w-4 text-brand-burgundy focus:ring-brand-burgundy border-gray-300 rounded"
                         />
                       </td>
-                      <td className="font-medium text-gray-900 dark:text-dark-text">{product.name}</td>
-                      <td className="text-gray-600 dark:text-dark-textSecondary">{product.sku}</td>
-                      <td>
+                      <td className="px-4 py-3 font-medium text-gray-900 dark:text-dark-text">{product.name}</td>
+                      <td className="px-4 py-3 text-gray-600 dark:text-dark-textSecondary">{product.sku}</td>
+                      <td className="px-4 py-3">
                         {product.supplier ? (
                           <span className="text-sm text-gray-600 dark:text-dark-textSecondary">
                             {product.supplier.name}
@@ -601,11 +613,11 @@ const LowStockOrders = () => {
                           <span className="text-sm text-warning-600">Sin proveedor</span>
                         )}
                       </td>
-                      <td className="text-brand-burgundy font-semibold">{product.stock}</td>
-                      <td className="text-gray-600 dark:text-dark-textSecondary">{product.minStock}</td>
-                      <td className="text-gray-600 dark:text-dark-textSecondary">{product.idealStock || '-'}</td>
-                      <td className="text-gray-600 dark:text-dark-textSecondary">{product.unit}</td>
-                      <td>
+                      <td className="px-4 py-3 text-center text-brand-burgundy font-semibold">{product.stock}</td>
+                      <td className="px-4 py-3 text-center text-gray-600 dark:text-dark-textSecondary">{product.minStock}</td>
+                      <td className="px-4 py-3 text-center text-gray-600 dark:text-dark-textSecondary">{product.idealStock || '-'}</td>
+                      <td className="px-4 py-3 text-center text-gray-600 dark:text-dark-textSecondary">{product.unit}</td>
+                      <td className="px-4 py-3 text-center">
                         <input
                           type="number"
                           min="0"
@@ -614,7 +626,7 @@ const LowStockOrders = () => {
                           className="form-input w-24 text-center"
                         />
                       </td>
-                      <td>
+                      <td className="px-4 py-3 text-center">
                         <button
                           type="button"
                           onClick={() => handleEditProduct(product)}
@@ -633,27 +645,6 @@ const LowStockOrders = () => {
         </div>
       </div>
 
-      {/* Botones de acción */}
-      {selectedProductsList.length > 0 && (
-        <div className="flex flex-col sm:flex-row gap-3">
-          <button
-            onClick={generatePDF}
-            disabled={generating}
-            className="btn-primary flex items-center justify-center space-x-2"
-          >
-            <FileText className="h-4 w-4" />
-            <span>{generating ? 'Generando...' : 'Generar PDF'}</span>
-          </button>
-          <button
-            onClick={generateImage}
-            disabled={generating}
-            className="btn-secondary flex items-center justify-center space-x-2"
-          >
-            <ImageIcon className="h-4 w-4" />
-            <span>{generating ? 'Generando...' : 'Descargar imagen'}</span>
-          </button>
-        </div>
-      )}
 
       {/* Modal de edición de stock mínimo e ideal */}
       {showEditModal && editingProduct && (
