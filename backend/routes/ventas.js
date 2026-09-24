@@ -7,7 +7,7 @@ const Mascota = require('../models/Mascota');
 const CarnetVacunacion = require('../models/CarnetVacunacion');
 const Recordatorio = require('../models/Recordatorio');
 const { authenticateToken, requireAdmin } = require('../middleware/auth');
-const { getCurrentDateGMT7 } = require('../helpers/timezone');
+const { getCurrentDateGMT7, parseCalendarDate } = require('../helpers/timezone');
 const router = express.Router();
 
 // @route   GET /api/ventas
@@ -19,40 +19,49 @@ router.get('/', async (req, res) => {
 
     // Filtro por fecha única (compatibilidad con existente)
     if (date && !startDate && !endDate) {
-      const filterDate = new Date(date);
-      const startOfDay = new Date(filterDate);
-      startOfDay.setHours(0, 0, 0, 0);
-      const endOfDay = new Date(filterDate);
-      endOfDay.setHours(23, 59, 59, 999);
-      query.date = { $gte: startOfDay, $lte: endOfDay };
+      const filterDate = parseCalendarDate(date);
+      if (filterDate) {
+        const startOfDay = new Date(filterDate);
+        startOfDay.setHours(0, 0, 0, 0);
+        const endOfDay = new Date(filterDate);
+        endOfDay.setHours(23, 59, 59, 999);
+        query.date = { $gte: startOfDay, $lte: endOfDay };
+      }
     }
     
     // Filtro por rango de fechas
     if (startDate && endDate) {
-      const start = new Date(startDate);
-      start.setHours(0, 0, 0, 0);
-      const end = new Date(endDate);
-      end.setHours(23, 59, 59, 999);
+      const start = parseCalendarDate(startDate);
+      const end = parseCalendarDate(endDate);
       
-      // Validar que startDate <= endDate
-      if (start > end) {
-        return res.status(400).json({
-          success: false,
-          message: 'La fecha inicial debe ser menor o igual a la fecha final'
-        });
+      if (start && end) {
+        start.setHours(0, 0, 0, 0);
+        end.setHours(23, 59, 59, 999);
+        
+        // Validar que startDate <= endDate
+        if (start > end) {
+          return res.status(400).json({
+            success: false,
+            message: 'La fecha inicial debe ser menor o igual a la fecha final'
+          });
+        }
+        
+        query.date = { $gte: start, $lte: end };
       }
-      
-      query.date = { $gte: start, $lte: end };
     } else if (startDate && !endDate) {
       // Solo startDate
-      const start = new Date(startDate);
-      start.setHours(0, 0, 0, 0);
-      query.date = { $gte: start };
+      const start = parseCalendarDate(startDate);
+      if (start) {
+        start.setHours(0, 0, 0, 0);
+        query.date = { $gte: start };
+      }
     } else if (!startDate && endDate) {
       // Solo endDate
-      const end = new Date(endDate);
-      end.setHours(23, 59, 59, 999);
-      query.date = { $lte: end };
+      const end = parseCalendarDate(endDate);
+      if (end) {
+        end.setHours(23, 59, 59, 999);
+        query.date = { $lte: end };
+      }
     }
 
     if (customer) query.customer = customer;
@@ -189,6 +198,10 @@ router.get('/:id', async (req, res) => {
 router.post('/', authenticateToken, async (req, res) => {
   try {
     const { items, paymentMethod, payments, customer, mascota, notes, amountReceived, saleChannel, commission, subtotal, total, netIncome, date, manualFinancials, employeeDiscountApplied, employeeDiscountPercentage } = req.body;
+
+    console.log('DEBUG req.body.employeeDiscountApplied:', employeeDiscountApplied);
+    console.log('DEBUG req.body.employeeDiscountPercentage:', employeeDiscountPercentage);
+    console.log('DEBUG typeof employeeDiscountApplied:', typeof employeeDiscountApplied);
 
     // Usar req.user._id para el usuario autenticado (ignorar user del body por seguridad)
     const user = req.user._id;
@@ -513,6 +526,9 @@ router.post('/', authenticateToken, async (req, res) => {
       status: 'completada',
       // Usar fecha personalizada si se proporciona, si no usa el default del modelo
       ...(date && { date: new Date(date) }),
+      // Incluir campos de descuento de empleado
+      ...(employeeDiscountApplied !== undefined && { employeeDiscountApplied }),
+      ...(employeeDiscountPercentage !== undefined && { employeeDiscountPercentage }),
       // Solo incluir valores financieros manuales si son proporcionados y es Mercado Libre
       ...(saleChannel === 'mercado_libre' && manualFinancials !== undefined && { manualFinancials }),
       ...(saleChannel === 'mercado_libre' && subtotal !== undefined && { subtotal }),
@@ -857,7 +873,7 @@ router.post('/', authenticateToken, async (req, res) => {
 // @desc    Actualizar venta (solo status o notas para usuarios normales, campos sensibles solo para admin)
 router.put('/:id', authenticateToken, async (req, res) => {
   try {
-    const { status, notes, items, total, commission, discount, customer, mascota, amountReceived, change, paymentMethod, saleChannel, employeeDiscountApplied, employeeDiscountPercentage, payments } = req.body;
+    const { status, notes, items, total, commission, discount, customer, mascota, amountReceived, change, paymentMethod, saleChannel, employeeDiscountApplied, employeeDiscountPercentage, payments, date } = req.body;
     
     const venta = await Venta.findById(req.params.id);
     if (!venta) {
@@ -868,7 +884,7 @@ router.put('/:id', authenticateToken, async (req, res) => {
     }
 
     // Campos sensibles que solo admin puede modificar
-    const sensitiveFields = ['items', 'total', 'commission', 'discount', 'customer', 'mascota', 'amountReceived', 'change', 'paymentMethod', 'saleChannel', 'employeeDiscountApplied', 'employeeDiscountPercentage', 'payments'];
+    const sensitiveFields = ['items', 'total', 'commission', 'discount', 'customer', 'mascota', 'amountReceived', 'change', 'paymentMethod', 'saleChannel', 'employeeDiscountApplied', 'employeeDiscountPercentage', 'payments', 'date'];
     const hasSensitiveFields = sensitiveFields.some(field => req.body[field] !== undefined);
 
     if (hasSensitiveFields) {
@@ -983,6 +999,14 @@ router.put('/:id', authenticateToken, async (req, res) => {
       if (change !== undefined) venta.change = change;
       if (employeeDiscountApplied !== undefined) venta.employeeDiscountApplied = employeeDiscountApplied;
       if (employeeDiscountPercentage !== undefined) venta.employeeDiscountPercentage = employeeDiscountPercentage;
+      
+      // Actualizar fecha si se proporciona (usando parseCalendarDate para evitar problemas de timezone)
+      if (date !== undefined && date !== '') {
+        const parsedDate = parseCalendarDate(date);
+        if (parsedDate) {
+          venta.date = parsedDate;
+        }
+      }
       
       // Si se modifican items o paymentMethod, recalcular totales en backend
       if (items || paymentMethod !== undefined) {

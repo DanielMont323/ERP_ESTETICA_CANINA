@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
+import GlobalReminders from './GlobalReminders';
 import {
   Home,
   Package,
@@ -232,6 +233,9 @@ const Layout = () => {
             </div>
           </div>
         </header>
+
+        {/* Global Reminders */}
+        <GlobalReminders />
 
         {/* Main content area */}
         <main className="flex-1 relative overflow-y-auto focus:outline-none">

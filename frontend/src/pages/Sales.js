@@ -73,6 +73,7 @@ const Sales = () => {
   const [amountReceived, setAmountReceived] = useState('');
   const [editAmountReceived, setEditAmountReceived] = useState('');
   const [saleDate, setSaleDate] = useState('');
+  const [editSaleDate, setEditSaleDate] = useState('');
   const searchInputRef = useRef(null);
   const formRef = useRef(null);
   const userRole = user?.role || 'user';
@@ -326,6 +327,24 @@ const Sales = () => {
     return () => clearTimeout(timer);
   }, [editSearchQuery]);
 
+  // Sincronizar payment con total del carrito cuando hay un solo payment en efectivo
+  useEffect(() => {
+    if (payments.length === 1 && payments[0].method === 'efectivo') {
+      const subtotal = cart.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0);
+      const total = employeeDiscountApplied ? subtotal * 0.80 : subtotal;
+      setPayments([{ method: 'efectivo', amount: Math.round(total * 100) / 100 }]);
+    }
+  }, [cart, employeeDiscountApplied]);
+
+  // Sincronizar editPayment con total del editCart cuando hay un solo payment en efectivo
+  useEffect(() => {
+    if (editPayments.length === 1 && editPayments[0].method === 'efectivo') {
+      const subtotal = editCart.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0);
+      const total = editEmployeeDiscountApplied ? subtotal * 0.80 : subtotal;
+      setEditPayments([{ method: 'efectivo', amount: Math.round(total * 100) / 100 }]);
+    }
+  }, [editCart, editEmployeeDiscountApplied]);
+
   // Manejo de teclas para navegación por teclado en buscador
   const handleSearchKeyDown = async (e) => {
     if (e.key === 'ArrowDown') {
@@ -464,6 +483,13 @@ const Sales = () => {
       setEditAmountReceived(sale.amountReceived?.toString() || '');
       setEditEmployeeDiscountApplied(sale.employeeDiscountApplied || false);
       
+      // Cargar fecha de la venta
+      const saleDate = sale.date ? new Date(sale.date) : null;
+      const formattedDate = saleDate && !isNaN(saleDate.getTime()) 
+        ? `${saleDate.getFullYear()}-${String(saleDate.getMonth() + 1).padStart(2, '0')}-${String(saleDate.getDate()).padStart(2, '0')}` 
+        : '';
+      setEditSaleDate(formattedDate);
+      
       // Cargar pagos divididos si existen
       if (sale.payments && sale.payments.length > 0) {
         setEditPayments(sale.payments.map(p => ({
@@ -557,7 +583,8 @@ const Sales = () => {
         customer: editCustomer?._id || null,
         mascota: editPet || null,
         saleChannel: editSaleChannel,
-        notes: editNotes
+        notes: editNotes,
+        ...(editSaleDate && { date: editSaleDate })
       };
 
       await salesAPI.update(editingSale._id, updateData);
@@ -586,6 +613,7 @@ const Sales = () => {
     setEditSearchQuery('');
     setEditSearchResults([]);
     setEditSelectedSearchIndex(-1);
+    setEditSaleDate('');
   };
 
   const addToEditCart = (item, type) => {
@@ -722,9 +750,23 @@ const Sales = () => {
       }));
       setEditCart(updatedCart);
       setEditEmployeeDiscountApplied(true);
+      
+      // Actualizar el monto del pago al nuevo total con descuento solo si hay un solo payment en efectivo
+      if (editPayments.length === 1 && editPayments[0].method === 'efectivo') {
+        const subtotal = editCart.reduce((sum, item) => sum + (item.subtotalBeforeDiscount || (item.quantity * item.unitPrice)), 0);
+        const newTotal = subtotal * 0.80; // 20% descuento
+        setEditPayments([{ method: 'efectivo', amount: Math.round(newTotal * 100) / 100 }]);
+      }
     } else {
       // Desactivar descuento de empleado
       setEditEmployeeDiscountApplied(false);
+      
+      // Actualizar el monto del pago al total sin descuento solo si hay un solo payment en efectivo
+      if (editPayments.length === 1 && editPayments[0].method === 'efectivo') {
+        const subtotal = editCart.reduce((sum, item) => sum + (item.subtotalBeforeDiscount || (item.quantity * item.unitPrice)), 0);
+        const newTotal = subtotal;
+        setEditPayments([{ method: 'efectivo', amount: Math.round(newTotal * 100) / 100 }]);
+      }
     }
   };
 
@@ -808,11 +850,30 @@ const Sales = () => {
         subtotalBeforeDiscount: item.quantity * item.unitPrice,
         subtotalAfterDiscount: item.quantity * item.unitPrice
       }));
+      
+      // Calcular subtotal del carrito actualizado
+      const subtotal = updatedCart.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0);
+      const newTotal = subtotal * 0.80; // 20% descuento
+      
       setCart(updatedCart);
       setEmployeeDiscountApplied(true);
+      
+      // Actualizar el monto del pago al nuevo total con descuento solo si hay un solo payment en efectivo
+      if (payments.length === 1 && payments[0].method === 'efectivo') {
+        setPayments([{ method: 'efectivo', amount: Math.round(newTotal * 100) / 100 }]);
+      }
     } else {
       // Desactivar descuento de empleado
       setEmployeeDiscountApplied(false);
+      
+      // Calcular subtotal del carrito actual
+      const subtotal = cart.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0);
+      const newTotal = subtotal;
+      
+      // Actualizar el monto del pago al total sin descuento solo si hay un solo payment en efectivo
+      if (payments.length === 1 && payments[0].method === 'efectivo') {
+        setPayments([{ method: 'efectivo', amount: Math.round(newTotal * 100) / 100 }]);
+      }
     }
   };
 
@@ -1179,7 +1240,10 @@ const Sales = () => {
               {filteredSales.map((sale, index) => (
                 <tr key={sale._id} className={`table-row-divider ${index % 2 === 0 ? 'bg-white dark:bg-dark-card' : 'bg-gray-50 dark:bg-dark-surface'} hover:bg-yellow-100`}>
                   <td className="py-4 px-4">
-                    {new Date(sale.date).toLocaleDateString('es-MX')}
+                    {(() => {
+                      const d = new Date(sale.date);
+                      return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
+                    })()}
                   </td>
                   <td className="py-4 px-4">
                     {sale.customer ? sale.customer.name : 'Cliente general'}
@@ -1273,7 +1337,10 @@ const Sales = () => {
                 <div className="flex justify-between items-start mb-3">
                   <div>
                     <div className="text-sm text-gray-500 dark:text-dark-textSecondary">
-                      {new Date(sale.date).toLocaleDateString('es-MX')}
+                      {(() => {
+                        const d = new Date(sale.date);
+                        return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
+                      })()}
                     </div>
                     <div className="font-medium text-gray-900 dark:text-dark-text">
                       {sale.customer ? sale.customer.name : 'Cliente general'}
@@ -2476,6 +2543,17 @@ const Sales = () => {
                         <option value="mercado_libre">Mercado Libre</option>
                         <option value="redes_sociales">Redes Sociales</option>
                       </select>
+                    </div>
+
+                    {/* Sale Date */}
+                    <div>
+                      <label className="form-label">Fecha de venta</label>
+                      <input
+                        type="date"
+                        value={editSaleDate}
+                        onChange={(e) => setEditSaleDate(e.target.value)}
+                        className="form-input"
+                      />
                     </div>
 
                     {/* Notes */}
