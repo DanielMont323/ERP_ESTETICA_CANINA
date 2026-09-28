@@ -193,8 +193,21 @@ const ventaSchema = new mongoose.Schema({
 
 // Calcular totales antes de guardar
 ventaSchema.pre('save', function(next) {
-  // Solo recalcular si NO es Mercado Libre con ajuste manual
+  // Validar que si es Mercado Libre con ajuste financiero manual, se proporcionen total y netIncome válidos
   const isMercadoLibreManual = this.saleChannel === 'mercado_libre' && this.manualFinancials === true;
+  
+  if (isMercadoLibreManual) {
+    const isTotalValid = this.total !== undefined && this.total !== null && !isNaN(this.total) && typeof this.total === 'number' && isFinite(this.total);
+    const isNetIncomeValid = this.netIncome !== undefined && this.netIncome !== null && !isNaN(this.netIncome) && typeof this.netIncome === 'number' && isFinite(this.netIncome);
+    
+    if (!isTotalValid || !isNetIncomeValid) {
+      const error = new Error('Para una venta de Mercado Libre con ajuste financiero manual se requieren total y utilidad neta válidos');
+      error.name = 'ValidationError';
+      return next(error);
+    }
+  }
+  
+  // Solo recalcular si NO es Mercado Libre con ajuste manual
   
   if (!isMercadoLibreManual) {
     // Calcular subtotal de cada item y aplicar descuentos
@@ -231,6 +244,9 @@ ventaSchema.pre('save', function(next) {
     this.subtotal = Math.round(this.items.reduce((sum, item) => sum + (item.subtotalBeforeDiscount || 0), 0) * 100) / 100;
     
     // Calcular descuento de empleado si está activo
+    console.log('DEBUG employeeDiscountApplied:', this.employeeDiscountApplied);
+    console.log('DEBUG employeeDiscountPercentage:', this.employeeDiscountPercentage);
+    console.log('DEBUG subtotal:', this.subtotal);
     if (this.employeeDiscountApplied === true) {
       // Validar que sea 20%
       if (this.employeeDiscountPercentage !== 20) {

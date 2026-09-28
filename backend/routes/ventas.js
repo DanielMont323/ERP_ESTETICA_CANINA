@@ -216,6 +216,19 @@ router.post('/', authenticateToken, async (req, res) => {
       }
     }
 
+    // Validar que si es Mercado Libre con ajuste financiero manual, se proporcionen total y netIncome válidos
+    if (saleChannel === 'mercado_libre' && manualFinancials === true) {
+      const isTotalValid = total !== undefined && total !== null && !isNaN(total) && typeof total === 'number' && isFinite(total);
+      const isNetIncomeValid = netIncome !== undefined && netIncome !== null && !isNaN(netIncome) && typeof netIncome === 'number' && isFinite(netIncome);
+      
+      if (!isTotalValid || !isNetIncomeValid) {
+        return res.status(400).json({
+          success: false,
+          message: 'Para una venta de Mercado Libre con ajuste financiero manual se requieren total y utilidad neta válidos'
+        });
+      }
+    }
+
     // 1. Validar que haya items
     if (!items || items.length === 0) {
       return res.status(400).json({

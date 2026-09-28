@@ -326,9 +326,16 @@ router.get('/income-statement', async (req, res) => {
       status: 'completada'
     });
 
-    const totalVentas = ventas.reduce((sum, venta) => sum + venta.total, 0);
-    const totalComision = ventas.reduce((sum, venta) => sum + venta.commission, 0);
-    const totalIngresoNeto = ventas.reduce((sum, venta) => sum + venta.netIncome, 0);
+    // Filtrar ventas válidas para evitar NaN
+    const ventasValidas = ventas.filter(v => {
+      const isTotalValid = v.total !== undefined && v.total !== null && !isNaN(v.total) && typeof v.total === 'number' && isFinite(v.total);
+      const isNetIncomeValid = v.netIncome !== undefined && v.netIncome !== null && !isNaN(v.netIncome) && typeof v.netIncome === 'number' && isFinite(v.netIncome);
+      return isTotalValid && isNetIncomeValid;
+    });
+
+    const totalVentas = ventasValidas.reduce((sum, venta) => sum + venta.total, 0);
+    const totalComision = ventasValidas.reduce((sum, venta) => sum + venta.commission, 0);
+    const totalIngresoNeto = ventasValidas.reduce((sum, venta) => sum + venta.netIncome, 0);
 
     // Costos variables (compras)
     const compras = await Compra.find({
@@ -478,6 +485,8 @@ router.get('/sales-summary', async (req, res) => {
         $match: {
           ...dateFilter,
           status: 'completada',
+          total: { $exists: true, $ne: null, $type: 'number' },
+          netIncome: { $exists: true, $ne: null, $type: 'number' },
           ...categoryFilter
         }
       },
@@ -498,6 +507,8 @@ router.get('/sales-summary', async (req, res) => {
         $match: {
           ...dateFilter,
           status: 'completada',
+          total: { $exists: true, $ne: null, $type: 'number' },
+          netIncome: { $exists: true, $ne: null, $type: 'number' },
           'items.type': 'producto',
           ...categoryFilter
         }
@@ -536,6 +547,8 @@ router.get('/sales-summary', async (req, res) => {
         $match: {
           ...dateFilter,
           status: 'completada',
+          total: { $exists: true, $ne: null, $type: 'number' },
+          netIncome: { $exists: true, $ne: null, $type: 'number' },
           ...categoryFilter
         }
       },
@@ -605,6 +618,8 @@ router.get('/sales-summary', async (req, res) => {
         $match: {
           ...dateFilter,
           status: 'completada',
+          total: { $exists: true, $ne: null, $type: 'number' },
+          netIncome: { $exists: true, $ne: null, $type: 'number' },
           ...categoryFilter
         }
       },
@@ -691,9 +706,37 @@ router.get('/sales-behavior', async (req, res) => {
       status: 'completada'
     });
 
-    const totalVentas = ventas.length;
-    const totalMonto = ventas.reduce((sum, venta) => sum + venta.total, 0);
-    const totalIngresoNeto = ventas.reduce((sum, venta) => sum + venta.netIncome, 0);
+    // Separar ventas válidas de inválidas para evitar NaN en cálculos
+    const ventasValidas = ventas.filter(v => {
+      const isTotalValid = v.total !== undefined && v.total !== null && !isNaN(v.total) && typeof v.total === 'number' && isFinite(v.total);
+      const isNetIncomeValid = v.netIncome !== undefined && v.netIncome !== null && !isNaN(v.netIncome) && typeof v.netIncome === 'number' && isFinite(v.netIncome);
+      return isTotalValid && isNetIncomeValid;
+    });
+
+    const ventasInvalidas = ventas.filter(v => {
+      const isTotalValid = v.total !== undefined && v.total !== null && !isNaN(v.total) && typeof v.total === 'number' && isFinite(v.total);
+      const isNetIncomeValid = v.netIncome !== undefined && v.netIncome !== null && !isNaN(v.netIncome) && typeof v.netIncome === 'number' && isFinite(v.netIncome);
+      return !isTotalValid || !isNetIncomeValid;
+    });
+
+    // Loguear ventas inválidas para trazabilidad
+    if (ventasInvalidas.length > 0) {
+      console.warn('[Reports] Ventas con datos financieros inválidos encontradas:', ventasInvalidas.length);
+      ventasInvalidas.forEach(v => {
+        console.warn('[Reports] Venta inválida:', {
+          id: v._id.toString(),
+          date: v.date,
+          total: v.total,
+          netIncome: v.netIncome,
+          saleChannel: v.saleChannel,
+          manualFinancials: v.manualFinancials
+        });
+      });
+    }
+
+    const totalVentas = ventasValidas.length;
+    const totalMonto = ventasValidas.reduce((sum, venta) => sum + venta.total, 0);
+    const totalIngresoNeto = ventasValidas.reduce((sum, venta) => sum + venta.netIncome, 0);
     
     // Calcular unidades vendidas
     const totalUnidades = ventas.reduce((sum, venta) => {
@@ -708,7 +751,9 @@ router.get('/sales-behavior', async (req, res) => {
       {
         $match: {
           ...dateFilter,
-          status: 'completada'
+          status: 'completada',
+          total: { $exists: true, $ne: null, $type: 'number' },
+          netIncome: { $exists: true, $ne: null, $type: 'number' }
         }
       },
       {
@@ -728,7 +773,9 @@ router.get('/sales-behavior', async (req, res) => {
       {
         $match: {
           ...dateFilter,
-          status: 'completada'
+          status: 'completada',
+          total: { $exists: true, $ne: null, $type: 'number' },
+          netIncome: { $exists: true, $ne: null, $type: 'number' }
         }
       },
       {
@@ -801,6 +848,8 @@ router.get('/sales-behavior', async (req, res) => {
         $match: {
           ...dateFilter,
           status: 'completada',
+          total: { $exists: true, $ne: null, $type: 'number' },
+          netIncome: { $exists: true, $ne: null, $type: 'number' },
           'items.type': 'producto'
         }
       },
@@ -1089,8 +1138,14 @@ router.get('/dashboard', async (req, res) => {
       status: 'completada'
     });
 
-    const currentMonthTotal = currentMonthSales.reduce((sum, sale) => sum + sale.total, 0);
-    const currentMonthCount = currentMonthSales.length;
+    // Filtrar ventas válidas para evitar NaN
+    const currentMonthSalesValid = currentMonthSales.filter(sale => {
+      const isTotalValid = sale.total !== undefined && sale.total !== null && !isNaN(sale.total) && typeof sale.total === 'number' && isFinite(sale.total);
+      return isTotalValid;
+    });
+
+    const currentMonthTotal = currentMonthSalesValid.reduce((sum, sale) => sum + sale.total, 0);
+    const currentMonthCount = currentMonthSalesValid.length;
 
     // Ventas del mes anterior
     const lastMonthSales = await Venta.find({
@@ -1098,8 +1153,14 @@ router.get('/dashboard', async (req, res) => {
       status: 'completada'
     });
 
-    const lastMonthTotal = lastMonthSales.reduce((sum, sale) => sum + sale.total, 0);
-    const lastMonthCount = lastMonthSales.length;
+    // Filtrar ventas válidas para evitar NaN
+    const lastMonthSalesValid = lastMonthSales.filter(sale => {
+      const isTotalValid = sale.total !== undefined && sale.total !== null && !isNaN(sale.total) && typeof sale.total === 'number' && isFinite(sale.total);
+      return isTotalValid;
+    });
+
+    const lastMonthTotal = lastMonthSalesValid.reduce((sum, sale) => sum + sale.total, 0);
+    const lastMonthCount = lastMonthSalesValid.length;
 
     // Productos con bajo stock
     const lowStockProducts = await Producto.countDocuments({
