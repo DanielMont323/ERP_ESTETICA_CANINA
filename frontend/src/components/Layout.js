@@ -137,7 +137,7 @@ const Layout = () => {
       {/* Sidebar for mobile */}
       <div className={`fixed inset-0 z-40 md:hidden ${sidebarOpen ? '' : 'hidden'}`}>
         <div className="fixed inset-0 bg-gray-600 bg-opacity-75" onClick={() => setSidebarOpen(false)} />
-        <div className="relative flex-1 flex flex-col max-w-xs w-full bg-white dark:bg-dark-card max-h-[100dvh]" style={{ paddingTop: 'env(safe-area-inset-top)', paddingBottom: 'env(safe-area-inset-bottom)' }}>
+        <div className="relative flex flex-col h-full max-w-xs w-full bg-white dark:bg-dark-card" style={{ paddingTop: 'env(safe-area-inset-top)', paddingBottom: 'env(safe-area-inset-bottom)' }}>
           <div className="absolute top-0 right-0 -mr-12 pt-2" style={{ top: 'env(safe-area-inset-top)' }}>
             <button
               type="button"
@@ -147,7 +147,9 @@ const Layout = () => {
               <X className="h-6 w-6 text-white" />
             </button>
           </div>
-          <Sidebar navigation={navigation} isActive={isActive} onMobileClose={() => setSidebarOpen(false)} isMobile={true} />
+          <div className="flex-1 overflow-hidden">
+            <Sidebar navigation={navigation} isActive={isActive} onMobileClose={() => setSidebarOpen(false)} isMobile={true} />
+          </div>
         </div>
       </div>
 
@@ -277,7 +279,7 @@ const Sidebar = ({ navigation, isActive, onMobileClose, isMobile = false }) => {
         <h1 className="text-xl font-bold text-brand-cream tracking-tight">BARBER DOG</h1>
       </div>
       
-      <nav className={`flex-1 px-3 py-6 space-y-1 ${isMobile ? 'overflow-y-auto' : ''}`}>
+      <nav className="flex-1 px-3 py-6 space-y-1 overflow-y-auto">
         {navigation.map((item) => {
           const Icon = item.icon;
           return (
