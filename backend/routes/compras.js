@@ -417,16 +417,16 @@ router.put('/:id', authenticateToken, requireAdmin, async (req, res) => {
     const originalType = compra.type;
     const originalProveedor = compra.proveedor;
 
+    // Helper para obtener valor con fallback explícito (evita tratar 0 como ausente)
+    const getValue = (...values) => {
+      for (const val of values) {
+        if (val !== undefined && val !== null) return val;
+      }
+      return 0;
+    };
+
     // Si se modifican items, ajustar inventario
     if (items) {
-      // Helper para obtener valor con fallback explícito (evita tratar 0 como ausente)
-      const getValue = (...values) => {
-        for (const val of values) {
-          if (val !== undefined && val !== null) return val;
-        }
-        return 0;
-      };
-
       // Validar y normalizar items
       const normalizedItems = items.map(item => ({
         ...item,
@@ -484,7 +484,13 @@ router.put('/:id', authenticateToken, requireAdmin, async (req, res) => {
     if (earlyPaymentDiscount !== undefined) compra.earlyPaymentDiscount = earlyPaymentDiscount;
     if (discountDeadline !== undefined) compra.discountDeadline = discountDeadline;
     if (dueDate !== undefined) compra.dueDate = dueDate;
-    if (date !== undefined) compra.date = parseCalendarDate(date);
+    if (date !== undefined && date !== '') {
+      // Solo actualizar fecha si se proporciona y no está vacía
+      const parsedDate = parseCalendarDate(date);
+      if (parsedDate) {
+        compra.date = parsedDate;
+      }
+    }
 
     // Recalcular totales
     compra.baseTotal = Math.round((compra.items.reduce((sum, item) => {

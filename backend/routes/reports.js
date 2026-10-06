@@ -401,6 +401,89 @@ router.get('/income-statement', async (req, res) => {
   }
 });
 
+// @route   GET /api/reports/expenses-detail
+// @desc    Detalle de gastos por período
+router.get('/expenses-detail', async (req, res) => {
+  try {
+    const { period, startDate, endDate } = req.query;
+    
+    let dateFilter = {};
+    
+    // Filtros de periodo predefinidos usando GMT-7 (misma lógica que income-statement)
+    const todayGMT7 = startOfDayGMT7(new Date());
+    
+    if (period === 'day' || period === 'today') {
+      const endOfToday = endOfDayGMT7(new Date());
+      dateFilter = {
+        date: { $gte: todayGMT7, $lte: endOfToday }
+      };
+    } else if (period === 'week') {
+      const startOfWeek = new Date(todayGMT7);
+      startOfWeek.setDate(todayGMT7.getDate() - todayGMT7.getDay());
+      const startOfWeekGMT7 = startOfDayGMT7(startOfWeek);
+      const endOfWeek = new Date(startOfWeekGMT7);
+      endOfWeek.setDate(startOfWeekGMT7.getDate() + 6);
+      const endOfWeekGMT7 = endOfDayGMT7(endOfWeek);
+      dateFilter = {
+        date: { $gte: startOfWeekGMT7, $lte: endOfWeekGMT7 }
+      };
+    } else if (period === 'month') {
+      const startOfMonth = new Date(todayGMT7.getFullYear(), todayGMT7.getMonth(), 1);
+      const startOfMonthGMT7 = startOfDayGMT7(startOfMonth);
+      const endOfMonth = new Date(todayGMT7.getFullYear(), todayGMT7.getMonth() + 1, 0);
+      const endOfMonthGMT7 = endOfDayGMT7(endOfMonth);
+      dateFilter = {
+        date: { $gte: startOfMonthGMT7, $lte: endOfMonthGMT7 }
+      };
+    } else if (period === 'year') {
+      const startOfYear = new Date(todayGMT7.getFullYear(), 0, 1);
+      const startOfYearGMT7 = startOfDayGMT7(startOfYear);
+      const endOfYear = new Date(todayGMT7.getFullYear(), 11, 31);
+      const endOfYearGMT7 = endOfDayGMT7(endOfYear);
+      dateFilter = {
+        date: { $gte: startOfYearGMT7, $lte: endOfYearGMT7 }
+      };
+    } else if (startDate && endDate) {
+      const startGMT7 = startOfDayGMT7(new Date(startDate));
+      const endGMT7 = endOfDayGMT7(new Date(endDate));
+      dateFilter = {
+        date: { $gte: startGMT7, $lte: endGMT7 }
+      };
+    }
+
+    // Obtener costos del período (misma lógica que income-statement)
+    const costos = await Costo.find({
+      ...dateFilter,
+      isActive: true
+    }).sort({ date: -1 });
+
+    // Calcular totales para verificación
+    const costosFijos = costos.filter(costo => costo.type === 'fijo').reduce((sum, costo) => sum + costo.amount, 0);
+    const costosVariables = costos.filter(costo => costo.type === 'variable').reduce((sum, costo) => sum + costo.amount, 0);
+    const totalCostos = costosFijos + costosVariables;
+
+    res.json({
+      success: true,
+      data: {
+        period: { startDate, endDate },
+        expenses: costos,
+        summary: {
+          count: costos.length,
+          costosFijos,
+          costosVariables,
+          totalCostos
+        }
+      }
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      success: false,
+      message: 'Error al obtener detalle de gastos'
+    });
+  }
+});
+
 // @route   GET /api/reports/sales-summary
 // @desc    Resumen de ventas
 router.get('/sales-summary', async (req, res) => {
@@ -538,7 +621,48 @@ router.get('/sales-summary', async (req, res) => {
           totalRevenue: 1
         }
       },
-      { $sort: { totalRevenue: -1 } },
+      { $sort: { totalQuantity: -1 } },
+      { $limit: 10 }
+    ]);
+
+    // Servicios más vendidos
+    const topServices = await Venta.aggregate([
+      {
+        $match: {
+          ...dateFilter,
+          status: 'completada',
+          total: { $exists: true, $ne: null, $type: 'number' },
+          netIncome: { $exists: true, $ne: null, $type: 'number' },
+          'items.type': 'servicio',
+          ...categoryFilter
+        }
+      },
+      { $unwind: '$items' },
+      { $match: { 'items.type': 'servicio' } },
+      {
+        $group: {
+          _id: '$items.item',
+          totalQuantity: { $sum: '$items.quantity' },
+          totalRevenue: { $sum: '$items.subtotal' }
+        }
+      },
+      {
+        $lookup: {
+          from: 'servicios',
+          localField: '_id',
+          foreignField: '_id',
+          as: 'service'
+        }
+      },
+      { $unwind: '$service' },
+      {
+        $project: {
+          name: '$service.name',
+          totalQuantity: 1,
+          totalRevenue: 1
+        }
+      },
+      { $sort: { totalQuantity: -1 } },
       { $limit: 10 }
     ]);
 
@@ -623,12 +747,41 @@ router.get('/sales-summary', async (req, res) => {
           ...categoryFilter
         }
       },
+      { $unwind: '$items' },
+      {
+        $group: {
+          _id: '$_id',
+          saleChannel: { $first: '$saleChannel' },
+          total: { $first: '$total' },
+          netIncome: { $first: '$netIncome' },
+          productQuantity: {
+            $sum: {
+              $cond: [
+                { $eq: ['$items.type', 'producto'] },
+                '$items.quantity',
+                0
+              ]
+            }
+          },
+          serviceQuantity: {
+            $sum: {
+              $cond: [
+                { $eq: ['$items.type', 'servicio'] },
+                '$items.quantity',
+                0
+              ]
+            }
+          }
+        }
+      },
       {
         $group: {
           _id: '$saleChannel',
           total: { $sum: '$total' },
           netIncome: { $sum: '$netIncome' },
-          count: { $sum: 1 }
+          count: { $sum: 1 },
+          productQuantity: { $sum: '$productQuantity' },
+          serviceQuantity: { $sum: '$serviceQuantity' }
         }
       }
     ]);
@@ -638,6 +791,7 @@ router.get('/sales-summary', async (req, res) => {
       data: {
         salesByPeriod,
         topProducts,
+        topServices,
         salesByPaymentMethod,
         salesByChannel
       }
@@ -883,6 +1037,7 @@ router.get('/sales-behavior', async (req, res) => {
     ]);
 
     const productoMasVendido = topProduct.length > 0 ? topProduct[0].name : null;
+    const productoTopQuantity = topProduct.length > 0 ? topProduct[0].totalQuantity : 0;
 
     res.json({
       success: true,
@@ -895,6 +1050,7 @@ router.get('/sales-behavior', async (req, res) => {
         canalPrincipal,
         metodoPagoPrincipal,
         productoMasVendido,
+        productoTopQuantity,
         salesByChannel,
         salesByPaymentMethod
       }

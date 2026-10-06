@@ -1333,99 +1333,141 @@ const Sales = () => {
           {filteredSales.map((sale, index) => (
             <div key={sale._id} className="card">
               <div className="card-body">
-                {/* Card Header - Always Visible */}
-                <div className="flex justify-between items-start mb-3">
+                {/* Primary Info - Customer Name */}
+                <div className="mb-4">
+                  <p className="text-xs text-gray-500 dark:text-dark-textSecondary uppercase tracking-wide mb-1">Cliente</p>
+                  <p className="text-lg font-semibold text-gray-900 dark:text-dark-text">
+                    {sale.customer ? sale.customer.name : 'Cliente general'}
+                  </p>
+                </div>
+
+                {/* Secondary Info - Date and Status */}
+                <div className="flex items-center justify-between mb-4 pb-4 border-b border-gray-200 dark:border-dark-border">
                   <div>
-                    <div className="text-sm text-gray-500 dark:text-dark-textSecondary">
+                    <p className="text-xs text-gray-500 dark:text-dark-textSecondary uppercase tracking-wide mb-1">Fecha</p>
+                    <p className="text-sm font-medium text-gray-700 dark:text-dark-text">
                       {(() => {
                         const d = new Date(sale.date);
                         return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
                       })()}
-                    </div>
-                    <div className="font-medium text-gray-900 dark:text-dark-text">
-                      {sale.customer ? sale.customer.name : 'Cliente general'}
-                    </div>
+                    </p>
                   </div>
-                  <div className="text-right">
-                    <div className="text-lg font-bold text-brand-burgundy">
-                      {formatCurrency(sale.total)}
-                    </div>
-                    {sale.employeeDiscountApplied && (
-                      <div className="text-xs text-green-600 dark:text-green-400 font-medium">
-                        ✓ Desc. empleado
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Quick Info */}
-                <div className="flex items-center gap-2 mb-3">
                   <span className={`badge badge-${
                     sale.status === 'completada' ? 'success' :
                     sale.status === 'cancelada' ? 'danger' : 'warning'
                   }`}>
                     {sale.status}
                   </span>
-                  <span className="text-sm text-gray-600 dark:text-dark-textSecondary capitalize">
-                    {sale.paymentMethod}
-                  </span>
                 </div>
 
-                {/* Expandable Details */}
+                {/* Items Summary */}
+                <div className="mb-4">
+                  <p className="text-xs text-gray-500 dark:text-dark-textSecondary uppercase tracking-wide mb-2">Items</p>
+                  <div className="space-y-1">
+                    {sale.items.slice(0, 2).map((item, index) => (
+                      <div key={index} className="text-sm text-gray-700 dark:text-dark-text">
+                        {item.quantity}x {item.item.name}
+                      </div>
+                    ))}
+                    {sale.items.length > 2 && (
+                      <p className="text-xs text-gray-500 dark:text-dark-textSecondary">
+                        +{sale.items.length - 2} más
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Financial Info - Total */}
+                <div className="flex items-center justify-between mb-4 pb-4 border-b border-gray-200 dark:border-dark-border">
+                  <div>
+                    <p className="text-xs text-gray-500 dark:text-dark-textSecondary uppercase tracking-wide mb-1">Total</p>
+                    <p className="text-xl font-bold text-brand-burgundy">
+                      {formatCurrency(sale.total)}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-xs text-gray-500 dark:text-dark-textSecondary capitalize mb-1">
+                      {sale.paymentMethod}
+                    </p>
+                    {sale.employeeDiscountApplied && (
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                        ✓ Desc. empleado
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Expandable Details Button */}
                 <button
                   onClick={() => setExpandedSale(expandedSale === sale._id ? null : sale._id)}
-                  className="w-full text-center text-sm text-brand-burgundy hover:text-brand-burgundy-dark py-2 border-t border-gray-200 dark:border-dark-border"
+                  className="w-full text-center text-sm text-brand-burgundy hover:text-brand-burgundy-dark py-3 border-t border-gray-200 dark:border-dark-border font-medium"
                 >
-                  {expandedSale === sale._id ? 'Ocultar detalles' : 'Ver detalles'}
+                  {expandedSale === sale._id ? 'Ocultar detalles' : 'Ver detalles completos'}
                 </button>
 
                 {/* Expanded Content */}
                 {expandedSale === sale._id && (
-                  <div className="mt-3 pt-3 border-t border-gray-200 dark:border-dark-border space-y-2 text-sm">
-                    <div className="grid grid-cols-2 gap-2">
+                  <div className="mt-4 pt-4 border-t border-gray-200 dark:border-dark-border space-y-4 text-sm">
+                    {/* Seller and Subtotal */}
+                    <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <span className="text-gray-500 dark:text-dark-textSecondary">Vendedor:</span>
-                        <span className="ml-2">{sale.user ? sale.user.name : 'Sin vendedor'}</span>
+                        <p className="text-xs text-gray-500 dark:text-dark-textSecondary uppercase tracking-wide mb-1">Vendedor</p>
+                        <p className="text-gray-700 dark:text-dark-text">{sale.user ? sale.user.name : 'Sin vendedor'}</p>
                       </div>
                       <div>
-                        <span className="text-gray-500 dark:text-dark-textSecondary">Subtotal:</span>
-                        <span className="ml-2">{formatCurrency(sale.subtotal || sale.total)}</span>
+                        <p className="text-xs text-gray-500 dark:text-dark-textSecondary uppercase tracking-wide mb-1">Subtotal</p>
+                        <p className="text-gray-700 dark:text-dark-text">{formatCurrency(sale.subtotal || sale.total)}</p>
                       </div>
                     </div>
 
-                    {sale.employeeDiscountApplied && (
-                      <div className="text-green-600 dark:text-green-400">
-                        Descuento empleado (20%): -{formatCurrency(sale.employeeDiscountAmount || 0)}
+                    {/* Discounts */}
+                    {(sale.employeeDiscountApplied || sale.totalDiscount > 0) && (
+                      <div className="bg-green-50 dark:bg-green-900/20 p-3 rounded-lg">
+                        {sale.employeeDiscountApplied && (
+                          <p className="text-green-700 dark:text-green-400 mb-1">
+                            Descuento empleado (20%): -{formatCurrency(sale.employeeDiscountAmount || 0)}
+                          </p>
+                        )}
+                        {sale.totalDiscount > 0 && (
+                          <p className="text-green-700 dark:text-green-400">
+                            Descuento adicional: -{formatCurrency(sale.totalDiscount)}
+                          </p>
+                        )}
                       </div>
                     )}
 
+                    {/* Card Commission */}
                     {sale.cardCommission > 0 && (
                       <div>
-                        <span className="text-gray-500 dark:text-dark-textSecondary">Comisión tarjeta:</span>
-                        <span className="ml-2">{formatCurrency(sale.cardCommission)}</span>
+                        <p className="text-xs text-gray-500 dark:text-dark-textSecondary uppercase tracking-wide mb-1">Comisión tarjeta</p>
+                        <p className="text-gray-700 dark:text-dark-text">{formatCurrency(sale.cardCommission)}</p>
                       </div>
                     )}
 
-                    <div>
-                      <span className="text-gray-500 dark:text-dark-textSecondary">Ingreso neto:</span>
-                      <span className="ml-2 text-success-600 font-medium">{formatCurrency(sale.netIncome)}</span>
+                    {/* Net Income */}
+                    <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg">
+                      <p className="text-xs text-gray-500 dark:text-dark-textSecondary uppercase tracking-wide mb-1">Ingreso neto</p>
+                      <p className="text-lg font-bold text-success-600">{formatCurrency(sale.netIncome)}</p>
                     </div>
 
+                    {/* All Items */}
                     <div>
-                      <span className="text-gray-500 dark:text-dark-textSecondary">Items:</span>
-                      <div className="mt-1 space-y-1">
+                      <p className="text-xs text-gray-500 dark:text-dark-textSecondary uppercase tracking-wide mb-2">Todos los items</p>
+                      <div className="space-y-2">
                         {sale.items.map((item, index) => (
-                          <div key={index} className="text-gray-700 dark:text-dark-text">
-                            {item.quantity}x {item.item.name}
+                          <div key={index} className="flex justify-between text-gray-700 dark:text-dark-text py-1 border-b border-gray-100 dark:border-dark-border last:border-0">
+                            <span>{item.quantity}x {item.item.name}</span>
+                            <span className="font-medium">{formatCurrency(item.subtotal)}</span>
                           </div>
                         ))}
                       </div>
                     </div>
 
+                    {/* Payments */}
                     {sale.payments && sale.payments.length > 0 && (
                       <div>
-                        <span className="text-gray-500 dark:text-dark-textSecondary">Pagos:</span>
-                        <div className="mt-1 space-y-1">
+                        <p className="text-xs text-gray-500 dark:text-dark-textSecondary uppercase tracking-wide mb-2">Pagos</p>
+                        <div className="space-y-1">
                           {sale.payments.map((payment, index) => (
                             <div key={index} className="text-gray-700 dark:text-dark-text">
                               {payment.method}: {formatCurrency(payment.amount)}
@@ -1437,17 +1479,19 @@ const Sales = () => {
 
                     {/* Actions */}
                     {userRole === 'admin' && sale.status !== 'cancelada' && (
-                      <div className="flex gap-2 pt-2 border-t border-gray-200 dark:border-dark-border">
+                      <div className="flex gap-3 pt-2">
                         <button
                           onClick={() => handleEditSale(sale)}
-                          className="flex-1 btn btn-primary btn-sm"
+                          className="flex-1 btn btn-primary btn-md"
                         >
+                          <Edit className="h-4 w-4 mr-2" />
                           Editar
                         </button>
                         <button
                           onClick={() => handleCancelSale(sale)}
-                          className="flex-1 btn btn-danger btn-sm"
+                          className="flex-1 btn btn-danger btn-md"
                         >
+                          <XCircle className="h-4 w-4 mr-2" />
                           Cancelar
                         </button>
                       </div>
@@ -1534,11 +1578,11 @@ const Sales = () => {
             </div>
             
             {/* Contenido Scrolleable */}
-            <div className="flex-1 overflow-y-auto p-6">
+            <div className="flex-1 overflow-y-auto p-4 sm:p-6">
                 
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
                   {/* Products and Services */}
-                  <div className="lg:col-span-2 space-y-6">
+                  <div className="lg:col-span-2 space-y-4 sm:space-y-6">
                     {/* Sale Date */}
                     <div>
                       <label className="form-label">Fecha de venta (opcional)</label>
@@ -1638,7 +1682,7 @@ const Sales = () => {
                     {/* Products */}
                     <div>
                       <h4 className="font-medium text-gray-900 dark:text-dark-text mb-3">Productos</h4>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-3">
                         {products.filter(p => p.stock > 0).map(product => (
                           <div key={product._id} className="border border-gray-200 dark:border-dark-border rounded-xl p-3 hover:border-primary-300 hover:shadow-sm transition-all duration-200">
                             <div className="flex justify-between items-start">
@@ -1664,7 +1708,7 @@ const Sales = () => {
                     {/* Services */}
                     <div>
                       <h4 className="font-medium text-gray-900 dark:text-dark-text mb-3">Servicios</h4>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-3">
                         {services.map(service => (
                           <div key={service._id} className="border border-gray-200 dark:border-dark-border rounded-xl p-3 hover:border-primary-300 hover:shadow-sm transition-all duration-200">
                             <div className="flex justify-between items-start">
@@ -2118,12 +2162,12 @@ const Sales = () => {
             <div className="modal-overlay" onClick={handleCloseEditModal} />
             
             <div className="relative modal-content max-w-4xl w-full sm:max-w-4xl max-h-[90vh] overflow-y-auto animate-slide-up">
-              <div className="p-6">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-dark-text mb-6">Editar Venta #{editingSale._id.slice(-6)}</h3>
+              <div className="p-4 sm:p-6">
+                <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-dark-text mb-4 sm:mb-6">Editar Venta #{editingSale._id.slice(-6)}</h3>
                 
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
                   {/* Products and Services */}
-                  <div className="lg:col-span-2 space-y-6">
+                  <div className="lg:col-span-2 space-y-4 sm:space-y-6">
                     {/* Customer Selection */}
                     <div>
                       <label className="form-label">Cliente</label>
@@ -2218,7 +2262,7 @@ const Sales = () => {
                     {/* Products */}
                     <div>
                       <h4 className="font-medium text-gray-900 dark:text-dark-text mb-3">Productos</h4>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-3">
                         {products.filter(p => p.stock > 0).map(product => (
                           <div key={product._id} className="border border-gray-200 dark:border-dark-border rounded-xl p-3 hover:border-primary-300 hover:shadow-sm transition-all duration-200">
                             <div className="flex justify-between items-start">
@@ -2244,7 +2288,7 @@ const Sales = () => {
                     {/* Services */}
                     <div>
                       <h4 className="font-medium text-gray-900 dark:text-dark-text mb-3">Servicios</h4>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-3">
                         {services.map(service => (
                           <div key={service._id} className="border border-gray-200 dark:border-dark-border rounded-xl p-3 hover:border-primary-300 hover:shadow-sm transition-all duration-200">
                             <div className="flex justify-between items-start">

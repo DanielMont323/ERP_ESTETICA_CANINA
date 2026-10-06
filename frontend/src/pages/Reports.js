@@ -16,6 +16,9 @@ const Reports = () => {
     endDate: '',
     useRange: false
   });
+  const [showExpensesModal, setShowExpensesModal] = useState(false);
+  const [expensesDetail, setExpensesDetail] = useState(null);
+  const [loadingExpenses, setLoadingExpenses] = useState(false);
 
   const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
 
@@ -82,6 +85,48 @@ const Reports = () => {
     return periodNames[selectedPeriod] || '';
   };
 
+  const handleExpensesClick = async () => {
+    setShowExpensesModal(true);
+    setLoadingExpenses(true);
+    setExpensesDetail(null);
+    
+    try {
+      const params = {};
+      if (dateRange.useRange) {
+        if (dateRange.startDate) params.startDate = dateRange.startDate;
+        if (dateRange.endDate) params.endDate = dateRange.endDate;
+      } else {
+        params.period = selectedPeriod;
+      }
+      
+      console.log('Parámetros enviados a expenses-detail:', params);
+      const response = await reportsAPI.getExpensesDetail(params);
+      console.log('Respuesta de expenses-detail:', response.data);
+      setExpensesDetail(response.data.data);
+    } catch (error) {
+      toast.error('Error al cargar detalle de gastos');
+      console.error('Error al cargar gastos:', error);
+    } finally {
+      setLoadingExpenses(false);
+    }
+  };
+
+  const handleExpensesModalClose = () => {
+    setShowExpensesModal(false);
+    setExpensesDetail(null);
+  };
+
+  useEffect(() => {
+    const handleEsc = (e) => {
+      if (e.key === 'Escape' && showExpensesModal) {
+        handleExpensesModalClose();
+      }
+    };
+
+    window.addEventListener('keydown', handleEsc);
+    return () => window.removeEventListener('keydown', handleEsc);
+  }, [showExpensesModal]);
+
   const handleExportExcel = async () => {
     try {
       const params = {};
@@ -145,6 +190,7 @@ const Reports = () => {
   }
 
   return (
+    <>
     <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -203,16 +249,16 @@ const Reports = () => {
 
       {/* Comportamiento de Ventas - KPIs */}
       {salesBehavior && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3 sm:gap-4">
           <div className="card">
             <div className="card-body">
               <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-brand-burgundy">Total Ventas</p>
-                  <p className="text-2xl font-bold text-gray-600 dark:text-dark-textSecondary mt-1">{formatCurrency(salesBehavior.totalMonto)}</p>
+                <div className="min-w-0 flex-1 pr-2">
+                  <p className="text-xs sm:text-sm text-brand-burgundy truncate">Total Ventas</p>
+                  <p className="text-xl sm:text-2xl font-bold text-gray-600 dark:text-dark-textSecondary mt-1 truncate">{formatCurrency(salesBehavior.totalMonto)}</p>
                 </div>
-                <div className="p-3 bg-white dark:bg-dark-card-100 rounded-lg">
-                  <DollarSign className="h-6 w-6 text-blue-600" />
+                <div className="p-2 sm:p-3 bg-white dark:bg-dark-card-100 rounded-lg flex-shrink-0">
+                  <DollarSign className="h-4 w-4 sm:h-6 sm:w-6 text-blue-600" />
                 </div>
               </div>
               <p className="text-xs text-gray-500 dark:text-dark-textSecondary mt-2">{salesBehavior.totalVentas} ventas</p>
@@ -222,12 +268,12 @@ const Reports = () => {
           <div className="card">
             <div className="card-body">
               <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-brand-burgundy">Ticket Promedio</p>
-                  <p className="text-2xl font-bold text-gray-600 dark:text-dark-textSecondary mt-1">{formatCurrency(salesBehavior.ticketPromedio)}</p>
+                <div className="min-w-0 flex-1 pr-2">
+                  <p className="text-xs sm:text-sm text-brand-burgundy truncate">Ticket Promedio</p>
+                  <p className="text-xl sm:text-2xl font-bold text-gray-600 dark:text-dark-textSecondary mt-1 truncate">{formatCurrency(salesBehavior.ticketPromedio)}</p>
                 </div>
-                <div className="p-3 bg-green-100 rounded-lg">
-                  <TrendingUp className="h-6 w-6 text-green-600" />
+                <div className="p-2 sm:p-3 bg-green-100 rounded-lg flex-shrink-0">
+                  <TrendingUp className="h-4 w-4 sm:h-6 sm:w-6 text-green-600" />
                 </div>
               </div>
               <p className="text-xs text-gray-500 dark:text-dark-textSecondary mt-2">Por venta</p>
@@ -237,12 +283,12 @@ const Reports = () => {
           <div className="card">
             <div className="card-body">
               <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-brand-burgundy">Unidades Vendidas</p>
-                  <p className="text-2xl font-bold text-gray-600 dark:text-dark-textSecondary mt-1">{salesBehavior.totalUnidades}</p>
+                <div className="min-w-0 flex-1 pr-2">
+                  <p className="text-xs sm:text-sm text-brand-burgundy truncate">Unidades Vendidas</p>
+                  <p className="text-xl sm:text-2xl font-bold text-gray-600 dark:text-dark-textSecondary mt-1 truncate">{salesBehavior.totalUnidades}</p>
                 </div>
-                <div className="p-3 bg-purple-100 rounded-lg">
-                  <Package className="h-6 w-6 text-purple-600" />
+                <div className="p-2 sm:p-3 bg-purple-100 rounded-lg flex-shrink-0">
+                  <Package className="h-4 w-4 sm:h-6 sm:w-6 text-purple-600" />
                 </div>
               </div>
               <p className="text-xs text-gray-500 dark:text-dark-textSecondary mt-2">Total productos</p>
@@ -252,12 +298,12 @@ const Reports = () => {
           <div className="card">
             <div className="card-body">
               <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-brand-burgundy">Canal Principal</p>
-                  <p className="text-lg font-bold text-gray-600 dark:text-dark-textSecondary mt-1 truncate">{getChannelName(salesBehavior.canalPrincipal)}</p>
+                <div className="min-w-0 flex-1 pr-2">
+                  <p className="text-xs sm:text-sm text-brand-burgundy truncate">Canal Principal</p>
+                  <p className="text-base sm:text-lg font-bold text-gray-600 dark:text-dark-textSecondary mt-1 truncate">{getChannelName(salesBehavior.canalPrincipal)}</p>
                 </div>
-                <div className="p-3 bg-orange-100 rounded-lg">
-                  <Store className="h-6 w-6 text-orange-600" />
+                <div className="p-2 sm:p-3 bg-orange-100 rounded-lg flex-shrink-0">
+                  <Store className="h-4 w-4 sm:h-6 sm:w-6 text-orange-600" />
                 </div>
               </div>
               <p className="text-xs text-gray-500 dark:text-dark-textSecondary mt-2">Más ventas</p>
@@ -267,12 +313,12 @@ const Reports = () => {
           <div className="card">
             <div className="card-body">
               <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-brand-burgundy">Método Principal</p>
-                  <p className="text-lg font-bold text-gray-600 dark:text-dark-textSecondary mt-1 capitalize">{salesBehavior.metodoPagoPrincipal}</p>
+                <div className="min-w-0 flex-1 pr-2">
+                  <p className="text-xs sm:text-sm text-brand-burgundy truncate">Método Principal</p>
+                  <p className="text-base sm:text-lg font-bold text-gray-600 dark:text-dark-textSecondary mt-1 capitalize truncate">{salesBehavior.metodoPagoPrincipal}</p>
                 </div>
-                <div className="p-3 bg-pink-100 rounded-lg">
-                  <CreditCard className="h-6 w-6 text-pink-600" />
+                <div className="p-2 sm:p-3 bg-pink-100 rounded-lg flex-shrink-0">
+                  <CreditCard className="h-4 w-4 sm:h-6 sm:w-6 text-pink-600" />
                 </div>
               </div>
               <p className="text-xs text-gray-500 dark:text-dark-textSecondary mt-2">Más usado</p>
@@ -282,12 +328,13 @@ const Reports = () => {
           <div className="card">
             <div className="card-body">
               <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-brand-burgundy">Producto Top</p>
-                  <p className="text-lg font-bold text-gray-600 dark:text-dark-textSecondary mt-1 truncate">{salesBehavior.productoMasVendido || 'N/A'}</p>
+                <div className="min-w-0 flex-1 pr-2">
+                  <p className="text-xs sm:text-sm text-brand-burgundy truncate">Producto Top</p>
+                  <p className="text-base sm:text-lg font-bold text-gray-600 dark:text-dark-textSecondary mt-1 truncate">{salesBehavior.productoMasVendido || 'N/A'}</p>
+                  <p className="text-xs text-gray-500 dark:text-dark-textSecondary mt-1 truncate">{salesBehavior.productoTopQuantity || 0} unidades</p>
                 </div>
-                <div className="p-3 bg-indigo-100 rounded-lg">
-                  <ShoppingCart className="h-6 w-6 text-indigo-600" />
+                <div className="p-2 sm:p-3 bg-indigo-100 rounded-lg flex-shrink-0">
+                  <ShoppingCart className="h-4 w-4 sm:h-6 sm:w-6 text-indigo-600" />
                 </div>
               </div>
               <p className="text-xs text-gray-500 dark:text-dark-textSecondary mt-2">Más vendido</p>
@@ -300,50 +347,50 @@ const Reports = () => {
       {incomeStatement && (
         <div className="card">
           <div className="card-header">
-            <h3 className="text-lg font-medium text-gray-600 dark:text-dark-textSecondary">RESUMEN DE RESULTADOS FINANCIEROS</h3>
+            <h3 className="text-base sm:text-lg font-medium text-gray-600 dark:text-dark-textSecondary">RESUMEN DE RESULTADOS FINANCIEROS</h3>
           </div>
           <div className="card-body">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="border-r border-gray-200 dark:border-dark-border pr-6 md:border-r md:pr-6 border-b md:border-b pb-6 md:pb-0 mb-6 md:mb-0">
-                <h4 className="font-semibold text-gray-600 dark:text-dark-textSecondary mb-4 flex items-center">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
+              <div className="border-r border-gray-200 dark:border-dark-border pr-4 sm:pr-6 md:border-r md:pr-6 border-b md:border-b pb-4 sm:pb-6 md:pb-0 mb-4 sm:mb-6 md:mb-0">
+                <h4 className="font-semibold text-gray-600 dark:text-dark-textSecondary mb-3 sm:mb-4 flex items-center">
                   <span className="w-3 h-3 bg-white dark:bg-dark-card-500 rounded-full mr-2"></span>
                   INGRESOS
                 </h4>
-                <div className="space-y-3">
+                <div className="space-y-2 sm:space-y-3">
                   <div className="flex justify-between items-center">
-                    <span className="text-brand-burgundy">Ventas totales:</span>
-                    <span className="font-semibold">{formatCurrency(incomeStatement.ingresos.totalVentas)}</span>
+                    <span className="text-sm sm:text-base text-brand-burgundy">Ventas totales:</span>
+                    <span className="font-semibold text-sm sm:text-base">{formatCurrency(incomeStatement.ingresos.totalVentas)}</span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="text-brand-burgundy">Comisiones:</span>
-                    <span className="font-semibold text-danger-600">-{formatCurrency(incomeStatement.ingresos.totalComision)}</span>
+                    <span className="text-sm sm:text-base text-brand-burgundy">Comisiones:</span>
+                    <span className="font-semibold text-sm sm:text-base text-danger-600">-{formatCurrency(incomeStatement.ingresos.totalComision)}</span>
                   </div>
-                  <div className="flex justify-between items-center text-lg font-bold border-t border-gray-200 dark:border-dark-border pt-3 mt-3">
+                  <div className="flex justify-between items-center text-base sm:text-lg font-bold border-t border-gray-200 dark:border-dark-border pt-2 sm:pt-3 mt-2 sm:mt-3">
                     <span className="text-gray-600 dark:text-dark-textSecondary">Ingreso Neto:</span>
                     <span className="text-success-600">{formatCurrency(incomeStatement.ingresos.totalIngresoNeto)}</span>
                   </div>
                 </div>
               </div>
               
-              <div className="border-r border-gray-200 dark:border-dark-border pr-6">
-                <h4 className="font-semibold text-gray-600 dark:text-dark-textSecondary mb-4 flex items-center">
+              <div className="border-r border-gray-200 dark:border-dark-border pr-4 sm:pr-6">
+                <h4 className="font-semibold text-gray-600 dark:text-dark-textSecondary mb-3 sm:mb-4 flex items-center">
                   <span className="w-3 h-3 bg-red-500 rounded-full mr-2"></span>
                   GASTOS
                 </h4>
-                <div className="space-y-3">
+                <div className="space-y-2 sm:space-y-3">
                   <div className="flex justify-between items-center">
-                    <span className="text-brand-burgundy">Compras:</span>
-                    <span className="font-semibold">{formatCurrency(incomeStatement.costos.totalCompras)}</span>
+                    <span className="text-sm sm:text-base text-brand-burgundy">Compras:</span>
+                    <span className="font-semibold text-sm sm:text-base">{formatCurrency(incomeStatement.costos.totalCompras)}</span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="text-brand-burgundy">Costos fijos:</span>
-                    <span className="font-semibold">{formatCurrency(incomeStatement.costos.costosFijos)}</span>
+                    <span className="text-sm sm:text-base text-brand-burgundy">Costos fijos:</span>
+                    <span className="font-semibold text-sm sm:text-base">{formatCurrency(incomeStatement.costos.costosFijos)}</span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="text-brand-burgundy">Costos variables:</span>
-                    <span className="font-semibold">{formatCurrency(incomeStatement.costos.costosVariables)}</span>
+                    <span className="text-sm sm:text-base text-brand-burgundy">Costos variables:</span>
+                    <span className="font-semibold text-sm sm:text-base">{formatCurrency(incomeStatement.costos.costosVariables)}</span>
                   </div>
-                  <div className="flex justify-between items-center text-lg font-bold border-t border-gray-200 dark:border-dark-border pt-3 mt-3">
+                  <div className="flex justify-between items-center text-base sm:text-lg font-bold border-t border-gray-200 dark:border-dark-border pt-2 sm:pt-3 mt-2 sm:mt-3">
                     <span className="text-gray-600 dark:text-dark-textSecondary">Total Gastos:</span>
                     <span className="text-danger-600">{formatCurrency(
                       incomeStatement.costos.totalCompras + 
@@ -412,7 +459,18 @@ const Reports = () => {
                   <YAxis />
                   <Tooltip formatter={(value) => formatCurrency(value)} />
                   <Legend />
-                  <Bar dataKey="valor" name="Monto" />
+                  <Bar dataKey="valor" name="Monto">
+                    {[
+                      { name: 'Ingresos', valor: incomeStatement.ingresos.totalIngresoNeto },
+                      { name: 'Gastos', valor: incomeStatement.costos.totalCompras + incomeStatement.costos.costosFijos + incomeStatement.costos.costosVariables }
+                    ].map((entry, index) => (
+                      <Cell 
+                        key={`cell-${index}`} 
+                        cursor={entry.name === 'Gastos' ? 'pointer' : 'default'}
+                        onClick={entry.name === 'Gastos' ? handleExpensesClick : undefined}
+                      />
+                    ))}
+                  </Bar>
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -494,17 +552,21 @@ const Reports = () => {
                 <h4 className="font-medium text-gray-600 dark:text-dark-textSecondary">Resumen por Canal</h4>
                 {salesSummary.salesByChannel.map((channel, index) => (
                   <div key={index} className="border border-gray-200 dark:border-dark-border rounded-lg p-4">
-                    <div className="flex justify-between items-center mb-2">
+                    <div className="flex justify-between items-center mb-3">
                       <span className="font-semibold text-gray-600 dark:text-dark-textSecondary">{getChannelName(channel._id)}</span>
-                      <span className="text-sm text-gray-500 dark:text-dark-textSecondary">{channel.count} ventas</span>
+                      <span className="text-sm text-gray-500 dark:text-dark-textSecondary">{channel.count} transacciones</span>
+                    </div>
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="text-brand-burgundy">Productos:</span>
+                      <span className="font-semibold">{channel.productQuantity || 0} unidades</span>
+                    </div>
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="text-brand-burgundy">Servicios:</span>
+                      <span className="font-semibold">{channel.serviceQuantity || 0} servicios</span>
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-brand-burgundy">Total:</span>
                       <span className="font-semibold">{formatCurrency(channel.total)}</span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-brand-burgundy">Ingreso Neto:</span>
-                      <span className="font-semibold text-success-600">{formatCurrency(channel.netIncome)}</span>
                     </div>
                   </div>
                 ))}
@@ -528,9 +590,9 @@ const Reports = () => {
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="name" />
                     <YAxis />
-                    <Tooltip formatter={(value) => formatCurrency(value)} />
+                    <Tooltip formatter={(value) => value + ' unidades'} />
                     <Legend />
-                    <Bar dataKey="totalRevenue" fill="#8b5cf6" name="Ingresos" />
+                    <Bar dataKey="totalQuantity" fill="#8b5cf6" name="Unidades" />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
@@ -545,8 +607,50 @@ const Reports = () => {
                       <span className="font-medium text-gray-600 dark:text-dark-textSecondary">{product.name}</span>
                     </div>
                     <div className="text-right">
-                      <div className="font-semibold text-gray-600 dark:text-dark-textSecondary">{formatCurrency(product.totalRevenue)}</div>
-                      <div className="text-sm text-gray-500 dark:text-dark-textSecondary">{product.totalQuantity} unidades</div>
+                      <div className="font-semibold text-gray-600 dark:text-dark-textSecondary">{product.totalQuantity} unidades</div>
+                      <div className="text-sm text-gray-500 dark:text-dark-textSecondary">{formatCurrency(product.totalRevenue)}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Servicios Más Vendidos */}
+      {salesSummary && salesSummary.topServices && (
+        <div className="card">
+          <div className="card-header">
+            <h3 className="text-lg font-medium text-gray-600 dark:text-dark-textSecondary">SERVICIOS MÁS VENDIDOS</h3>
+          </div>
+          <div className="card-body">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div>
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart data={salesSummary.topServices.slice(0, 5)}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="name" />
+                    <YAxis />
+                    <Tooltip formatter={(value) => value + ' servicios'} />
+                    <Legend />
+                    <Bar dataKey="totalQuantity" fill="#10b981" name="Servicios" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+              <div className="space-y-2">
+                <h4 className="font-medium text-gray-600 dark:text-dark-textSecondary mb-3">Top 10 Servicios</h4>
+                {salesSummary.topServices.map((service, index) => (
+                  <div key={index} className="flex justify-between items-center p-3 bg-gray-50 dark:bg-dark-surface rounded-lg">
+                    <div className="flex items-center">
+                      <span className="w-6 h-6 bg-green-100 text-green-600 rounded-full flex items-center justify-center text-sm font-semibold mr-3">
+                        {index + 1}
+                      </span>
+                      <span className="font-medium text-gray-600 dark:text-dark-textSecondary">{service.name}</span>
+                    </div>
+                    <div className="text-right">
+                      <div className="font-semibold text-gray-600 dark:text-dark-textSecondary">{service.totalQuantity} servicios</div>
+                      <div className="text-sm text-gray-500 dark:text-dark-textSecondary">{formatCurrency(service.totalRevenue)}</div>
                     </div>
                   </div>
                 ))}
@@ -585,7 +689,142 @@ const Reports = () => {
         </div>
       )}
     </div>
-  );
+
+    {/* Modal de Detalle de Gastos */}
+    {showExpensesModal && (
+      <div 
+        className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-3 sm:p-4"
+        onClick={handleExpensesModalClose}
+      >
+        <div 
+          className="bg-white dark:bg-dark-card rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] flex flex-col"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="px-4 py-3 sm:px-6 sm:py-4 border-b border-gray-200 dark:border-dark-border flex justify-between items-center">
+            <h3 className="text-base sm:text-xl font-semibold text-gray-600 dark:text-dark-textSecondary">
+              Detalle de gastos — {getPeriodDisplay()}
+            </h3>
+            <button 
+              onClick={handleExpensesModalClose}
+              className="text-gray-500 hover:text-gray-700 dark:text-dark-textSecondary dark:hover:text-gray-300 p-1"
+            >
+              <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+          
+          <div className="p-4 sm:p-6 flex-1 overflow-auto">
+            {loadingExpenses ? (
+              <div className="flex items-center justify-center h-64">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-burgundy"></div>
+              </div>
+            ) : expensesDetail && expensesDetail.expenses.length > 0 ? (
+              <>
+                <div className="mb-4 sm:mb-6 p-3 sm:p-4 bg-gray-50 dark:bg-dark-surface rounded-lg">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4">
+                    <div>
+                      <p className="text-xs sm:text-sm text-gray-500 dark:text-dark-textSecondary">Total de gastos</p>
+                      <p className="text-xl sm:text-2xl font-bold text-gray-600 dark:text-dark-textSecondary">
+                        {formatCurrency(expensesDetail.summary.totalCostos)}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs sm:text-sm text-gray-500 dark:text-dark-textSecondary">Gastos registrados</p>
+                      <p className="text-xl sm:text-2xl font-bold text-gray-600 dark:text-dark-textSecondary">
+                        {expensesDetail.summary.count}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs sm:text-sm text-gray-500 dark:text-dark-textSecondary">Costos fijos</p>
+                      <p className="text-lg sm:text-xl font-semibold text-gray-600 dark:text-dark-textSecondary">
+                        {formatCurrency(expensesDetail.summary.costosFijos)}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
+                  <table className="min-w-full divide-y divide-gray-200 dark:divide-dark-border">
+                    <thead className="bg-gray-50 dark:bg-dark-surface">
+                      <tr>
+                        <th className="px-3 py-2 sm:px-6 sm:py-3 text-left text-xs font-semibold text-gray-500 dark:text-dark-textSecondary uppercase tracking-wider whitespace-nowrap">
+                          Fecha
+                        </th>
+                        <th className="px-3 py-2 sm:px-6 sm:py-3 text-left text-xs font-semibold text-gray-500 dark:text-dark-textSecondary uppercase tracking-wider whitespace-nowrap">
+                          Concepto
+                        </th>
+                        <th className="px-3 py-2 sm:px-6 sm:py-3 text-left text-xs font-semibold text-gray-500 dark:text-dark-textSecondary uppercase tracking-wider whitespace-nowrap">
+                          Categoría
+                        </th>
+                        <th className="px-3 py-2 sm:px-6 sm:py-3 text-left text-xs font-semibold text-gray-500 dark:text-dark-textSecondary uppercase tracking-wider whitespace-nowrap">
+                          Tipo
+                        </th>
+                        <th className="px-3 py-2 sm:px-6 sm:py-3 text-right text-xs font-semibold text-gray-500 dark:text-dark-textSecondary uppercase tracking-wider whitespace-nowrap">
+                          Monto
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white dark:bg-dark-card divide-y divide-gray-200 dark:divide-dark-border">
+                      {expensesDetail.expenses.map((expense) => (
+                        <tr key={expense._id}>
+                          <td className="px-3 py-2 sm:px-6 sm:py-3 whitespace-nowrap text-xs sm:text-sm text-gray-600 dark:text-dark-textSecondary">
+                            {formatDate(expense.date)}
+                          </td>
+                          <td className="px-3 py-2 sm:px-6 sm:py-3 text-xs sm:text-sm text-gray-600 dark:text-dark-textSecondary">
+                            {expense.description}
+                          </td>
+                          <td className="px-3 py-2 sm:px-6 sm:py-3 whitespace-nowrap text-xs sm:text-sm text-gray-600 dark:text-dark-textSecondary capitalize">
+                            {expense.category}
+                          </td>
+                          <td className="px-3 py-2 sm:px-6 sm:py-3 whitespace-nowrap text-xs sm:text-sm">
+                            <span className={`px-2 py-0.5 sm:px-2.5 sm:py-0.5 rounded-full text-xs font-medium ${
+                              expense.type === 'fijo' 
+                                ? 'bg-blue-100 text-blue-800' 
+                                : 'bg-orange-100 text-orange-800'
+                            }`}>
+                              {expense.type}
+                            </span>
+                          </td>
+                          <td className="px-3 py-2 sm:px-6 sm:py-3 whitespace-nowrap text-xs sm:text-sm text-right font-semibold text-gray-600 dark:text-dark-textSecondary">
+                            {formatCurrency(expense.amount)}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-gray-50 dark:bg-dark-surface rounded-lg flex justify-between items-center">
+                  <p className="text-xs sm:text-sm text-gray-500 dark:text-dark-textSecondary">Total de gastos</p>
+                  <p className="text-lg sm:text-xl font-bold text-gray-600 dark:text-dark-textSecondary">
+                    {formatCurrency(expensesDetail.summary.totalCostos)}
+                  </p>
+                </div>
+              </>
+            ) : (
+              <div className="flex flex-col items-center justify-center h-64 text-gray-500 dark:text-dark-textSecondary">
+                <svg className="w-12 h-12 sm:w-16 sm:h-16 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                <p className="text-base sm:text-lg">No hay gastos registrados en este período</p>
+              </div>
+            )}
+          </div>
+
+          <div className="px-4 py-3 sm:px-6 sm:py-4 border-t border-gray-200 dark:border-dark-border flex justify-end">
+            <button 
+              onClick={handleExpensesModalClose}
+              className="btn btn-secondary btn-md w-full sm:w-auto"
+            >
+              Cerrar
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+    </>
+ );
 };
 
 export default Reports;

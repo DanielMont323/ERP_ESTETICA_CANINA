@@ -609,8 +609,8 @@ const Purchases = () => {
 
       {/* Filters */}
       <div className="card hover:shadow-md transition-shadow duration-200">
-        <div className="card-body p-5">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+        <div className="card-body p-4 sm:p-5">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
             <div>
               <label className="form-label">Filtrar por proveedor</label>
               <Autocomplete
@@ -775,9 +775,9 @@ const Purchases = () => {
             </div>
 
             {/* Contenido Scrolleable */}
-            <div className="flex-1 overflow-y-auto p-6">
+            <div className="flex-1 overflow-y-auto p-4 sm:p-6">
               <form ref={formRef} onSubmit={handleSubmit}>
-                <div className="grid grid-cols-2 gap-4 mb-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
                   <div>
                     <label className="form-label">Proveedor</label>
                     <Autocomplete
@@ -817,7 +817,7 @@ const Purchases = () => {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4 mb-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
                   <div>
                     <label className="form-label">Número de Factura</label>
                     <input
@@ -895,7 +895,7 @@ const Purchases = () => {
                     )}
                   </div>
 
-                  <div className="grid grid-cols-4 gap-4 mb-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
                     <div>
                       <label className="form-label">Producto</label>
                       <Autocomplete
@@ -1122,7 +1122,7 @@ const Purchases = () => {
                   )}
                 </div>
 
-                <div className="grid grid-cols-2 gap-4 mb-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
                   <div>
                     <label className="form-label">Método de pago</label>
                     <select

@@ -385,30 +385,30 @@ const Products = () => {
                 />
               </div>
             </div>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2 sm:gap-2">
               <button
                 onClick={() => setFilter('all')}
-                className={`btn btn-sm ${filter === 'all' ? 'btn-primary' : 'btn-secondary'}`}
+                className={`btn btn-sm flex-1 sm:flex-none ${filter === 'all' ? 'btn-primary' : 'btn-secondary'}`}
               >
                 Todos
               </button>
               <button
                 onClick={() => setFilter('low-stock')}
-                className={`btn btn-sm ${filter === 'low-stock' ? 'btn-warning' : 'btn-secondary'}`}
+                className={`btn btn-sm flex-1 sm:flex-none ${filter === 'low-stock' ? 'btn-warning' : 'btn-secondary'}`}
               >
                 <AlertTriangle className="h-4 w-4 mr-1" />
                 Bajo Stock
               </button>
               <button
                 onClick={() => setFilter('out-of-stock')}
-                className={`btn btn-sm ${filter === 'out-of-stock' ? 'btn-danger' : 'btn-secondary'}`}
+                className={`btn btn-sm flex-1 sm:flex-none ${filter === 'out-of-stock' ? 'btn-danger' : 'btn-secondary'}`}
               >
                 Agotados
               </button>
               {userRole === 'admin' && (
                 <button
                   onClick={() => setShowInactive(!showInactive)}
-                  className={`btn btn-sm ${showInactive ? 'btn-info' : 'btn-secondary'}`}
+                  className={`btn btn-sm flex-1 sm:flex-none ${showInactive ? 'btn-info' : 'btn-secondary'}`}
                 >
                   <EyeOff className="h-4 w-4 mr-1" />
                   {showInactive ? 'Ocultar Inactivos' : 'Mostrar Inactivos'}
@@ -417,7 +417,7 @@ const Products = () => {
               {userRole === 'admin' && (
                 <button
                   onClick={() => setShowDeleted(!showDeleted)}
-                  className={`btn btn-sm ${showDeleted ? 'btn-danger' : 'btn-secondary'}`}
+                  className={`btn btn-sm ${showDeleted ? 'btn-danger' : 'btn-secondary'} flex-1 sm:flex-none`}
                 >
                   <Trash2 className="h-4 w-4 mr-1" />
                   {showDeleted ? 'Ocultar Eliminados' : 'Mostrar Eliminados'}
@@ -430,7 +430,8 @@ const Products = () => {
 
       {/* Products Table */}
 <div className="card hover:shadow-md transition-shadow duration-200 flex flex-col max-h-[calc(100vh-320px)]">
-  <div className="table-container flex-1 overflow-auto">
+  {/* Desktop Table - Hidden on Mobile */}
+  <div className="hidden md:block table-container flex-1 overflow-auto">
     <table className="table table-fixed w-full">
       <thead className="sticky top-0 bg-gray-50 dark:bg-dark-surface z-10">
         <tr>
@@ -554,6 +555,115 @@ const Products = () => {
             </div>
           )}
         </div>
+
+        {/* Mobile Cards View */}
+        <div className="md:hidden space-y-4 p-4 overflow-auto">
+          {filteredProducts.map((product, index) => {
+            const stockStatus = getStockStatus(product);
+            const expirationStatus = getExpirationStatus(product);
+            return (
+              <div key={product._id} className="card">
+                <div className="card-body">
+                  {/* Primary Info - Product Name */}
+                  <div className="mb-4">
+                    <p className="text-xs text-gray-500 dark:text-dark-textSecondary uppercase tracking-wide mb-1">Producto</p>
+                    <p className="text-lg font-semibold text-gray-900 dark:text-dark-text">
+                      {product.name}
+                    </p>
+                    <p className="text-sm text-gray-500 dark:text-dark-textSecondary">SKU: {product.sku}</p>
+                  </div>
+
+                  {/* Secondary Info - Category and Stock */}
+                  <div className="flex items-center justify-between mb-4 pb-4 border-b border-gray-200 dark:border-dark-border">
+                    <div>
+                      <p className="text-xs text-gray-500 dark:text-dark-textSecondary uppercase tracking-wide mb-1">Categoría</p>
+                      <p className="text-sm font-medium text-gray-700 dark:text-dark-text">
+                        {product.category?.name || 'Sin categoría'}
+                      </p>
+                    </div>
+                    <span className={`badge badge-${stockStatus.color}`}>
+                      {stockStatus.text}
+                    </span>
+                  </div>
+
+                  {/* Financial Info - Price and Stock */}
+                  <div className="flex items-center justify-between mb-4 pb-4 border-b border-gray-200 dark:border-dark-border">
+                    <div>
+                      <p className="text-xs text-gray-500 dark:text-dark-textSecondary uppercase tracking-wide mb-1">Precio</p>
+                      {product.discountPercentage > 0 ? (
+                        <div>
+                          <span className="text-gray-400 dark:text-dark-textSecondary line-through text-sm">{formatCurrency(product.price)}</span>
+                          <p className="text-xl font-bold text-success-600">{formatCurrency(product.price * (1 - product.discountPercentage / 100))}</p>
+                        </div>
+                      ) : (
+                        <p className="text-xl font-bold text-brand-burgundy">{formatCurrency(product.price)}</p>
+                      )}
+                    </div>
+                    <div className="text-right">
+                      <p className="text-xs text-gray-500 dark:text-dark-textSecondary uppercase tracking-wide mb-1">Stock</p>
+                      <p className="text-lg font-semibold text-gray-700 dark:text-dark-text">{product.stock}</p>
+                      <p className="text-xs text-gray-500 dark:text-dark-textSecondary">Mín: {product.minStock}</p>
+                    </div>
+                  </div>
+
+                  {/* Additional Info - Margin and Expiration */}
+                  <div className="flex items-center justify-between mb-4 pb-4 border-b border-gray-200 dark:border-dark-border">
+                    <div>
+                      <p className="text-xs text-gray-500 dark:text-dark-textSecondary uppercase tracking-wide mb-1">Margen</p>
+                      <p className={`font-medium ${
+                        product.margin > 30 ? 'text-success-600' : 
+                        product.margin > 15 ? 'text-warning-600' : 'text-danger-600'
+                      }`}>
+                        {product.margin}%
+                      </p>
+                    </div>
+                    <span className={`badge badge-${expirationStatus.color}`}>
+                      {expirationStatus.text}
+                    </span>
+                  </div>
+
+                  {/* Actions */}
+                  <div className="flex gap-3">
+                    {showDeleted ? (
+                      <button
+                        onClick={() => handleRestore(product._id)}
+                        className="flex-1 btn btn-success btn-md"
+                      >
+                        ♻️ Restaurar
+                      </button>
+                    ) : (
+                      <>
+                        <button
+                          onClick={() => handleEdit(product)}
+                          className="flex-1 btn btn-primary btn-md"
+                        >
+                          <Edit className="h-4 w-4 mr-2" />
+                          Editar
+                        </button>
+                        {userRole === 'admin' && (
+                          <button
+                            onClick={() => handleDelete(product._id)}
+                            className="flex-1 btn btn-danger btn-md"
+                          >
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Eliminar
+                          </button>
+                        )}
+                      </>
+                    )}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+          
+          {filteredProducts.length === 0 && (
+            <div className="text-center py-8">
+              <Package className="h-12 w-12 text-gray-400 dark:text-dark-textSecondary mx-auto mb-4" />
+              <p className="text-gray-500 dark:text-dark-textSecondary">No se encontraron productos</p>
+            </div>
+          )}
+        </div>
         
         {!showDeleted && (
           <div className="border-t border-gray-200 dark:border-dark-border p-4 bg-gray-50 dark:bg-dark-surface">
@@ -660,7 +770,7 @@ const Products = () => {
                   <h4 className="text-sm font-semibold text-gray-700 dark:text-dark-textSecondary mb-4 pb-2 border-b border-gray-200 dark:border-dark-border">
                     Precios e Inventario
                   </h4>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                     <div>
                       <label className="form-label">Costo</label>
                       <input

@@ -161,40 +161,27 @@ const Layout = () => {
       {/* Main content */}
       <div className="flex flex-col w-0 flex-1 overflow-hidden">
         {/* Top header */}
-        <header className="relative z-10 flex-shrink-0 flex h-16 bg-white dark:bg-dark-card border-b border-gray-200 dark:border-dark-border shadow-sm">
-          <button
-            type="button"
-            className="px-4 border-r border-gray-200 dark:border-dark-border text-gray-500 dark:text-dark-text hover:bg-gray-50 dark:hover:bg-dark-hover hover:text-gray-700 dark:hover:text-dark-text focus:outline-none focus:ring-2 focus:ring-inset focus:ring-primary-500 md:hidden transition-colors"
-            onClick={() => setSidebarOpen(true)}
-          >
-            <Menu className="h-6 w-6" />
-          </button>
-          
-          <div className="flex-1 px-4 flex justify-between">
-            <div className="flex-1 flex items-center">
-              <div className="flex items-center space-x-3">
-                <img 
-                  src="/logo.png" 
-                  alt="BARBER DOG" 
-                  className="h-14 w-auto object-contain"
-                />
-                <span className="text-xl font-bold text-brand-burgundy hidden sm:block">BARBER DOG</span>
-              </div>
-              <div className="w-full flex md:ml-4">
-                <div className="relative w-full text-gray-400 focus-within:text-gray-600">
-                  <div className="absolute inset-y-0 left-0 flex items-center pointer-events-none pl-3">
-                    <Search className="h-5 w-5" />
-                  </div>
-                  <input
-                    className="block w-full h-full pl-10 pr-3 py-2.5 border border-gray-300 dark:border-dark-inputBorder bg-white dark:bg-dark-input rounded-lg text-gray-900 dark:text-dark-text placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-brand-burgundy focus:border-brand-burgundy sm:text-sm transition-all duration-200"
-                    placeholder="Buscar..."
-                    type="search"
-                  />
-                </div>
-              </div>
+        <header className="relative z-10 flex-shrink-0 flex flex-col bg-white dark:bg-dark-card border-b border-gray-200 dark:border-dark-border shadow-sm">
+          {/* Header superior - logo, menu, acciones */}
+          <div className="flex h-16 items-center px-4">
+            <button
+              type="button"
+              className="mr-3 border-r border-gray-200 dark:border-dark-border pr-4 text-gray-500 dark:text-dark-text hover:bg-gray-50 dark:hover:bg-dark-hover hover:text-gray-700 dark:hover:text-dark-text focus:outline-none focus:ring-2 focus:ring-inset focus:ring-primary-500 md:hidden transition-colors"
+              onClick={() => setSidebarOpen(true)}
+            >
+              <Menu className="h-6 w-6" />
+            </button>
+            
+            <div className="flex items-center space-x-3 flex-1">
+              <img 
+                src="/logo.png" 
+                alt="BARBER DOG" 
+                className="h-10 w-auto object-contain"
+              />
+              <span className="text-lg font-bold text-brand-burgundy hidden sm:block">BARBER DOG</span>
             </div>
             
-            <div className="ml-4 flex items-center md:ml-6 space-x-3">
+            <div className="flex items-center space-x-2 sm:space-x-3 ml-2">
               {/* Theme toggle */}
               <button
                 onClick={toggleTheme}
@@ -210,12 +197,12 @@ const Layout = () => {
               </button>
 
               {/* User dropdown */}
-              <div className="relative flex items-center space-x-3 pl-3 border-l border-gray-200 dark:border-dark-border">
+              <div className="relative flex items-center space-x-2 pl-3 border-l border-gray-200 dark:border-dark-border">
                 <div className="text-right hidden sm:block">
                   <p className="text-sm font-medium text-gray-900 dark:text-dark-text">{user?.name}</p>
                   <p className="text-xs text-gray-500 dark:text-dark-textSecondary">{user?.email}</p>
                 </div>
-                <div className="h-9 w-9 rounded-full bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center shadow-sm">
+                <div className="h-9 w-9 rounded-full bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center shadow-sm flex-shrink-0">
                   <span className="text-white text-sm font-semibold">
                     {user?.name?.charAt(0).toUpperCase()}
                   </span>
@@ -230,6 +217,34 @@ const Layout = () => {
               >
                 <LogOut className="h-5 w-5" />
               </button>
+            </div>
+          </div>
+
+          {/* Header secundario - búsqueda (solo visible en móvil) */}
+          <div className="px-4 pb-3 md:hidden">
+            <div className="relative w-full text-gray-400 focus-within:text-gray-600">
+              <div className="absolute inset-y-0 left-0 flex items-center pointer-events-none pl-3">
+                <Search className="h-5 w-5" />
+              </div>
+              <input
+                className="block w-full h-full pl-10 pr-3 py-2.5 border border-gray-300 dark:border-dark-inputBorder bg-white dark:bg-dark-input rounded-lg text-gray-900 dark:text-dark-text placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-brand-burgundy focus:border-brand-burgundy sm:text-sm transition-all duration-200"
+                placeholder="Buscar..."
+                type="search"
+              />
+            </div>
+          </div>
+
+          {/* Búsqueda en desktop (mantener en la misma fila) */}
+          <div className="hidden md:flex flex-1 px-4 pb-4">
+            <div className="relative w-full max-w-lg text-gray-400 focus-within:text-gray-600">
+              <div className="absolute inset-y-0 left-0 flex items-center pointer-events-none pl-3">
+                <Search className="h-5 w-5" />
+              </div>
+              <input
+                className="block w-full h-full pl-10 pr-3 py-2.5 border border-gray-300 dark:border-dark-inputBorder bg-white dark:bg-dark-input rounded-lg text-gray-900 dark:text-dark-text placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-brand-burgundy focus:border-brand-burgundy sm:text-sm transition-all duration-200"
+                placeholder="Buscar..."
+                type="search"
+              />
             </div>
           </div>
         </header>

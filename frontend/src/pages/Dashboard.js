@@ -100,26 +100,26 @@ const Dashboard = () => {
   const StatCard = ({ title, value, change, changeType, icon: Icon, color }) => {
     return (
       <div className="card hover:shadow-md transition-shadow duration-200">
-        <div className="card-body p-6">
+        <div className="card-body">
           <div className="flex items-start justify-between">
-            <div className="flex-1">
-              <p className="text-sm font-medium text-gray-600 dark:text-dark-textSecondary mb-1">{title}</p>
-              <p className="text-3xl font-bold text-gray-900 dark:text-dark-text mb-2">{value}</p>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-gray-600 dark:text-dark-textSecondary mb-1 truncate">{title}</p>
+              <p className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-dark-text mb-2">{value}</p>
               {change !== undefined && (
                 <div className={`flex items-center text-sm ${
                   changeType === 'positive' ? 'text-success-600' : 'text-danger-600'
                 }`}>
                   {changeType === 'positive' ? (
-                    <ArrowUp className="h-4 w-4 mr-1" />
+                    <ArrowUp className="h-4 w-4 mr-1 flex-shrink-0" />
                   ) : (
-                    <ArrowDown className="h-4 w-4 mr-1" />
+                    <ArrowDown className="h-4 w-4 mr-1 flex-shrink-0" />
                   )}
-                  {Math.abs(change)}%
+                  <span className="truncate">{Math.abs(change)}%</span>
                 </div>
               )}
             </div>
-            <div className={`p-4 rounded-xl ${color} ml-4 flex-shrink-0`}>
-              <Icon className="h-6 w-6 text-white" />
+            <div className={`p-3 sm:p-4 rounded-xl ${color} ml-3 sm:ml-4 flex-shrink-0`}>
+              <Icon className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
             </div>
           </div>
         </div>
@@ -208,38 +208,38 @@ const Dashboard = () => {
 
       {/* Attention Required Section */}
       <div>
-        <h2 className="text-xl font-semibold text-gray-900 dark:text-dark-text mb-6">Atención requerida</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+        <h2 className="text-xl font-semibold text-gray-900 dark:text-dark-text mb-4 sm:mb-6">Atención requerida</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
         {/* Mascotas - Vacunas Próximas */}
         <div className="card hover:shadow-md transition-shadow duration-200">
           <div 
-className="card-header cursor-pointer hover:bg-gray-50 dark:hover:bg-dark-hover transition-colors p-5"
+className="card-header cursor-pointer hover:bg-gray-50 dark:hover:bg-dark-hover transition-colors px-4 py-3 sm:px-5 sm:py-4"
             onClick={() => setExpandedSection(expandedSection === 'pets' ? null : 'pets')}
           >
             <div className="flex items-center justify-between">
-              <div className="flex items-center">
-                <div className="p-3 rounded-xl bg-brand-cream text-brand-burgundy mr-4">
-                  <Dog className="h-5 w-5" />
+              <div className="flex items-center min-w-0 flex-1 pr-3">
+                <div className="p-2 sm:p-3 rounded-xl bg-brand-cream text-brand-burgundy mr-3 sm:mr-4 flex-shrink-0">
+                  <Dog className="h-4 w-4 sm:h-5 sm:w-5" />
                 </div>
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-dark-text">Mascotas</h3>
-                  <p className="text-sm text-gray-600 dark:text-dark-textSecondary">Vacunas próximas</p>
+                <div className="min-w-0">
+                  <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-dark-text truncate">Mascotas</h3>
+                  <p className="text-xs sm:text-sm text-gray-600 dark:text-dark-textSecondary">Vacunas próximas</p>
                 </div>
               </div>
-              <div className="flex items-center">
-                <span className="text-3xl font-bold text-gray-900 dark:text-dark-text mr-3">
+              <div className="flex items-center flex-shrink-0">
+                <span className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-dark-text mr-2 sm:mr-3">
                   {remindersData?.counts?.vaccines || 0}
                 </span>
                 {expandedSection === 'pets' ? (
-                  <ChevronUp className="h-5 w-5 text-gray-400 dark:text-dark-textSecondary" />
+                  <ChevronUp className="h-4 w-4 sm:h-5 sm:w-5 text-gray-400 dark:text-dark-textSecondary" />
                 ) : (
-                  <ChevronDown className="h-5 w-5 text-gray-400 dark:text-dark-textSecondary" />
+                  <ChevronDown className="h-4 w-4 sm:h-5 sm:w-5 text-gray-400 dark:text-dark-textSecondary" />
                 )}
               </div>
             </div>
           </div>
           {expandedSection === 'pets' && (
-            <div className="card-body border-t border-gray-200 p-5">
+            <div className="card-body border-t border-gray-200 px-4 py-3 sm:px-5 sm:py-4">
               {remindersData?.vaccines?.length > 0 ? (
                 <div className="space-y-3">
                   {remindersData.vaccines.map((vaccine) => (
@@ -280,33 +280,33 @@ className="card-header cursor-pointer hover:bg-gray-50 dark:hover:bg-dark-hover 
         {/* Cuentas por Pagar */}
         <div className="card hover:shadow-md transition-shadow duration-200">
           <div 
-className="card-header cursor-pointer hover:bg-gray-50 dark:hover:bg-dark-hover transition-colors p-5"
+className="card-header cursor-pointer hover:bg-gray-50 dark:hover:bg-dark-hover transition-colors px-4 py-3 sm:px-5 sm:py-4"
             onClick={() => setExpandedSection(expandedSection === 'accounts' ? null : 'accounts')}
           >
             <div className="flex items-center justify-between">
-              <div className="flex items-center">
-                <div className="p-3 rounded-xl bg-success-100 text-success-600 mr-4">
-                  <DollarSign className="h-5 w-5" />
+              <div className="flex items-center min-w-0 flex-1 pr-3">
+                <div className="p-2 sm:p-3 rounded-xl bg-success-100 text-success-600 mr-3 sm:mr-4 flex-shrink-0">
+                  <DollarSign className="h-4 w-4 sm:h-5 sm:w-5" />
                 </div>
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-dark-text">Cuentas por Pagar</h3>
-                  <p className="text-sm text-gray-600 dark:text-dark-textSecondary">Pagos pendientes</p>
+                <div className="min-w-0">
+                  <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-dark-text truncate">Cuentas por Pagar</h3>
+                  <p className="text-xs sm:text-sm text-gray-600 dark:text-dark-textSecondary">Pagos pendientes</p>
                 </div>
               </div>
-              <div className="flex items-center">
-                <span className="text-3xl font-bold text-gray-900 dark:text-dark-text mr-3">
+              <div className="flex items-center flex-shrink-0">
+                <span className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-dark-text mr-2 sm:mr-3">
                   {remindersData?.counts?.accounts || 0}
                 </span>
                 {expandedSection === 'accounts' ? (
-                  <ChevronUp className="h-5 w-5 text-gray-400 dark:text-dark-textSecondary" />
+                  <ChevronUp className="h-4 w-4 sm:h-5 sm:w-5 text-gray-400 dark:text-dark-textSecondary" />
                 ) : (
-                  <ChevronDown className="h-5 w-5 text-gray-400 dark:text-dark-textSecondary" />
+                  <ChevronDown className="h-4 w-4 sm:h-5 sm:w-5 text-gray-400 dark:text-dark-textSecondary" />
                 )}
               </div>
             </div>
           </div>
           {expandedSection === 'accounts' && (
-            <div className="card-body border-t border-gray-200 p-5">
+            <div className="card-body border-t border-gray-200 px-4 py-3 sm:px-5 sm:py-4">
               {remindersData?.accounts?.length > 0 ? (
                 <div className="space-y-3">
                   {remindersData.accounts.map((account) => (
@@ -348,33 +348,33 @@ className="card-header cursor-pointer hover:bg-gray-50 dark:hover:bg-dark-hover 
         {/* Productos - Stock Bajo */}
         <div className="card hover:shadow-md transition-shadow duration-200">
           <div 
-className="card-header cursor-pointer hover:bg-gray-50 dark:hover:bg-dark-hover transition-colors p-5"
+className="card-header cursor-pointer hover:bg-gray-50 dark:hover:bg-dark-hover transition-colors px-4 py-3 sm:px-5 sm:py-4"
             onClick={() => setExpandedSection(expandedSection === 'products' ? null : 'products')}
           >
             <div className="flex items-center justify-between">
-              <div className="flex items-center">
-                <div className="p-3 rounded-xl bg-warning-100 text-warning-600 mr-4">
-                  <Package className="h-5 w-5" />
+              <div className="flex items-center min-w-0 flex-1 pr-3">
+                <div className="p-2 sm:p-3 rounded-xl bg-warning-100 text-warning-600 mr-3 sm:mr-4 flex-shrink-0">
+                  <Package className="h-4 w-4 sm:h-5 sm:w-5" />
                 </div>
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-dark-text">Productos</h3>
-                  <p className="text-sm text-gray-600 dark:text-dark-textSecondary">Stock bajo</p>
+                <div className="min-w-0">
+                  <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-dark-text truncate">Productos</h3>
+                  <p className="text-xs sm:text-sm text-gray-600 dark:text-dark-textSecondary">Stock bajo</p>
                 </div>
               </div>
-              <div className="flex items-center">
-                <span className="text-3xl font-bold text-gray-900 dark:text-dark-text mr-3">
+              <div className="flex items-center flex-shrink-0">
+                <span className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-dark-text mr-2 sm:mr-3">
                   {remindersData?.counts?.lowStockProducts || 0}
                 </span>
                 {expandedSection === 'products' ? (
-                  <ChevronUp className="h-5 w-5 text-gray-400 dark:text-dark-textSecondary" />
+                  <ChevronUp className="h-4 w-4 sm:h-5 sm:w-5 text-gray-400 dark:text-dark-textSecondary" />
                 ) : (
-                  <ChevronDown className="h-5 w-5 text-gray-400 dark:text-dark-textSecondary" />
+                  <ChevronDown className="h-4 w-4 sm:h-5 sm:w-5 text-gray-400 dark:text-dark-textSecondary" />
                 )}
               </div>
             </div>
           </div>
           {expandedSection === 'products' && (
-            <div className="card-body border-t border-gray-200 p-5">
+            <div className="card-body border-t border-gray-200 px-4 py-3 sm:px-5 sm:py-4">
               {remindersData?.lowStockProducts?.length > 0 ? (
                 <div className="space-y-3">
                   {remindersData.lowStockProducts.map((product) => (
@@ -410,33 +410,33 @@ className="card-header cursor-pointer hover:bg-gray-50 dark:hover:bg-dark-hover 
         {/* Productos - Por Caducar */}
         <div className="card hover:shadow-md transition-shadow duration-200">
           <div 
-className="card-header cursor-pointer hover:bg-gray-50 dark:hover:bg-dark-hover transition-colors p-5"
+className="card-header cursor-pointer hover:bg-gray-50 dark:hover:bg-dark-hover transition-colors px-4 py-3 sm:px-5 sm:py-4"
             onClick={() => setExpandedSection(expandedSection === 'expiring' ? null : 'expiring')}
           >
             <div className="flex items-center justify-between">
-              <div className="flex items-center">
-                <div className="p-3 rounded-xl bg-orange-100 text-orange-600 mr-4">
-                  <Package className="h-5 w-5" />
+              <div className="flex items-center min-w-0 flex-1 pr-3">
+                <div className="p-2 sm:p-3 rounded-xl bg-orange-100 text-orange-600 mr-3 sm:mr-4 flex-shrink-0">
+                  <Package className="h-4 w-4 sm:h-5 sm:w-5" />
                 </div>
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-dark-text">Productos</h3>
-                  <p className="text-sm text-gray-600 dark:text-dark-textSecondary">Por caducar</p>
+                <div className="min-w-0">
+                  <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-dark-text truncate">Productos</h3>
+                  <p className="text-xs sm:text-sm text-gray-600 dark:text-dark-textSecondary">Por caducar</p>
                 </div>
               </div>
-              <div className="flex items-center">
-                <span className="text-3xl font-bold text-gray-900 dark:text-dark-text mr-3">
+              <div className="flex items-center flex-shrink-0">
+                <span className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-dark-text mr-2 sm:mr-3">
                   {remindersData?.expiringProducts?.length || 0}
                 </span>
                 {expandedSection === 'expiring' ? (
-                  <ChevronUp className="h-5 w-5 text-gray-400 dark:text-dark-textSecondary" />
+                  <ChevronUp className="h-4 w-4 sm:h-5 sm:w-5 text-gray-400 dark:text-dark-textSecondary" />
                 ) : (
-                  <ChevronDown className="h-5 w-5 text-gray-400 dark:text-dark-textSecondary" />
+                  <ChevronDown className="h-4 w-4 sm:h-5 sm:w-5 text-gray-400 dark:text-dark-textSecondary" />
                 )}
               </div>
             </div>
           </div>
           {expandedSection === 'expiring' && (
-            <div className="card-body border-t border-gray-200 p-5">
+            <div className="card-body border-t border-gray-200 px-4 py-3 sm:px-5 sm:py-4">
               {remindersData?.expiringProducts?.length > 0 ? (
                 <div className="space-y-3">
                   {remindersData.expiringProducts
