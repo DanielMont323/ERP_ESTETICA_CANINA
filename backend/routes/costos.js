@@ -6,13 +6,30 @@ const router = express.Router();
 // @desc    Obtener todos los costos
 router.get('/', async (req, res) => {
   try {
-    const { type, category, frequency, active, page = 1, limit = 10 } = req.query;
+    const { type, category, frequency, active, page = 1, limit = 10, startDate, endDate } = req.query;
     let query = {};
 
     if (type) query.type = type;
     if (category) query.category = category;
     if (frequency) query.frequency = frequency;
     if (active !== undefined) query.isActive = active === 'true';
+
+    // Filtro por rango de fechas
+    if (startDate || endDate) {
+      query.date = {};
+      if (startDate) {
+        // Inicio del día en zona horaria local (Tepic, Nayarit)
+        const start = new Date(startDate);
+        start.setHours(0, 0, 0, 0);
+        query.date.$gte = start;
+      }
+      if (endDate) {
+        // Fin del día en zona horaria local (23:59:59.999)
+        const end = new Date(endDate);
+        end.setHours(23, 59, 59, 999);
+        query.date.$lte = end;
+      }
+    }
 
     const costos = await Costo.find(query)
       .populate('user', 'name')

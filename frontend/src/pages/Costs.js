@@ -15,6 +15,10 @@ const Costs = () => {
   const [costs, setCosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [dateRange, setDateRange] = useState({
+    startDate: '',
+    endDate: ''
+  });
   const [pagination, setPagination] = useState({
     page: 1,
     limit: 10,
@@ -44,6 +48,15 @@ const Costs = () => {
         page: pagination.page,
         limit: pagination.limit
       };
+      
+      // Agregar filtros de fecha si existen
+      if (dateRange.startDate) {
+        params.startDate = dateRange.startDate;
+      }
+      if (dateRange.endDate) {
+        params.endDate = dateRange.endDate;
+      }
+      
       const response = await costsAPI.getAll(params);
       setCosts(response.data.data);
       setPagination(response.data.pagination || pagination);
@@ -52,6 +65,17 @@ const Costs = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleFilterByDate = () => {
+    setPagination({ ...pagination, page: 1 });
+    fetchCosts();
+  };
+
+  const handleClearFilters = () => {
+    setDateRange({ startDate: '', endDate: '' });
+    setPagination({ ...pagination, page: 1 });
+    fetchCosts();
   };
 
   const formatCurrency = (amount) => {
@@ -153,6 +177,39 @@ const Costs = () => {
         </div>
       </div>
 
+      {/* Date Filters */}
+      <div className="card">
+        <div className="flex flex-col sm:flex-row gap-4 items-end">
+          <div className="flex-1">
+            <label className="form-label">Desde</label>
+            <input
+              type="date"
+              value={dateRange.startDate}
+              onChange={(e) => setDateRange({ ...dateRange, startDate: e.target.value })}
+              className="form-input"
+            />
+          </div>
+          <div className="flex-1">
+            <label className="form-label">Hasta</label>
+            <input
+              type="date"
+              value={dateRange.endDate}
+              onChange={(e) => setDateRange({ ...dateRange, endDate: e.target.value })}
+              min={dateRange.startDate}
+              className="form-input"
+            />
+          </div>
+          <div className="flex gap-2">
+            <button onClick={handleFilterByDate} className="btn btn-primary btn-md">
+              Filtrar
+            </button>
+            <button onClick={handleClearFilters} className="btn btn-secondary btn-md">
+              Limpiar
+            </button>
+          </div>
+        </div>
+      </div>
+
       {/* Costs Table */}
       <div className="card">
         <div className="table-container">
@@ -172,48 +229,61 @@ const Costs = () => {
               {costs.filter(cost =>
                 cost.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 cost.category?.toLowerCase().includes(searchTerm.toLowerCase())
-              ).map((cost, index) => (
-                <tr key={cost._id} className={`table-row-divider ${index % 2 === 0 ? 'bg-white dark:bg-dark-card' : 'bg-gray-50 dark:bg-dark-surface'} hover:bg-yellow-100`}>
-                  <td className="py-4 font-medium">{cost.description}</td>
-                  <td className="py-4">
-                    <span className="capitalize badge badge-info">
-                      {cost.category}
-                    </span>
-                  </td>
-                  <td className="py-4">
-                    <span className={`capitalize badge badge-${
-                      cost.type === 'fijo' ? 'success' : 'warning'
-                    }`}>
-                      {cost.type}
-                    </span>
-                  </td>
-                  <td className="py-4 text-right font-medium">
-                    {formatCurrency(cost.amount)}
-                  </td>
-                  <td className="py-4">
-                    {new Date(cost.date).toLocaleDateString('es-MX')}
-                  </td>
-                  <td className="py-4">
-                    <span className="capitalize">{cost.frequency}</span>
-                  </td>
-                  <td className="py-4">
-                    <div className="flex items-center space-x-2">
-                      <button 
-                        onClick={() => handleEditCost(cost)}
-                        className="text-brand-burgundy hover:text-primary-900"
-                      >
-                        <Edit className="h-4 w-4" />
-                      </button>
-                      <button 
-                        onClick={() => handleDeleteCost(cost._id)}
-                        className="text-danger-600 hover:text-danger-900"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    </div>
+              ).length === 0 ? (
+                <tr>
+                  <td colSpan="7" className="py-8 text-center text-gray-500 dark:text-dark-textSecondary">
+                    {dateRange.startDate || dateRange.endDate 
+                      ? 'No hay costos registrados en el periodo seleccionado' 
+                      : 'No hay costos registrados'}
                   </td>
                 </tr>
-              ))}
+              ) : (
+                costs.filter(cost =>
+                  cost.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                  cost.category?.toLowerCase().includes(searchTerm.toLowerCase())
+                ).map((cost, index) => (
+                  <tr key={cost._id} className={`table-row-divider ${index % 2 === 0 ? 'bg-white dark:bg-dark-card' : 'bg-gray-50 dark:bg-dark-surface'} hover:bg-yellow-100`}>
+                    <td className="py-4 font-medium">{cost.description}</td>
+                    <td className="py-4">
+                      <span className="capitalize badge badge-info">
+                        {cost.category}
+                      </span>
+                    </td>
+                    <td className="py-4">
+                      <span className={`capitalize badge badge-${
+                        cost.type === 'fijo' ? 'success' : 'warning'
+                      }`}>
+                        {cost.type}
+                      </span>
+                    </td>
+                    <td className="py-4 text-right font-medium">
+                      {formatCurrency(cost.amount)}
+                    </td>
+                    <td className="py-4">
+                      {new Date(cost.date).toLocaleDateString('es-MX')}
+                    </td>
+                    <td className="py-4">
+                      <span className="capitalize">{cost.frequency}</span>
+                    </td>
+                    <td className="py-4">
+                      <div className="flex items-center space-x-2">
+                        <button 
+                          onClick={() => handleEditCost(cost)}
+                          className="text-brand-burgundy hover:text-primary-900"
+                        >
+                          <Edit className="h-4 w-4" />
+                        </button>
+                        <button 
+                          onClick={() => handleDeleteCost(cost._id)}
+                          className="text-danger-600 hover:text-danger-900"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
           
