@@ -145,6 +145,24 @@ const Sales = () => {
     }
   };
 
+  // Función helper para calcular próxima dosis (igual que backend)
+  const calculateNextDoseDate = (dias, fechaBase = null) => {
+    if (!dias || dias <= 0) return null;
+    const baseDate = fechaBase ? new Date(fechaBase) : new Date();
+    const nextDate = new Date(baseDate);
+    nextDate.setDate(nextDate.getDate() + parseInt(dias));
+    return nextDate;
+  };
+
+  // Formatear fecha a DD/MM/AAAA
+  const formatDateDDMMYYYY = (date) => {
+    if (!date) return '';
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = date.getFullYear();
+    return `${day}/${month}/${year}`;
+  };
+
   // Atajo ESC para cerrar modales
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -1893,7 +1911,15 @@ const Sales = () => {
                                       className="form-input text-sm py-1"
                                       placeholder="Ej: 30"
                                     />
-                                    <p className="text-xs text-gray-500 dark:text-dark-textSecondary mt-1">El sistema calculará la fecha automáticamente</p>
+                                    {item.diasProximaDosis && parseInt(item.diasProximaDosis) > 0 ? (
+                                      <p className="text-xs font-semibold text-brand-burgundy dark:text-brand-burgundy mt-1">
+                                        Próxima dosis: {formatDateDDMMYYYY(calculateNextDoseDate(item.diasProximaDosis, saleDate))}
+                                      </p>
+                                    ) : (
+                                      <p className="text-xs text-gray-500 dark:text-dark-textSecondary mt-1">
+                                        Ingresa los días para calcular la próxima dosis
+                                      </p>
+                                    )}
                                   </div>
                                 )}
                               </div>
