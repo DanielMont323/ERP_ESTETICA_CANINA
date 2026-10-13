@@ -16,15 +16,29 @@ router.get('/', authenticateToken, async (req, res) => {
       .populate('propietario', 'name phone email')
       .sort({ nombreMascota: 1 });
 
-    // Populate manual de vacunas para manejar ObjectId y String
+    // Optimización: recolectar todos los IDs de vacunas y hacer una sola consulta
+    const vaccineIds = new Set();
     for (const carnet of carnets) {
       for (const vacuna of carnet.vacunas) {
         if (vacuna.vacuna && mongoose.Types.ObjectId.isValid(vacuna.vacuna)) {
-          // Si es ObjectId, populate
-          const vacunaDoc = await Vacuna.findById(vacuna.vacuna).select('name description');
-          vacuna.vacuna = vacunaDoc;
+          vaccineIds.add(vacuna.vacuna);
         }
-        // Si es String, mantener como está (histórico)
+      }
+    }
+
+    // Una sola consulta para todas las vacunas
+    const vaccinesMap = new Map();
+    if (vaccineIds.size > 0) {
+      const vaccines = await Vacuna.find({ _id: { $in: Array.from(vaccineIds) } }).select('name description');
+      vaccines.forEach(v => vaccinesMap.set(v._id.toString(), v));
+    }
+
+    // Mapear vacunas usando el mapa
+    for (const carnet of carnets) {
+      for (const vacuna of carnet.vacunas) {
+        if (vacuna.vacuna && mongoose.Types.ObjectId.isValid(vacuna.vacuna)) {
+          vacuna.vacuna = vaccinesMap.get(vacuna.vacuna.toString()) || vacuna.vacuna;
+        }
       }
     }
 

@@ -443,9 +443,28 @@ const Sales = () => {
       : Number(item.price);
 
     if (existingItem) {
+      const newQuantity = existingItem.quantity + 1;
+      const newSubtotalBeforeDiscount = newQuantity * existingItem.unitPrice;
+      
+      // Recalcular descuento basado en el nuevo subtotal (misma lógica que updateQuantity)
+      let newDiscountAmount = 0;
+      if (existingItem.discountType === 'porcentaje') {
+        newDiscountAmount = Math.round((newSubtotalBeforeDiscount * (existingItem.discountValue / 100)) * 100) / 100;
+      } else if (existingItem.discountType === 'monto') {
+        newDiscountAmount = Math.round(Math.min(existingItem.discountValue, newSubtotalBeforeDiscount) * 100) / 100;
+      }
+      
+      const newSubtotalAfterDiscount = Math.round((newSubtotalBeforeDiscount - newDiscountAmount) * 100) / 100;
+
       setCart(cart.map(cartItem =>
         cartItem.item === item._id && cartItem.type === type
-          ? { ...cartItem, quantity: cartItem.quantity + 1 }
+          ? {
+              ...cartItem,
+              quantity: newQuantity,
+              subtotalBeforeDiscount: Math.round(newSubtotalBeforeDiscount * 100) / 100,
+              discountAmount: newDiscountAmount,
+              subtotalAfterDiscount: newSubtotalAfterDiscount
+            }
           : cartItem
       ));
     } else {
@@ -640,9 +659,28 @@ const Sales = () => {
     );
 
     if (existingItem) {
+      const newQuantity = existingItem.quantity + 1;
+      const newSubtotalBeforeDiscount = newQuantity * existingItem.unitPrice;
+      
+      // Recalcular descuento basado en el nuevo subtotal
+      let newDiscountAmount = 0;
+      if (existingItem.discountType === 'porcentaje') {
+        newDiscountAmount = Math.round((newSubtotalBeforeDiscount * (existingItem.discountValue / 100)) * 100) / 100;
+      } else if (existingItem.discountType === 'monto') {
+        newDiscountAmount = Math.round(Math.min(existingItem.discountValue, newSubtotalBeforeDiscount) * 100) / 100;
+      }
+      
+      const newSubtotalAfterDiscount = Math.round((newSubtotalBeforeDiscount - newDiscountAmount) * 100) / 100;
+
       setEditCart(editCart.map(cartItem =>
         cartItem.item === item._id && cartItem.type === type
-          ? { ...cartItem, quantity: cartItem.quantity + 1 }
+          ? {
+              ...cartItem,
+              quantity: newQuantity,
+              subtotalBeforeDiscount: Math.round(newSubtotalBeforeDiscount * 100) / 100,
+              discountAmount: newDiscountAmount,
+              subtotalAfterDiscount: newSubtotalAfterDiscount
+            }
           : cartItem
       ));
     } else {
@@ -651,7 +689,12 @@ const Sales = () => {
         type,
         quantity: 1,
         unitPrice: item.price,
-        name: item.name
+        name: item.name,
+        discountType: 'ninguno',
+        discountValue: 0,
+        discountAmount: 0,
+        subtotalBeforeDiscount: item.price,
+        subtotalAfterDiscount: item.price
       }]);
     }
   };

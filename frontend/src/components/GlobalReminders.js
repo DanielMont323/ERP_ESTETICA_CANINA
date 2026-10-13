@@ -8,7 +8,7 @@ const GlobalReminders = () => {
   const navigate = useNavigate();
   const [reminders, setReminders] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [isMinimized, setIsMinimized] = useState(false);
+  const [isMinimized, setIsMinimized] = useState(true);
   const [isCompactMode, setIsCompactMode] = useState(false);
   const [totalCount, setTotalCount] = useState(0);
 
@@ -130,7 +130,7 @@ const GlobalReminders = () => {
   };
 
   return (
-    <div className="fixed top-20 right-4 z-30 w-80 max-w-[calc(100vw-2rem)]">
+    <div className="fixed top-4 right-4 md:top-16 md:right-4 z-30 w-80 max-w-[calc(100vw-2rem)]">
       {/* Compact Mode - Mobile Only */}
       {isCompactMode ? (
         <button

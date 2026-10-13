@@ -12,7 +12,9 @@ import {
   Plus,
   X,
   TrendingDown,
-  Edit
+  Edit,
+  PlusCircle,
+  MinusCircle
 } from 'lucide-react';
 
 const Purchases = () => {
@@ -655,7 +657,73 @@ const Purchases = () => {
 
       {/* Purchases Table */}
       <div className="card hover:shadow-md transition-shadow duration-200 flex flex-col max-h-[calc(100vh-320px)]">
-        <div className="table-container flex-1 overflow-auto">
+        {/* Mobile: Cards View */}
+        <div className="block sm:hidden flex-1 overflow-auto p-4 space-y-3">
+          {filteredPurchases.map((purchase, index) => (
+            <div key={purchase._id} className="border border-gray-200 dark:border-dark-border rounded-lg p-3 bg-white dark:bg-dark-card space-y-2">
+              <div className="flex justify-between items-start">
+                <div className="flex-1">
+                  <p className="font-medium text-gray-900 dark:text-dark-text text-sm">
+                    {purchase.proveedor?.name || 'Sin proveedor'}
+                  </p>
+                  <p className="text-xs text-gray-500 dark:text-dark-textSecondary">
+                    {formatCalendarDate(purchase.date)}
+                  </p>
+                </div>
+                <div className="flex space-x-2">
+                  {user?.role === 'admin' && (
+                    <button
+                      onClick={() => handleEditClick(purchase)}
+                      disabled={purchase.status === 'cancelada'}
+                      className="text-blue-600 hover:text-blue-800 disabled:text-gray-400"
+                    >
+                      <Edit className="h-4 w-4" />
+                    </button>
+                  )}
+                  {user?.role === 'admin' && purchase.status !== 'cancelada' && (
+                    <button
+                      onClick={() => handleCancelPurchase(purchase._id)}
+                      className="text-red-600 hover:text-red-800"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  )}
+                </div>
+              </div>
+              
+              <div className="text-sm">
+                {purchase.items?.map((item, idx) => (
+                  <div key={idx} className="text-gray-600 dark:text-dark-textSecondary">
+                    <span className="truncate block">{item.productName || item.product?.name || 'Producto no disponible'}</span> x {item.quantity}
+                  </div>
+                ))}
+              </div>
+              
+              <div className="flex justify-between items-center text-sm">
+                <div className="flex space-x-3">
+                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                    purchase.type === 'contado' ? 'bg-blue-100 text-blue-800' : 'bg-yellow-100 text-yellow-800'
+                  }`}>
+                    {purchase.type}
+                  </span>
+                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                    purchase.status === 'pagada' ? 'bg-green-100 text-green-800' : 
+                    purchase.status === 'pendiente' ? 'bg-yellow-100 text-yellow-800' : 
+                    purchase.status === 'cancelada' ? 'bg-red-100 text-red-800' : 'bg-red-100 text-red-800'
+                  }`}>
+                    {purchase.status}
+                  </span>
+                </div>
+                <div className="font-bold text-gray-900 dark:text-dark-text">
+                  {formatCurrency(purchase.total)}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Desktop: Table View */}
+        <div className="hidden sm:block table-container flex-1 overflow-auto">
           <table className="table table-fixed w-full">
             <thead className="sticky top-0 bg-gray-50 dark:bg-dark-surface z-10">
               <tr>
@@ -758,9 +826,9 @@ const Purchases = () => {
           
           <div className="relative modal-content max-w-4xl w-full max-h-[90vh] flex flex-col animate-slide-up">
             {/* Header Sticky */}
-            <div className="sticky top-0 bg-white dark:bg-dark-card z-10 p-6 border-b border-gray-200 dark:border-dark-border rounded-t-xl">
+            <div className="sticky top-0 bg-white dark:bg-dark-card z-10 p-4 sm:p-6 border-b border-gray-200 dark:border-dark-border rounded-t-xl">
               <div className="flex justify-between items-center">
-                <h2 className="text-xl font-semibold text-gray-900 dark:text-dark-text">
+                <h2 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-dark-text">
                   {isEditMode ? 'Editar Compra' : 'Nueva Compra'}
                 </h2>
                 <button onClick={() => {
@@ -775,7 +843,7 @@ const Purchases = () => {
             </div>
 
             {/* Contenido Scrolleable */}
-            <div className="flex-1 overflow-y-auto p-4 sm:p-6">
+            <div className="flex-1 overflow-y-auto p-3 sm:p-6">
               <form ref={formRef} onSubmit={handleSubmit}>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
                   <div>
@@ -895,8 +963,8 @@ const Purchases = () => {
                     )}
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
-                    <div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-4">
+                    <div className="sm:col-span-2 lg:col-span-1">
                       <label className="form-label">Producto</label>
                       <Autocomplete
                         placeholder="Buscar producto..."
@@ -969,11 +1037,11 @@ const Purchases = () => {
                         </div>
                       )}
                     </div>
-                    <div className="flex items-end">
+                    <div className="sm:col-span-2 lg:col-span-4 flex items-end">
                       <button
                         type="button"
                         onClick={handleAddItem}
-                        className="btn btn-primary btn-md w-full"
+                        className="btn btn-primary btn-md w-full sm:w-auto"
                       >
                         Agregar
                       </button>
@@ -999,8 +1067,79 @@ const Purchases = () => {
 
                   {/* Items List */}
                   {formData.items.length > 0 && (
-                    <div className="border border-gray-200 dark:border-dark-border rounded-xl p-3 bg-white dark:bg-dark-card">
-                      <table className="w-full text-sm">
+                    <div className="block sm:hidden space-y-3">
+                      {formData.items.map((item, index) => (
+                        <div key={index} className="space-y-2">
+                          <div className="flex items-center justify-between">
+                            <div className="flex-1">
+                              <p className="font-medium text-gray-900 dark:text-dark-text text-sm">
+                                {item.productName || 'Producto no disponible'}
+                              </p>
+                              <p className="text-sm text-gray-500 dark:text-dark-textSecondary">
+                                {formatCurrency(item.unitCost)} c/u
+                              </p>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveItem(index)}
+                              className="text-danger-600 hover:text-danger-900 ml-2 flex-shrink-0"
+                            >
+                              <X className="h-4 w-4" />
+                            </button>
+                          </div>
+                          
+                          <div className="flex items-center space-x-2">
+                            <button
+                              type="button"
+                              onClick={() => handleItemQuantityChange(index, item.quantity - 1)}
+                              className="text-gray-400 dark:text-dark-textSecondary hover:text-gray-600"
+                            >
+                              <MinusCircle className="h-4 w-4" />
+                            </button>
+                            <input
+                              type="number"
+                              min="1"
+                              value={item.quantity}
+                              onChange={(e) => handleItemQuantityChange(index, e.target.value)}
+                              className="form-input w-16 text-center text-sm py-1"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => handleItemQuantityChange(index, item.quantity + 1)}
+                              className="text-gray-400 dark:text-dark-textSecondary hover:text-gray-600"
+                            >
+                              <PlusCircle className="h-4 w-4" />
+                            </button>
+                          </div>
+                          
+                          <div className="flex justify-between items-center text-sm pl-2">
+                            <div>
+                              <span className="text-gray-600 dark:text-dark-textSecondary">IVA: </span>
+                              {!item.hasTax ? (
+                                <span className="text-gray-500 dark:text-dark-textSecondary">Sin IVA</span>
+                              ) : item.costIncludesTax ? (
+                                <span className="text-brand-burgundy font-medium">
+                                  {((item.taxRate || 0.16) * 100).toFixed(0)}% incluido
+                                </span>
+                              ) : (
+                                <span className="text-gray-700 dark:text-dark-textSecondary">
+                                  {((item.taxRate || 0.16) * 100).toFixed(0)}%
+                                </span>
+                              )}
+                            </div>
+                            <div className="font-semibold text-gray-900 dark:text-dark-text">
+                              {formatCurrency(item.quantity * item.unitCost)}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Desktop: Table View */}
+                  {formData.items.length > 0 && (
+                    <div className="hidden sm:block border border-gray-200 dark:border-dark-border rounded-xl p-3 bg-white dark:bg-dark-card overflow-x-auto -mx-3 px-3">
+                      <table className="w-full text-sm min-w-[500px]">
                         <thead>
                           <tr>
                             <th className="text-left py-2">Producto</th>
@@ -1122,7 +1261,7 @@ const Purchases = () => {
                   )}
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mb-4">
                   <div>
                     <label className="form-label">Método de pago</label>
                     <select
@@ -1160,8 +1299,8 @@ const Purchases = () => {
             </div>
             
             {/* Footer Sticky */}
-            <div className="sticky bottom-0 bg-white dark:bg-dark-card p-6 border-t border-gray-200 dark:border-dark-border rounded-b-xl">
-              <div className="flex justify-end space-x-2">
+            <div className="sticky bottom-0 bg-white dark:bg-dark-card p-4 sm:p-6 border-t border-gray-200 dark:border-dark-border rounded-b-xl">
+              <div className="flex flex-col sm:flex-row justify-end gap-2 sm:space-x-2 sm:gap-0">
                 <button
                   type="button"
                   onClick={() => {
@@ -1169,7 +1308,7 @@ const Purchases = () => {
                     setProductSearchQuery('');
                     setSearchResults([]);
                   }}
-                  className="btn btn-secondary btn-md"
+                  className="btn btn-secondary btn-md w-full sm:w-auto"
                 >
                   Cancelar
                 </button>
@@ -1179,9 +1318,9 @@ const Purchases = () => {
                     e.preventDefault();
                     formRef.current?.requestSubmit();
                   }}
-                  className="btn btn-primary btn-md"
+                  className="btn btn-primary btn-md w-full sm:w-auto"
                 >
-                  Crear Compra
+                  {isEditMode ? 'Actualizar Compra' : 'Crear Compra'}
                 </button>
               </div>
             </div>

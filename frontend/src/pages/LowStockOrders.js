@@ -575,72 +575,137 @@ const LowStockOrders = () => {
               <p>No hay productos con bajo stock</p>
             </div>
           ) : (
-            <div className="table-container max-h-[500px] overflow-y-auto">
-              <table className="table-responsive">
-                <thead className="sticky top-0 bg-white dark:bg-dark-card z-10">
-                  <tr>
-                    <th className="w-10 px-4 py-3"></th>
-                    <th className="min-w-[200px] px-4 py-3">Producto</th>
-                    <th className="min-w-[120px] px-4 py-3">SKU</th>
-                    <th className="min-w-[150px] px-4 py-3">Proveedor</th>
-                    <th className="min-w-[80px] px-4 py-3 text-center">Stock actual</th>
-                    <th className="min-w-[80px] px-4 py-3 text-center">Stock mínimo</th>
-                    <th className="min-w-[80px] px-4 py-3 text-center">Stock ideal</th>
-                    <th className="min-w-[60px] px-4 py-3 text-center">Unidad</th>
-                    <th className="min-w-[80px] px-4 py-3 text-center">Cantidad a pedir</th>
-                    <th className="min-w-[40px] px-4 py-3"></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {products.map(product => (
-                    <tr key={product._id}>
-                      <td className="px-4 py-3">
-                        <input
-                          type="checkbox"
-                          checked={selectedProducts[product._id] || false}
-                          onChange={() => handleProductSelect(product._id)}
-                          className="h-4 w-4 text-brand-burgundy focus:ring-brand-burgundy border-gray-300 rounded"
-                        />
-                      </td>
-                      <td className="px-4 py-3 font-medium text-gray-900 dark:text-dark-text">{product.name}</td>
-                      <td className="px-4 py-3 text-gray-600 dark:text-dark-textSecondary">{product.sku}</td>
-                      <td className="px-4 py-3">
-                        {product.supplier ? (
-                          <span className="text-sm text-gray-600 dark:text-dark-textSecondary">
-                            {product.supplier.name}
-                          </span>
-                        ) : (
-                          <span className="text-sm text-warning-600">Sin proveedor</span>
-                        )}
-                      </td>
-                      <td className="px-4 py-3 text-center text-brand-burgundy font-semibold">{product.stock}</td>
-                      <td className="px-4 py-3 text-center text-gray-600 dark:text-dark-textSecondary">{product.minStock}</td>
-                      <td className="px-4 py-3 text-center text-gray-600 dark:text-dark-textSecondary">{product.idealStock || '-'}</td>
-                      <td className="px-4 py-3 text-center text-gray-600 dark:text-dark-textSecondary">{product.unit}</td>
-                      <td className="px-4 py-3 text-center">
+            <>
+              {/* Mobile: Cards View */}
+              <div className="block sm:hidden space-y-3">
+                {products.map(product => (
+                  <div key={product._id} className="border border-gray-200 dark:border-dark-border rounded-lg p-3 bg-white dark:bg-dark-card space-y-2">
+                    <div className="flex items-start space-x-3">
+                      <input
+                        type="checkbox"
+                        checked={selectedProducts[product._id] || false}
+                        onChange={() => handleProductSelect(product._id)}
+                        className="h-4 w-4 text-brand-burgundy focus:ring-brand-burgundy border-gray-300 rounded mt-1 flex-shrink-0"
+                      />
+                      <div className="flex-1">
+                        <p className="font-medium text-gray-900 dark:text-dark-text text-sm">{product.name}</p>
+                        <p className="text-xs text-gray-500 dark:text-dark-textSecondary">SKU: {product.sku}</p>
+                        <p className="text-xs text-gray-500 dark:text-dark-textSecondary">
+                          {product.supplier ? product.supplier.name : <span className="text-warning-600">Sin proveedor</span>}
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleEditProduct(product)}
+                        className="text-brand-burgundy hover:text-brand-burgundy/80 transition-colors flex-shrink-0"
+                      >
+                        <Edit className="h-4 w-4" />
+                      </button>
+                    </div>
+                    
+                    <div className="grid grid-cols-3 gap-2 text-xs">
+                      <div className="bg-gray-50 dark:bg-dark-surface rounded p-2 text-center">
+                        <p className="text-gray-600 dark:text-dark-textSecondary">Stock actual</p>
+                        <p className="font-semibold text-brand-burgundy">{product.stock}</p>
+                      </div>
+                      <div className="bg-gray-50 dark:bg-dark-surface rounded p-2 text-center">
+                        <p className="text-gray-600 dark:text-dark-textSecondary">Stock mínimo</p>
+                        <p className="font-semibold">{product.minStock}</p>
+                      </div>
+                      <div className="bg-gray-50 dark:bg-dark-surface rounded p-2 text-center">
+                        <p className="text-gray-600 dark:text-dark-textSecondary">Stock ideal</p>
+                        <p className="font-semibold">{product.idealStock || '-'}</p>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-2">
+                        <span className="text-xs text-gray-600 dark:text-dark-textSecondary">Unidad:</span>
+                        <span className="text-sm">{product.unit}</span>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <label className="text-xs text-gray-600 dark:text-dark-textSecondary">A pedir:</label>
                         <input
                           type="number"
                           min="0"
                           value={quantities[product._id] || 0}
                           onChange={(e) => handleQuantityChange(product._id, e.target.value)}
-                          className="form-input w-24 text-center"
+                          className="form-input w-20 text-center text-sm py-1"
                         />
-                      </td>
-                      <td className="px-4 py-3 text-center">
-                        <button
-                          type="button"
-                          onClick={() => handleEditProduct(product)}
-                          className="text-brand-burgundy hover:text-brand-burgundy/80 transition-colors"
-                          title="Editar stock mínimo e ideal"
-                        >
-                          <Edit className="h-4 w-4" />
-                        </button>
-                      </td>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Desktop: Table View */}
+              <div className="hidden sm:block table-container max-h-[500px] overflow-y-auto">
+                <table className="table-responsive">
+                  <thead className="sticky top-0 bg-white dark:bg-dark-card z-10">
+                    <tr>
+                      <th className="w-10 px-4 py-3"></th>
+                      <th className="min-w-[200px] px-4 py-3">Producto</th>
+                      <th className="min-w-[120px] px-4 py-3">SKU</th>
+                      <th className="min-w-[150px] px-4 py-3">Proveedor</th>
+                      <th className="min-w-[80px] px-4 py-3 text-center">Stock actual</th>
+                      <th className="min-w-[80px] px-4 py-3 text-center">Stock mínimo</th>
+                      <th className="min-w-[80px] px-4 py-3 text-center">Stock ideal</th>
+                      <th className="min-w-[60px] px-4 py-3 text-center">Unidad</th>
+                      <th className="min-w-[80px] px-4 py-3 text-center">Cantidad a pedir</th>
+                      <th className="min-w-[40px] px-4 py-3"></th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody>
+                    {products.map(product => (
+                      <tr key={product._id}>
+                        <td className="px-4 py-3">
+                          <input
+                            type="checkbox"
+                            checked={selectedProducts[product._id] || false}
+                            onChange={() => handleProductSelect(product._id)}
+                            className="h-4 w-4 text-brand-burgundy focus:ring-brand-burgundy border-gray-300 rounded"
+                          />
+                        </td>
+                        <td className="px-4 py-3 font-medium text-gray-900 dark:text-dark-text">{product.name}</td>
+                        <td className="px-4 py-3 text-gray-600 dark:text-dark-textSecondary">{product.sku}</td>
+                        <td className="px-4 py-3">
+                          {product.supplier ? (
+                            <span className="text-sm text-gray-600 dark:text-dark-textSecondary">
+                              {product.supplier.name}
+                            </span>
+                          ) : (
+                            <span className="text-sm text-warning-600">Sin proveedor</span>
+                          )}
+                        </td>
+                        <td className="px-4 py-3 text-center text-brand-burgundy font-semibold">{product.stock}</td>
+                        <td className="px-4 py-3 text-center text-gray-600 dark:text-dark-textSecondary">{product.minStock}</td>
+                        <td className="px-4 py-3 text-center text-gray-600 dark:text-dark-textSecondary">{product.idealStock || '-'}</td>
+                        <td className="px-4 py-3 text-center text-gray-600 dark:text-dark-textSecondary">{product.unit}</td>
+                        <td className="px-4 py-3 text-center">
+                          <input
+                            type="number"
+                            min="0"
+                            value={quantities[product._id] || 0}
+                            onChange={(e) => handleQuantityChange(product._id, e.target.value)}
+                            className="form-input w-24 text-center"
+                          />
+                        </td>
+                        <td className="px-4 py-3 text-center">
+                          <button
+                            type="button"
+                            onClick={() => handleEditProduct(product)}
+                            className="text-brand-burgundy hover:text-brand-burgundy/80 transition-colors"
+                            title="Editar stock mínimo e ideal"
+                          >
+                            <Edit className="h-4 w-4" />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
           )}
         </div>
       </div>
@@ -652,9 +717,9 @@ const LowStockOrders = () => {
           <div className="flex items-center justify-center min-h-screen px-4">
             <div className="modal-overlay" onClick={() => setShowEditModal(false)} />
             
-            <div className="relative modal-content max-w-md w-full sm:max-w-md p-6 animate-slide-up">
+            <div className="relative modal-content max-w-md w-full sm:max-w-md p-4 sm:p-6 animate-slide-up">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-dark-text">
+                <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-dark-text">
                   Editar Stock - {editingProduct.name}
                 </h3>
                 <button
@@ -715,16 +780,16 @@ const LowStockOrders = () => {
                   </p>
                 </div>
 
-                <div className="flex gap-3 pt-4">
+                <div className="flex flex-col sm:flex-row gap-3 pt-4">
                   <button
                     onClick={() => setShowEditModal(false)}
-                    className="btn btn-secondary btn-md flex-1"
+                    className="btn btn-secondary btn-md w-full sm:w-auto"
                   >
                     Cancelar
                   </button>
                   <button
                     onClick={handleSaveEdit}
-                    className="btn btn-primary btn-md flex-1"
+                    className="btn btn-primary btn-md w-full sm:w-auto"
                   >
                     Guardar
                   </button>
