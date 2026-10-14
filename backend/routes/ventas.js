@@ -476,6 +476,42 @@ router.post('/', authenticateToken, async (req, res) => {
       }
     }
 
+    // 1.7. Validar que los servicios tengan mascota asociada
+    for (const item of items) {
+      if (item.type === 'servicio') {
+        if (!item.mascota) {
+          const servicio = await Servicio.findById(item.item);
+          return res.status(400).json({
+            success: false,
+            message: `El servicio "${servicio ? servicio.name : 'desconocido'}" debe tener una mascota asociada`
+          });
+        }
+
+        // Validar que la mascota pertenezca al cliente
+        if (!customer) {
+          return res.status(400).json({
+            success: false,
+            message: 'Para vender servicios debe seleccionar un cliente'
+          });
+        }
+
+        const mascotaDoc = await Mascota.findById(item.mascota);
+        if (!mascotaDoc) {
+          return res.status(404).json({
+            success: false,
+            message: 'Mascota no encontrada'
+          });
+        }
+
+        if (!mascotaDoc.owner || mascotaDoc.owner.toString() !== customer) {
+          return res.status(403).json({
+            success: false,
+            message: `La mascota "${mascotaDoc.name}" no pertenece al cliente seleccionado`
+          });
+        }
+      }
+    }
+
     // Mantener compatibilidad con ventas antiguas que usan mascota a nivel de venta
     if (mascota && !customer) {
       return res.status(400).json({
@@ -678,7 +714,33 @@ router.post('/', authenticateToken, async (req, res) => {
       }
     }
 
-    // 8. Registrar vacunas y desparasitantes en el carnet si aplica
+    // 8. Registrar servicios en el historial médico de las mascotas
+    for (const item of items) {
+      if (item.type === 'servicio' && item.mascota) {
+        const servicio = await Servicio.findById(item.item);
+        if (servicio) {
+          const mascotaDoc = await Mascota.findById(item.mascota);
+          if (mascotaDoc) {
+            // Agregar servicio al historial médico de la mascota
+            await Mascota.findByIdAndUpdate(
+              item.mascota,
+              {
+                $push: {
+                  medicalHistory: {
+                    date: venta.date,
+                    description: `Servicio: ${servicio.name} (Venta #${venta._id})`,
+                    veterinarian: req.user.name || 'Sistema',
+                    cost: item.subtotalAfterDiscount || (item.quantity * item.unitPrice)
+                  }
+                }
+              }
+            );
+          }
+        }
+      }
+    }
+
+    // 9. Registrar vacunas y desparasitantes en el carnet si aplica
     if (hasVaccines || hasDewormers) {
       try {
         // Procesar cada producto con sus aplicaciones
@@ -937,9 +999,46 @@ router.put('/:id', authenticateToken, async (req, res) => {
       
       // Admin puede modificar campos sensibles
       if (items) {
+        // Validar que los servicios tengan mascota asociada
+        for (const item of items) {
+          if (item.type === 'servicio') {
+            if (!item.mascota) {
+              const servicio = await Servicio.findById(item.item);
+              return res.status(400).json({
+                success: false,
+                message: `El servicio "${servicio ? servicio.name : 'desconocido'}" debe tener una mascota asociada`
+              });
+            }
+
+            // Validar que la mascota pertenezca al cliente
+            if (!customer && !venta.customer) {
+              return res.status(400).json({
+                success: false,
+                message: 'Para vender servicios debe seleccionar un cliente'
+              });
+            }
+
+            const effectiveCustomer = customer || venta.customer;
+            const mascotaDoc = await Mascota.findById(item.mascota);
+            if (!mascotaDoc) {
+              return res.status(404).json({
+                success: false,
+                message: 'Mascota no encontrada'
+              });
+            }
+
+            if (!mascotaDoc.owner || mascotaDoc.owner.toString() !== effectiveCustomer.toString()) {
+              return res.status(403).json({
+                success: false,
+                message: `La mascota "${mascotaDoc.name}" no pertenece al cliente seleccionado`
+              });
+            }
+          }
+        }
+
         // Guardar items originales para ajustar inventario
         const originalItems = venta.items;
-        
+
         // Devolver stock de items originales (solo productos)
         for (const originalItem of originalItems) {
           if (originalItem.type === 'producto') {
@@ -950,7 +1049,7 @@ router.put('/:id', authenticateToken, async (req, res) => {
             }
           }
         }
-        
+
         // Verificar stock disponible para nuevos items
         for (const newItem of items) {
           if (newItem.type === 'producto') {
@@ -971,7 +1070,7 @@ router.put('/:id', authenticateToken, async (req, res) => {
                 message: `Producto con ID ${newItem.item} no encontrado`
               });
             }
-            
+
             if (producto.stock < newItem.quantity) {
               // Si no hay suficiente stock, revertir stock y rechazar
               for (const originalItem of originalItems) {

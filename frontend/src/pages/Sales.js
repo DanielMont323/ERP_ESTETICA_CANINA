@@ -432,9 +432,21 @@ const Sales = () => {
   };
 
   const addToCart = (item, type) => {
-    const existingItem = cart.find(cartItem => 
-      cartItem.item === item._id && cartItem.type === type
-    );
+    // Para servicios: NO agrupar automáticamente (cada servicio es un item separado)
+    // Esto permite que el mismo servicio para diferentes mascotas se mantenga separado
+    // Para productos: agrupar por item y type (mascota opcional)
+    let existingItem = null;
+
+    if (type === 'servicio') {
+      // Servicios: no agrupar, siempre crear nuevo item
+      existingItem = null;
+    } else {
+      // Productos: buscar item con mismo item y type (sin importar mascota)
+      existingItem = cart.find(cartItem =>
+        cartItem.item === item._id &&
+        cartItem.type === type
+      );
+    }
 
     // Calcular precio con descuento si existe
     const discountPercentage = Number(item.discountPercentage) || 0;
@@ -597,6 +609,14 @@ const Sales = () => {
       }
     }
 
+    // Validar que todos los servicios tengan mascota asociada
+    const servicesWithoutPet = editCart.filter(item => item.type === 'servicio' && !item.mascota);
+    if (servicesWithoutPet.length > 0) {
+      const serviceNames = servicesWithoutPet.map(s => s.name).join(', ');
+      toast.error(`Los siguientes servicios requieren una mascota: ${serviceNames}`);
+      return;
+    }
+
     try {
       const updateData = {
         items: editCart.map(item => ({
@@ -654,9 +674,21 @@ const Sales = () => {
   };
 
   const addToEditCart = (item, type) => {
-    const existingItem = editCart.find(cartItem => 
-      cartItem.item === item._id && cartItem.type === type
-    );
+    // Para servicios: NO agrupar automáticamente (cada servicio es un item separado)
+    // Esto permite que el mismo servicio para diferentes mascotas se mantenga separado
+    // Para productos: agrupar por item y type (mascota opcional)
+    let existingItem = null;
+
+    if (type === 'servicio') {
+      // Servicios: no agrupar, siempre crear nuevo item
+      existingItem = null;
+    } else {
+      // Productos: buscar item con mismo item y type (sin importar mascota)
+      existingItem = editCart.find(cartItem =>
+        cartItem.item === item._id &&
+        cartItem.type === type
+      );
+    }
 
     if (existingItem) {
       const newQuantity = existingItem.quantity + 1;
@@ -1071,6 +1103,14 @@ const Sales = () => {
         toast.error(`La suma de pagos ($${totalPayments.toFixed(2)}) no coincide con el total ($${total.toFixed(2)})`);
         return;
       }
+    }
+
+    // Validar que todos los servicios tengan mascota asociada
+    const servicesWithoutPet = cart.filter(item => item.type === 'servicio' && !item.mascota);
+    if (servicesWithoutPet.length > 0) {
+      const serviceNames = servicesWithoutPet.map(s => s.name).join(', ');
+      toast.error(`Los siguientes servicios requieren una mascota: ${serviceNames}`);
+      return;
     }
 
     try {
@@ -1814,7 +1854,9 @@ const Sales = () => {
                             const isVaccine = categoryLower === 'vacunas' || categoryLower === 'vacuna';
                             const isDewormer = categoryLower === 'desparasitantes' || categoryLower === 'desparasitante' || categoryLower.includes('desparasitante');
                             const showNextDose = (isVaccine || isDewormer) && item.type === 'producto';
+                            const isService = item.type === 'servicio';
                             const showMascotaSelector = selectedCustomer && !isVaccine && !isDewormer;
+                            const showMascotaObligatorio = isService;
                             const showAplicacionesSelector = (isVaccine || isDewormer) && item.type === 'producto';
 
                             return (
@@ -1921,10 +1963,12 @@ const Sales = () => {
                                   </div>
                                 )}
                                 {showMascotaSelector && (
-                                  <div className="pl-2 bg-blue-50 border border-blue-200 rounded-lg p-2">
-                                    <label className="text-xs font-semibold text-blue-800">Mascota asociada (opcional):</label>
+                                  <div className={`pl-2 border rounded-lg p-2 ${showMascotaObligatorio ? 'bg-red-50 border-red-200' : 'bg-blue-50 border-blue-200'}`}>
+                                    <label className={`text-xs font-semibold ${showMascotaObligatorio ? 'text-red-800' : 'text-blue-800'}`}>
+                                      {showMascotaObligatorio ? 'Mascota a la que se aplicará (OBLIGATORIO):' : 'Mascota asociada (opcional):'}
+                                    </label>
                                     <Autocomplete
-                                      placeholder="Sin mascota"
+                                      placeholder={showMascotaObligatorio ? 'Seleccionar mascota...' : 'Sin mascota'}
                                       localOptions={pets}
                                       displayValue={(item) => `${item.name} - ${item.breed}`}
                               getOptionValue={(item) => item._id}
@@ -1935,8 +1979,12 @@ const Sales = () => {
                                 setCart(newCart);
                               }}
                               minLength={0}
-                              className="text-sm py-1 border-blue-300 focus:border-blue-500 focus:ring-blue-500 mt-2"
+                              className={`text-sm py-1 mt-2 ${showMascotaObligatorio ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : 'border-blue-300 focus:border-blue-500 focus:ring-blue-500'}`}
+                              required={showMascotaObligatorio}
                             />
+                                    {showMascotaObligatorio && !item.mascota && (
+                                      <p className="text-xs text-red-600 mt-1">⚠️ Debes seleccionar una mascota para este servicio</p>
+                                    )}
                                   </div>
                                 )}
                                 {showNextDose && (
@@ -2401,7 +2449,9 @@ const Sales = () => {
                             
                             const isVaccine = categoryLower === 'vacunas' || categoryLower === 'vacuna';
                             const isDewormer = categoryLower === 'desparasitantes' || categoryLower === 'desparasitante' || categoryLower.includes('desparasitante');
+                            const isService = item.type === 'servicio';
                             const showMascotaSelector = editCustomer && !isVaccine && !isDewormer;
+                            const showMascotaObligatorio = isService;
                             const showAplicacionesSelector = (isVaccine || isDewormer) && item.type === 'producto';
 
                             return (
@@ -2508,8 +2558,10 @@ const Sales = () => {
                                   </div>
                                 )}
                                 {showMascotaSelector && (
-                                  <div className="pl-2 bg-blue-50 border border-blue-200 rounded-lg p-2">
-                                    <label className="text-xs font-semibold text-blue-800">Mascota asociada (opcional):</label>
+                                  <div className={`pl-2 border rounded-lg p-2 ${showMascotaObligatorio ? 'bg-red-50 border-red-200' : 'bg-blue-50 border-blue-200'}`}>
+                                    <label className={`text-xs font-semibold ${showMascotaObligatorio ? 'text-red-800' : 'text-blue-800'}`}>
+                                      {showMascotaObligatorio ? 'Mascota a la que se aplicará (OBLIGATORIO):' : 'Mascota asociada (opcional):'}
+                                    </label>
                                     <select
                                       value={item.mascota || ''}
                                       onChange={(e) => {
@@ -2517,9 +2569,10 @@ const Sales = () => {
                                         newCart[index].mascota = e.target.value;
                                         setEditCart(newCart);
                                       }}
-                                      className="form-input text-sm py-1 border-blue-300 focus:border-blue-500 focus:ring-blue-500 mt-2"
+                                      className={`form-input text-sm py-1 mt-2 ${showMascotaObligatorio ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : 'border-blue-300 focus:border-blue-500 focus:ring-blue-500'}`}
+                                      required={showMascotaObligatorio}
                                     >
-                                      <option value="">Sin mascota</option>
+                                      <option value="">{showMascotaObligatorio ? 'Seleccionar mascota...' : 'Sin mascota'}</option>
                                       {pets.length === 0 ? (
                                         <option value="" disabled>Este cliente no tiene mascotas</option>
                                       ) : (
@@ -2530,6 +2583,9 @@ const Sales = () => {
                                         ))
                                       )}
                                     </select>
+                                    {showMascotaObligatorio && !item.mascota && (
+                                      <p className="text-xs text-red-600 mt-1">⚠️ Debes seleccionar una mascota para este servicio</p>
+                                    )}
                                   </div>
                                 )}
                               </div>
