@@ -348,8 +348,9 @@ const Sales = () => {
   // Sincronizar payment con total del carrito cuando hay un solo payment en efectivo
   useEffect(() => {
     if (payments.length === 1 && payments[0].method === 'efectivo') {
-      const subtotal = cart.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0);
-      const total = employeeDiscountApplied ? subtotal * 0.80 : subtotal;
+      const total = employeeDiscountApplied
+        ? cart.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0) * 0.80
+        : cart.reduce((sum, item) => sum + (item.subtotalAfterDiscount ?? (item.quantity * item.unitPrice)), 0);
       setPayments([{ method: 'efectivo', amount: Math.round(total * 100) / 100 }]);
     }
   }, [cart, employeeDiscountApplied]);
@@ -357,8 +358,9 @@ const Sales = () => {
   // Sincronizar editPayment con total del editCart cuando hay un solo payment en efectivo
   useEffect(() => {
     if (editPayments.length === 1 && editPayments[0].method === 'efectivo') {
-      const subtotal = editCart.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0);
-      const total = editEmployeeDiscountApplied ? subtotal * 0.80 : subtotal;
+      const total = editEmployeeDiscountApplied
+        ? editCart.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0) * 0.80
+        : editCart.reduce((sum, item) => sum + (item.subtotalAfterDiscount ?? (item.quantity * item.unitPrice)), 0);
       setEditPayments([{ method: 'efectivo', amount: Math.round(total * 100) / 100 }]);
     }
   }, [editCart, editEmployeeDiscountApplied]);
@@ -846,7 +848,7 @@ const Sales = () => {
       
       // Actualizar el monto del pago al nuevo total con descuento solo si hay un solo payment en efectivo
       if (editPayments.length === 1 && editPayments[0].method === 'efectivo') {
-        const subtotal = editCart.reduce((sum, item) => sum + (item.subtotalBeforeDiscount || (item.quantity * item.unitPrice)), 0);
+        const subtotal = editCart.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0);
         const newTotal = subtotal * 0.80; // 20% descuento
         setEditPayments([{ method: 'efectivo', amount: Math.round(newTotal * 100) / 100 }]);
       }
@@ -856,8 +858,7 @@ const Sales = () => {
       
       // Actualizar el monto del pago al total sin descuento solo si hay un solo payment en efectivo
       if (editPayments.length === 1 && editPayments[0].method === 'efectivo') {
-        const subtotal = editCart.reduce((sum, item) => sum + (item.subtotalBeforeDiscount || (item.quantity * item.unitPrice)), 0);
-        const newTotal = subtotal;
+        const newTotal = editCart.reduce((sum, item) => sum + (item.subtotalAfterDiscount ?? (item.quantity * item.unitPrice)), 0);
         setEditPayments([{ method: 'efectivo', amount: Math.round(newTotal * 100) / 100 }]);
       }
     }
@@ -958,11 +959,10 @@ const Sales = () => {
     } else {
       // Desactivar descuento de empleado
       setEmployeeDiscountApplied(false);
-      
-      // Calcular subtotal del carrito actual
-      const subtotal = cart.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0);
-      const newTotal = subtotal;
-      
+
+      // Calcular total del carrito actual (considerando descuentos individuales)
+      const newTotal = cart.reduce((sum, item) => sum + (item.subtotalAfterDiscount ?? (item.quantity * item.unitPrice)), 0);
+
       // Actualizar el monto del pago al total sin descuento solo si hay un solo payment en efectivo
       if (payments.length === 1 && payments[0].method === 'efectivo') {
         setPayments([{ method: 'efectivo', amount: Math.round(newTotal * 100) / 100 }]);
