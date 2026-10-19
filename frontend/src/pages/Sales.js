@@ -201,7 +201,7 @@ const Sales = () => {
 
   const fetchCustomers = async () => {
     try {
-      const response = await customersAPI.getAll({ active: true });
+      const response = await customersAPI.getAll({});
       setCustomers(response.data.data);
     } catch (error) {
       console.error('Error fetching customers:', error);
@@ -355,8 +355,10 @@ const Sales = () => {
     }
   }, [cart, employeeDiscountApplied]);
 
-  // Sincronizar editPayment con total del editCart cuando hay un solo payment en efectivo
+  // Sincronizar pagos con el total del carrito en modo edición
   useEffect(() => {
+    // Solo sincronizar automáticamente si hay un solo pago en efectivo
+    // No redistribuir pagos mixtos para permitir ajustes manuales del usuario
     if (editPayments.length === 1 && editPayments[0].method === 'efectivo') {
       const total = editEmployeeDiscountApplied
         ? editCart.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0) * 0.80
@@ -523,8 +525,19 @@ const Sales = () => {
         discountValue: item.discountValue || 0,
         discountAmount: item.discountAmount || 0,
         subtotalBeforeDiscount: item.subtotalBeforeDiscount || (item.quantity * item.unitPrice),
-        subtotalAfterDiscount: item.subtotalAfterDiscount || (item.quantity * item.unitPrice)
+        subtotalAfterDiscount: item.subtotalAfterDiscount || (item.quantity * item.unitPrice),
+        // Mascota asociada al item
+        mascota: item.mascota?._id || item.mascota || '',
+        // Campos de vacunación
+        nextDoseDate: item.nextDoseDate || null,
+        diasProximaDosis: item.diasProximaDosis || '',
+        aplicaciones: item.aplicaciones || []
       })));
+      
+      // Asegurar que el cliente de la venta esté en el array de clientes
+      if (sale.customer && !customers.find(c => c._id === (sale.customer._id || sale.customer))) {
+        setCustomers(prev => [...prev, sale.customer._id ? sale.customer : { _id: sale.customer, name: 'Cliente' }]);
+      }
       
       setEditCustomer(sale.customer || null);
       setEditPet(sale.mascota?._id || sale.mascota || '');
@@ -557,6 +570,23 @@ const Sales = () => {
         await fetchPetsByCustomer(sale.customer._id || sale.customer);
       }
       
+      // Asegurar que las mascotas individuales de los items estén en el array de mascotas
+      const itemPets = sale.items
+        .filter(item => item.mascota)
+        .map(item => item.mascota._id || item.mascota);
+      
+      if (itemPets.length > 0) {
+        setPets(prev => {
+          const existingIds = prev.map(p => p._id);
+          const newPets = itemPets.filter(id => !existingIds.includes(id));
+          // Si hay mascotas que no están en el array, agregarlas
+          if (newPets.length > 0) {
+            return [...prev, ...newPets.map(id => ({ _id: id, name: 'Mascota', type: 'Desconocido' }))];
+          }
+          return prev;
+        });
+      }
+      
       setShowEditModal(true);
     } catch (error) {
       console.error('Error al cargar venta para editar:', error);
@@ -587,10 +617,12 @@ const Sales = () => {
     // Validar pagos
     const totalPayments = editPayments.reduce((sum, p) => sum + p.amount, 0);
     const subtotal = editCart.reduce((sum, item) => sum + (item.subtotalBeforeDiscount || (item.quantity * item.unitPrice)), 0);
-    const totalDiscount = editEmployeeDiscountApplied 
+    const totalDiscount = editEmployeeDiscountApplied
       ? Math.round((subtotal * 0.20) * 100) / 100
-      : editCart.reduce((sum, item) => sum + (item.discountAmount || 0), 0);
-    const total = subtotal - totalDiscount;
+      : editCart.reduce((sum, item) => sum + (item.discountAmount ?? 0), 0);
+    const total = editEmployeeDiscountApplied
+      ? Math.round((subtotal * 0.80) * 100) / 100
+      : editCart.reduce((sum, item) => sum + (item.subtotalAfterDiscount ?? (item.quantity * item.unitPrice)), 0);
     const tolerance = 0.01;
     
     // Verificar si hay pagos en efectivo
@@ -600,13 +632,18 @@ const Sales = () => {
       // Con efectivo, permitir sobrepago (el excedente será el cambio)
       if (totalPayments < total - tolerance) {
         const missing = total - totalPayments;
-        toast.error(`Faltan $${missing.toFixed(2)} para completar el pago`);
+        toast.error(`Faltan $${missing.toFixed(2)} para completar el pago. Por favor ajusta los pagos.`);
         return;
       }
     } else {
       // Sin efectivo, el pago debe ser exacto
       if (Math.abs(totalPayments - total) > tolerance) {
-        toast.error(`La suma de pagos ($${totalPayments.toFixed(2)}) no coincide con el total ($${total.toFixed(2)})`);
+        const diff = totalPayments - total;
+        if (diff > 0) {
+          toast.error(`Los pagos exceden el total en $${diff.toFixed(2)}. Por favor ajusta los pagos.`);
+        } else {
+          toast.error(`Faltan $${Math.abs(diff).toFixed(2)} para completar el pago. Por favor ajusta los pagos.`);
+        }
         return;
       }
     }
@@ -2626,7 +2663,7 @@ const Sales = () => {
                         <span>Total:</span>
                         <span>{formatCurrency(editEmployeeDiscountApplied
                           ? Math.round((editCart.reduce((sum, item) => sum + (item.subtotalBeforeDiscount || (item.quantity * item.unitPrice)), 0) * 0.80) * 100) / 100
-                          : editCart.reduce((sum, item) => sum + (item.subtotalAfterDiscount || (item.quantity * item.unitPrice)), 0))}</span>
+                          : editCart.reduce((sum, item) => sum + (item.subtotalAfterDiscount ?? (item.quantity * item.unitPrice)), 0))}</span>
                       </div>
                     </div>
 
@@ -2676,8 +2713,22 @@ const Sales = () => {
                           </button>
                         )}
                       </div>
-                      <div className="mt-2 text-sm text-gray-600 dark:text-dark-textSecondary">
-                        Total pagos: {formatCurrency(editPayments.reduce((sum, p) => sum + (p.amount || 0), 0))}
+                      <div className="mt-2 flex items-center justify-between">
+                        <div className="text-sm text-gray-600 dark:text-dark-textSecondary">
+                          Total pagos: {formatCurrency(editPayments.reduce((sum, p) => sum + (p.amount || 0), 0))}
+                        </div>
+                        <button
+                          onClick={() => {
+                            const total = editEmployeeDiscountApplied
+                              ? editCart.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0) * 0.80
+                              : editCart.reduce((sum, item) => sum + (item.subtotalAfterDiscount ?? (item.quantity * item.unitPrice)), 0);
+                            setEditPayments([{ method: 'efectivo', amount: Math.round(total * 100) / 100 }]);
+                            toast.success('Pagos ajustados al total actual');
+                          }}
+                          className="text-sm text-blue-600 hover:text-blue-800 underline"
+                        >
+                          Ajustar pagos al total
+                        </button>
                       </div>
                     </div>
 
@@ -2690,7 +2741,7 @@ const Sales = () => {
                             {(() => {
                               const totalCash = editPayments.filter(p => p.method === 'efectivo').reduce((sum, p) => sum + (p.amount || 0), 0);
                               const nonCashTotal = editPayments.filter(p => p.method !== 'efectivo').reduce((sum, p) => sum + (p.amount || 0), 0);
-                              const total = editCart.reduce((sum, item) => sum + (item.subtotalAfterDiscount || (item.quantity * item.unitPrice)), 0);
+                              const total = editCart.reduce((sum, item) => sum + (item.subtotalAfterDiscount ?? (item.quantity * item.unitPrice)), 0);
                               const cashRequired = total - nonCashTotal;
                               const change = totalCash - cashRequired;
                               return formatCurrency(Math.max(0, change));

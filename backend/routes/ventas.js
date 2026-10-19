@@ -170,8 +170,10 @@ router.get('/:id', async (req, res) => {
   try {
     const venta = await Venta.findById(req.params.id)
       .populate('customer', 'name phone email')
+      .populate('mascota', 'name')
       .populate('user', 'name')
-      .populate('items.item');
+      .populate('items.item')
+      .populate('items.mascota', 'name');
     
     if (!venta) {
       return res.status(404).json({
@@ -1122,26 +1124,35 @@ router.put('/:id', authenticateToken, async (req, res) => {
       
       // Si se modifican items o paymentMethod, recalcular totales en backend
       if (items || paymentMethod !== undefined) {
-        // Calcular subtotal de cada item
+        // Calcular subtotal de cada item (usar subtotalBeforeDiscount si existe)
         venta.items.forEach(item => {
-          item.subtotal = Math.round((item.quantity * item.unitPrice) * 100) / 100;
+          item.subtotal = Math.round((item.subtotalBeforeDiscount || (item.quantity * item.unitPrice)) * 100) / 100;
         });
         
         // Calcular subtotal total
-        venta.subtotal = Math.round(venta.items.reduce((sum, item) => sum + item.subtotal, 0) * 100) / 100;
+        venta.subtotal = Math.round(venta.items.reduce((sum, item) => sum + (item.subtotalBeforeDiscount || item.subtotal), 0) * 100) / 100;
+        
+        // Calcular descuento total
+        const totalDiscount = venta.employeeDiscountApplied
+          ? Math.round((venta.subtotal * (venta.employeeDiscountPercentage || 20) / 100) * 100) / 100
+          : Math.round(venta.items.reduce((sum, item) => sum + (item.discountAmount || 0), 0) * 100) / 100;
+        venta.totalDiscount = totalDiscount;
+        
+        // Calcular total después de descuentos
+        const totalAfterDiscount = Math.round((venta.subtotal - totalDiscount) * 100) / 100;
         
         // Calcular comisión de tarjeta (4.06%) solo si paymentMethod es tarjeta
         if (venta.paymentMethod === 'tarjeta') {
-          venta.cardCommission = Math.round((venta.subtotal * 0.0406) * 100) / 100;
+          venta.cardCommission = Math.round((totalAfterDiscount * 0.0406) * 100) / 100;
         } else {
           venta.cardCommission = 0;
         }
         
-        // Calcular total (subtotal sin comisión de tarjeta - la empresa absorbe la comisión)
-        venta.total = Math.round(venta.subtotal * 100) / 100;
+        // Calcular total (subtotal después de descuentos sin comisión de tarjeta - la empresa absorbe la comisión)
+        venta.total = totalAfterDiscount;
         
-        // Calcular ingreso neto (subtotal - commission - cardCommission)
-        venta.netIncome = Math.round((venta.subtotal - (venta.commission || 0) - venta.cardCommission) * 100) / 100;
+        // Calcular ingreso neto (total - commission - cardCommission)
+        venta.netIncome = Math.round((venta.total - (venta.commission || 0) - venta.cardCommission) * 100) / 100;
       }
       
       // Si se envían manualmente, usar esos valores (solo admin puede hacerlo)
