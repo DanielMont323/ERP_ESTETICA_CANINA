@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { accountsPayableAPI } from '../services/api';
+import { accountsPayableAPI, purchasesAPI } from '../services/api';
 import toast from 'react-hot-toast';
 import { SkeletonTable } from '../components/Skeleton';
 import Pagination from '../components/Pagination';
@@ -34,6 +34,9 @@ const AccountsPayable = () => {
     notes: ''
   });
   const [processingPayment, setProcessingPayment] = useState(false);
+  const [showPurchaseDetailModal, setShowPurchaseDetailModal] = useState(false);
+  const [selectedPurchase, setSelectedPurchase] = useState(null);
+  const [loadingPurchase, setLoadingPurchase] = useState(false);
 
   useEffect(() => {
     fetchAccounts();
@@ -44,6 +47,9 @@ const AccountsPayable = () => {
 
   // Manejo de ESC para cerrar modal de pago masivo
   useEscapeKey(() => setShowMassivePaymentModal(false), showMassivePaymentModal);
+
+  // Manejo de ESC para cerrar modal de detalle de compra
+  useEscapeKey(() => setShowPurchaseDetailModal(false), showPurchaseDetailModal);
 
   const fetchAccounts = async () => {
     try {
@@ -249,6 +255,29 @@ const AccountsPayable = () => {
     }
   };
 
+  const handleViewPurchaseDetail = async (account) => {
+    if (!account.compra) {
+      toast.error('Esta cuenta no tiene una compra asociada');
+      return;
+    }
+
+    setLoadingPurchase(true);
+    setShowPurchaseDetailModal(true);
+
+    try {
+      // Si account.compra es un objeto con _id, usar el _id
+      const compraId = typeof account.compra === 'object' ? account.compra._id : account.compra;
+      const response = await purchasesAPI.getById(compraId);
+      setSelectedPurchase(response.data.data);
+    } catch (error) {
+      console.error('Error al cargar detalle de compra:', error);
+      toast.error(error.response?.data?.message || 'Error al cargar detalle de compra');
+      setSelectedPurchase(null);
+    } finally {
+      setLoadingPurchase(false);
+    }
+  };
+
   if (loading) {
     return <SkeletonTable rows={5} columns={10} />;
   }
@@ -321,10 +350,10 @@ const AccountsPayable = () => {
       )}
 
       {/* Accounts Table */}
-      <div className="card">
-        <div className="table-container">
-          <table className="table table-responsive">
-            <thead>
+      <div className="card hover:shadow-md transition-shadow duration-200 flex flex-col max-h-[calc(100vh-320px)]">
+        <div className="hidden md:block table-container flex-1 overflow-auto">
+          <table className="table min-w-full">
+            <thead className="sticky top-0 bg-gray-50 dark:bg-dark-surface z-10">
               <tr>
                 <th>
                   <input
@@ -409,6 +438,12 @@ const AccountsPayable = () => {
                     </td>
                     <td className="py-4">
                       <div className="flex space-x-2">
+                        <button 
+                          onClick={() => handleViewPurchaseDetail(account)}
+                          className="text-sm font-medium text-blue-600 hover:text-blue-900"
+                        >
+                          Ver detalle
+                        </button>
                         <button 
                           onClick={() => handlePaymentClick(account)}
                           disabled={account.status === 'pagado' || account.status === 'cancelada'}
@@ -530,6 +565,12 @@ const AccountsPayable = () => {
               </div>
 
               <div className="mt-4 pt-3 border-t border-gray-200 dark:border-dark-border flex space-x-2">
+                <button 
+                  onClick={() => handleViewPurchaseDetail(account)}
+                  className="flex-1 py-2 px-4 rounded-lg text-sm font-medium bg-blue-600 text-white hover:bg-blue-900"
+                >
+                  Ver detalle
+                </button>
                 <button 
                   onClick={() => handlePaymentClick(account)}
                   disabled={account.status === 'pagado' || account.status === 'cancelada'}
@@ -775,6 +816,165 @@ const AccountsPayable = () => {
           </div>
         </div>
       </div>
+      )}
+
+      {/* Purchase Detail Modal */}
+      {showPurchaseDetailModal && (
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          <div className="flex items-center justify-center min-h-screen px-4">
+            <div className="modal-overlay" onClick={() => setShowPurchaseDetailModal(false)} />
+            
+            <div className="relative modal-content max-w-4xl w-full sm:max-w-4xl max-h-[90vh] overflow-y-auto animate-slide-up">
+              <div className="flex items-center justify-between p-4 md:p-6 border-b border-gray-200 dark:border-dark-border sticky top-0 bg-white dark:bg-dark-card rounded-t-xl">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-dark-text">Detalle de Compra</h3>
+                <button
+                  onClick={() => setShowPurchaseDetailModal(false)}
+                  className="text-gray-400 dark:text-dark-textSecondary hover:text-gray-600 dark:text-dark-textSecondary transition-colors p-1"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+            
+              <div className="p-4 md:p-6">
+                {loadingPurchase ? (
+                  <div className="text-center py-8">
+                    <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-brand-burgundy"></div>
+                    <p className="mt-2 text-gray-600 dark:text-dark-textSecondary">Cargando detalle...</p>
+                  </div>
+                ) : selectedPurchase ? (
+                  <div className="space-y-6">
+                    {/* Datos Generales */}
+                    <div className="bg-gray-50 dark:bg-dark-surface border border-gray-200 dark:border-dark-border rounded-lg p-4">
+                      <h4 className="font-semibold text-gray-900 dark:text-dark-text mb-3">Datos Generales</h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                        <div>
+                          <span className="text-gray-600 dark:text-dark-textSecondary">Proveedor:</span>
+                          <span className="ml-2 font-medium">{selectedPurchase.proveedor?.name || 'N/A'}</span>
+                        </div>
+                        <div>
+                          <span className="text-gray-600 dark:text-dark-textSecondary">Factura:</span>
+                          <span className="ml-2 font-medium">{selectedPurchase.invoice || 'N/A'}</span>
+                        </div>
+                        <div>
+                          <span className="text-gray-600 dark:text-dark-textSecondary">Fecha de Compra:</span>
+                          <span className="ml-2 font-medium">{formatCalendarDate(selectedPurchase.date)}</span>
+                        </div>
+                        <div>
+                          <span className="text-gray-600 dark:text-dark-textSecondary">Fecha de Vencimiento:</span>
+                          <span className="ml-2 font-medium">{formatCalendarDate(selectedPurchase.dueDate)}</span>
+                        </div>
+                        <div>
+                          <span className="text-gray-600 dark:text-dark-textSecondary">Estado:</span>
+                          <span className={`ml-2 px-2 py-1 rounded text-xs ${
+                            selectedPurchase.status === 'pagada' ? 'bg-green-100 text-green-800' :
+                            selectedPurchase.status === 'pendiente' ? 'bg-yellow-100 text-yellow-800' :
+                            selectedPurchase.status === 'vencida' ? 'bg-red-100 text-red-800' :
+                            'bg-gray-100 text-gray-800'
+                          }`}>
+                            {selectedPurchase.status}
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-gray-600 dark:text-dark-textSecondary">Tipo:</span>
+                          <span className="ml-2 font-medium capitalize">{selectedPurchase.type}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Productos Comprados */}
+                    <div>
+                      <h4 className="font-semibold text-gray-900 dark:text-dark-text mb-3">Productos Comprados</h4>
+                      <div className="border border-gray-200 dark:border-dark-border rounded-lg overflow-hidden">
+                        <table className="min-w-full divide-y divide-gray-200 dark:divide-dark-border">
+                          <thead className="bg-gray-50 dark:bg-dark-surface">
+                            <tr>
+                              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-dark-textSecondary uppercase">Producto</th>
+                              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-dark-textSecondary uppercase">SKU</th>
+                              <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-dark-textSecondary uppercase">Cantidad</th>
+                              <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-dark-textSecondary uppercase">Precio Unitario</th>
+                              <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-dark-textSecondary uppercase">Descuento</th>
+                              <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-dark-textSecondary uppercase">IVA</th>
+                              <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-dark-textSecondary uppercase">Importe</th>
+                            </tr>
+                          </thead>
+                          <tbody className="bg-white dark:bg-dark-card divide-y divide-gray-200 dark:divide-dark-border">
+                            {selectedPurchase.items && selectedPurchase.items.length > 0 ? (
+                              selectedPurchase.items.map((item, index) => (
+                                <tr key={index}>
+                                  <td className="px-4 py-3 text-sm text-gray-900 dark:text-dark-text">
+                                    {item.product?.name || 'Producto desconocido'}
+                                  </td>
+                                  <td className="px-4 py-3 text-sm text-gray-600 dark:text-dark-textSecondary">
+                                    {item.product?.sku || 'N/A'}
+                                  </td>
+                                  <td className="px-4 py-3 text-sm text-right text-gray-900 dark:text-dark-text">
+                                    {item.quantity}
+                                  </td>
+                                  <td className="px-4 py-3 text-sm text-right text-gray-900 dark:text-dark-text">
+                                    {formatCurrency(item.baseUnitCost)}
+                                  </td>
+                                  <td className="px-4 py-3 text-sm text-right text-gray-600 dark:text-dark-textSecondary">
+                                    {item.discountPercentage > 0 ? `${item.discountPercentage}% (-${formatCurrency(item.discountAmount)})` : '$0.00'}
+                                  </td>
+                                  <td className="px-4 py-3 text-sm text-right text-gray-600 dark:text-dark-textSecondary">
+                                    {item.hasTax !== false ? `${(item.taxRate || 0.16) * 100}%` : '0%'}
+                                  </td>
+                                  <td className="px-4 py-3 text-sm text-right font-medium text-gray-900 dark:text-dark-text">
+                                    {formatCurrency(item.subtotal)}
+                                  </td>
+                                </tr>
+                              ))
+                            ) : (
+                              <tr>
+                                <td colSpan="7" className="px-4 py-3 text-sm text-gray-500 dark:text-dark-textSecondary text-center">
+                                  No hay productos en esta compra
+                                </td>
+                              </tr>
+                            )}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+
+                    {/* Resumen Económico */}
+                    <div className="bg-gray-50 dark:bg-dark-surface border border-gray-200 dark:border-dark-border rounded-lg p-4">
+                      <h4 className="font-semibold text-gray-900 dark:text-dark-text mb-3">Resumen Económico</h4>
+                      <div className="space-y-2 text-sm">
+                        <div className="flex justify-between">
+                          <span className="text-gray-600 dark:text-dark-textSecondary">Subtotal:</span>
+                          <span className="font-medium">{formatCurrency(selectedPurchase.baseTotal)}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-600 dark:text-dark-textSecondary">Descuentos:</span>
+                          <span className="font-medium text-red-600">-{formatCurrency(selectedPurchase.totalDiscount)}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-600 dark:text-dark-textSecondary">IVA:</span>
+                          <span className="font-medium">{formatCurrency(selectedPurchase.totalIVA)}</span>
+                        </div>
+                        <div className="flex justify-between border-t border-gray-300 pt-2">
+                          <span className="font-semibold">Total de la Compra:</span>
+                          <span className="font-semibold text-lg">{formatCurrency(selectedPurchase.total)}</span>
+                        </div>
+                        {selectedPurchase.earlyPaymentDiscount > 0 && (
+                          <div className="flex justify-between text-green-600">
+                            <span className="font-medium">Descuento Pronto Pago ({selectedPurchase.earlyPaymentDiscount}%):</span>
+                            <span className="font-medium">-{formatCurrency(selectedPurchase.baseTotal * (selectedPurchase.earlyPaymentDiscount / 100))}</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <AlertTriangle className="h-12 w-12 text-yellow-500 mx-auto mb-3" />
+                    <p className="text-gray-600 dark:text-dark-textSecondary">No se pudo cargar el detalle de la compra</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

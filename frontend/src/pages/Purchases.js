@@ -1218,12 +1218,16 @@ const Purchases = () => {
                         </div>
                         {formData.type === 'credito' && calculateEarlyPaymentDiscount() > 0 && (
                           <>
+                            <div className="flex justify-between text-gray-600 dark:text-dark-textSecondary">
+                              <span>Total sin descuento por pronto pago:</span>
+                              <span className="font-medium">{formatCurrency(calculateBaseTotal() + calculateTotalIVA())}</span>
+                            </div>
                             <div className="flex justify-between text-green-600">
                               <span className="text-gray-600 dark:text-dark-textSecondary">Descuento pronto pago ({selectedSupplierInfo?.earlyPaymentDiscount}%):</span>
                               <span className="font-medium">-{formatCurrency(calculateEarlyPaymentDiscount())}</span>
                             </div>
                             <div className="flex justify-between border-t border-gray-200 dark:border-dark-border pt-2">
-                              <span className="font-semibold">Total:</span>
+                              <span className="font-semibold">Total con descuento:</span>
                               <span className="font-semibold text-brand-burgundy">{formatCurrency(calculateBaseTotal() + calculateTotalIVA() - calculateEarlyPaymentDiscount())}</span>
                             </div>
                             <div className="flex justify-between text-green-600 text-xs pt-1 border-t border-green-200">
@@ -1234,6 +1238,10 @@ const Purchases = () => {
                         )}
                         {formData.type === 'credito' && calculateEarlyPaymentDiscount() === 0 && (
                           <>
+                            <div className="flex justify-between text-gray-600 dark:text-dark-textSecondary">
+                              <span>Total sin descuento por pronto pago:</span>
+                              <span className="font-medium">{formatCurrency(calculateBaseTotal() + calculateTotalIVA())}</span>
+                            </div>
                             <div className="flex justify-between text-gray-500 dark:text-dark-textSecondary text-xs">
                               <span>Descuento pronto pago:</span>
                               <span>No disponible</span>
