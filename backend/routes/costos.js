@@ -9,10 +9,16 @@ router.get('/', async (req, res) => {
     const { type, category, frequency, active, page = 1, limit = 10, startDate, endDate } = req.query;
     let query = {};
 
+    // Por defecto, solo mostrar costos activos
+    if (active !== undefined) {
+      query.isActive = active === 'true';
+    } else {
+      query.isActive = true;
+    }
+
     if (type) query.type = type;
     if (category) query.category = category;
     if (frequency) query.frequency = frequency;
-    if (active !== undefined) query.isActive = active === 'true';
 
     // Filtro por rango de fechas
     if (startDate || endDate) {
