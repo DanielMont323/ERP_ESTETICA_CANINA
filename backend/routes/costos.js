@@ -18,15 +18,15 @@ router.get('/', async (req, res) => {
     if (startDate || endDate) {
       query.date = {};
       if (startDate) {
-        // Inicio del día en zona horaria local (Tepic, Nayarit)
+        // Inicio del día en UTC (costos se almacenan como días de calendario UTC 00:00)
         const start = new Date(startDate);
-        start.setHours(0, 0, 0, 0);
+        start.setUTCHours(0, 0, 0, 0);
         query.date.$gte = start;
       }
       if (endDate) {
-        // Fin del día en zona horaria local (23:59:59.999)
+        // Fin del día en UTC (23:59:59.999)
         const end = new Date(endDate);
-        end.setHours(23, 59, 59, 999);
+        end.setUTCHours(23, 59, 59, 999);
         query.date.$lte = end;
       }
     }
@@ -192,14 +192,14 @@ router.get('/summary/:period', async (req, res) => {
       const targetYear = parseInt(year) || new Date().getFullYear();
       const targetMonth = parseInt(month) || new Date().getMonth() + 1;
       
-      startDate = new Date(targetYear, targetMonth - 1, 1);
-      endDate = new Date(targetYear, targetMonth, 0, 23, 59, 59, 999);
+      startDate = new Date(Date.UTC(targetYear, targetMonth - 1, 1, 0, 0, 0));
+      endDate = new Date(Date.UTC(targetYear, targetMonth, 0, 23, 59, 59, 999));
       groupFormat = { $dayOfMonth: '$date' };
     } else if (period === 'year') {
       const targetYear = parseInt(year) || new Date().getFullYear();
       
-      startDate = new Date(targetYear, 0, 1);
-      endDate = new Date(targetYear, 11, 31, 23, 59, 59, 999);
+      startDate = new Date(Date.UTC(targetYear, 0, 1, 0, 0, 0));
+      endDate = new Date(Date.UTC(targetYear, 11, 31, 23, 59, 59, 999));
       groupFormat = { $month: '$date' };
     } else {
       return res.status(400).json({

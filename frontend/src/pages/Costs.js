@@ -85,6 +85,15 @@ const Costs = () => {
     }).format(amount);
   };
 
+  const formatDate = (date) => {
+    if (!date) return '';
+    const d = new Date(date);
+    const day = String(d.getUTCDate()).padStart(2, '0');
+    const month = String(d.getUTCMonth() + 1).padStart(2, '0');
+    const year = d.getUTCFullYear();
+    return `${day}/${month}/${year}`;
+  };
+
   const handleCreateCost = () => {
     setEditingCost(null);
     setFormData({
@@ -260,7 +269,7 @@ const Costs = () => {
                       {formatCurrency(cost.amount)}
                     </td>
                     <td className="py-4">
-                      {new Date(cost.date).toLocaleDateString('es-MX')}
+                      {formatDate(cost.date)}
                     </td>
                     <td className="py-4">
                       <span className="capitalize">{cost.frequency}</span>
