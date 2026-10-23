@@ -8,7 +8,7 @@ const Servicio = require('../models/Servicio');
 const Cliente = require('../models/Cliente');
 const Proveedor = require('../models/Proveedor');
 const Recordatorio = require('../models/Recordatorio');
-const { startOfDayGMT7, endOfDayGMT7, toGMT7, createCalendarDate, formatCalendarDate } = require('../helpers/timezone');
+const { startOfDayGMT7, endOfDayGMT7, toGMT7, createCalendarDate, formatCalendarDate, startOfDayGMT7FromCalendar, endOfDayGMT7FromCalendar } = require('../helpers/timezone');
 const ExcelJS = require('exceljs');
 const router = express.Router();
 
@@ -316,11 +316,11 @@ router.get('/income-statement', async (req, res) => {
       // Usar funciones de calendario para evitar desfase de zona horaria
       const startCalendar = createCalendarDate(startDate);
       const endCalendar = createCalendarDate(endDate);
-      // Para el filtro: inicio del día inicial (00:00 GMT-7) hasta inicio del día siguiente al final (00:00 GMT-7)
-      const startGMT7 = startOfDayGMT7(startCalendar);
-      const endGMT7 = startOfDayGMT7(new Date(endCalendar.getTime() + 24 * 3600000)); // Día siguiente a las 00:00
+      // Para el filtro: inicio del día inicial (00:00 GMT-7) hasta fin del día final (23:59:59.999 GMT-7)
+      const startGMT7 = startOfDayGMT7FromCalendar(startCalendar);
+      const endGMT7 = endOfDayGMT7FromCalendar(endCalendar);
       dateFilter = {
-        date: { $gte: startGMT7, $lt: endGMT7 }
+        date: { $gte: startGMT7, $lte: endGMT7 }
       };
     }
 
@@ -451,11 +451,11 @@ router.get('/expenses-detail', async (req, res) => {
       // Usar funciones de calendario para evitar desfase de zona horaria
       const startCalendar = createCalendarDate(startDate);
       const endCalendar = createCalendarDate(endDate);
-      // Para el filtro: inicio del día inicial (00:00 GMT-7) hasta inicio del día siguiente al final (00:00 GMT-7)
-      const startGMT7 = startOfDayGMT7(startCalendar);
-      const endGMT7 = startOfDayGMT7(new Date(endCalendar.getTime() + 24 * 3600000)); // Día siguiente a las 00:00
+      // Para el filtro: inicio del día inicial (00:00 GMT-7) hasta fin del día final (23:59:59.999 GMT-7)
+      const startGMT7 = startOfDayGMT7FromCalendar(startCalendar);
+      const endGMT7 = endOfDayGMT7FromCalendar(endCalendar);
       dateFilter = {
-        date: { $gte: startGMT7, $lt: endGMT7 }
+        date: { $gte: startGMT7, $lte: endGMT7 }
       };
     }
 
@@ -538,11 +538,11 @@ router.get('/sales-summary', async (req, res) => {
       // Usar funciones de calendario para evitar desfase de zona horaria
       const startCalendar = createCalendarDate(startDate);
       const endCalendar = createCalendarDate(endDate);
-      // Para el filtro: inicio del día inicial (00:00 GMT-7) hasta inicio del día siguiente al final (00:00 GMT-7)
-      const startGMT7 = startOfDayGMT7(startCalendar);
-      const endGMT7 = startOfDayGMT7(new Date(endCalendar.getTime() + 24 * 3600000)); // Día siguiente a las 00:00
+      // Para el filtro: inicio del día inicial (00:00 GMT-7) hasta fin del día final (23:59:59.999 GMT-7)
+      const startGMT7 = startOfDayGMT7FromCalendar(startCalendar);
+      const endGMT7 = endOfDayGMT7FromCalendar(endCalendar);
       dateFilter = {
-        date: { $gte: startGMT7, $lt: endGMT7 }
+        date: { $gte: startGMT7, $lte: endGMT7 }
       };
     }
 
@@ -863,11 +863,11 @@ router.get('/sales-behavior', async (req, res) => {
       // Usar funciones de calendario para evitar desfase de zona horaria
       const startCalendar = createCalendarDate(startDate);
       const endCalendar = createCalendarDate(endDate);
-      // Para el filtro: inicio del día inicial (00:00 GMT-7) hasta inicio del día siguiente al final (00:00 GMT-7)
-      const startGMT7 = startOfDayGMT7(startCalendar);
-      const endGMT7 = startOfDayGMT7(new Date(endCalendar.getTime() + 24 * 3600000)); // Día siguiente a las 00:00
+      // Para el filtro: inicio del día inicial (00:00 GMT-7) hasta fin del día final (23:59:59.999 GMT-7)
+      const startGMT7 = startOfDayGMT7FromCalendar(startCalendar);
+      const endGMT7 = endOfDayGMT7FromCalendar(endCalendar);
       dateFilter = {
-        date: { $gte: startGMT7, $lt: endGMT7 }
+        date: { $gte: startGMT7, $lte: endGMT7 }
       };
     }
 
@@ -1194,11 +1194,14 @@ router.get('/customers', async (req, res) => {
         date: { $gte: startOfYear, $lte: endOfYear }
       };
     } else if (startDate && endDate) {
+      // Usar funciones de calendario para evitar desfase de zona horaria
+      const startCalendar = createCalendarDate(startDate);
+      const endCalendar = createCalendarDate(endDate);
+      // Para el filtro: inicio del día inicial (00:00 GMT-7) hasta fin del día final (23:59:59.999 GMT-7)
+      const startGMT7 = startOfDayGMT7FromCalendar(startCalendar);
+      const endGMT7 = endOfDayGMT7FromCalendar(endCalendar);
       dateFilter = {
-        date: {
-          $gte: new Date(startDate),
-          $lte: new Date(endDate)
-        }
+        date: { $gte: startGMT7, $lte: endGMT7 }
       };
     }
 
@@ -1443,11 +1446,11 @@ router.get('/export-sales', async (req, res) => {
       // Usar funciones de calendario para evitar desfase de zona horaria
       const startCalendar = createCalendarDate(startDate);
       const endCalendar = createCalendarDate(endDate);
-      // Para el filtro: inicio del día inicial (00:00 GMT-7) hasta inicio del día siguiente al final (00:00 GMT-7)
-      const startGMT7 = startOfDayGMT7(startCalendar);
-      const endGMT7 = startOfDayGMT7(new Date(endCalendar.getTime() + 24 * 3600000)); // Día siguiente a las 00:00
+      // Para el filtro: inicio del día inicial (00:00 GMT-7) hasta fin del día final (23:59:59.999 GMT-7)
+      const startGMT7 = startOfDayGMT7FromCalendar(startCalendar);
+      const endGMT7 = endOfDayGMT7FromCalendar(endCalendar);
       dateFilter = {
-        date: { $gte: startGMT7, $lt: endGMT7 }
+        date: { $gte: startGMT7, $lte: endGMT7 }
       };
     }
 

@@ -112,6 +112,36 @@ const parseCalendarDate = (dateStr) => {
   return createCalendarDate(dateStr);
 };
 
+/**
+ * Obtiene el inicio del día GMT-7 a partir de una fecha de calendario
+ * @param {Date} calendarDate - Fecha de calendario (UTC 12:00)
+ * @returns {Date} Inicio del día en GMT-7 como UTC (07:00 UTC)
+ */
+const startOfDayGMT7FromCalendar = (calendarDate) => {
+  if (!calendarDate) return null;
+  const d = new Date(calendarDate);
+  // UTC 12:00 representa el mediodía del día GMT-7
+  // Inicio del día GMT-7 = UTC 12:00 - 5 horas = UTC 07:00
+  d.setUTCHours(7, 0, 0, 0);
+  return d;
+};
+
+/**
+ * Obtiene el fin del día GMT-7 a partir de una fecha de calendario
+ * @param {Date} calendarDate - Fecha de calendario (UTC 12:00)
+ * @returns {Date} Fin del día en GMT-7 como UTC (06:59 UTC del día siguiente)
+ */
+const endOfDayGMT7FromCalendar = (calendarDate) => {
+  if (!calendarDate) return null;
+  const d = new Date(calendarDate);
+  // UTC 12:00 representa el mediodía del día GMT-7
+  // Fin del día GMT-7 = UTC 12:00 + 19 horas = UTC 07:00 del día siguiente - 1ms
+  d.setUTCHours(7, 0, 0, 0);
+  d.setDate(d.getDate() + 1);
+  d.setMilliseconds(-1);
+  return d;
+};
+
 module.exports = {
   getCurrentDateGMT7,
   toGMT7,
@@ -121,5 +151,7 @@ module.exports = {
   // Funciones para fechas de calendario
   createCalendarDate,
   formatCalendarDate,
-  parseCalendarDate
+  parseCalendarDate,
+  startOfDayGMT7FromCalendar,
+  endOfDayGMT7FromCalendar
 };
